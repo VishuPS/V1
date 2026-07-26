@@ -1,0 +1,4 @@
+barcode,expected_product_name,expected_brand,country,category,retailer_or_source,notes
+012345678905,Fictional Example A,Example Brand,Portugal,beverages,manual observation example,FICTIONAL TEMPLATE ROW - replace before benchmarking
+4006381333931,Fictional Example B,Example Brand,United Kingdom,snacks,receipt example,FICTIONAL TEMPLATE ROW - replace before benchmarking
+96385074,Fictional Example C,,Portugal,dairy,,FICTIONAL TEMPLATE ROW - replace before benchmarking

@@ -1,0 +1,5 @@
+barcode,expected_product_name,expected_brand,country,category,retailer_or_source,notes
+3017620422003,Nutella,Ferrero,Portugal,confectionery,bundled development fixture,EXAMPLE ONLY - not an independent observation
+5449000000996,Coca-Cola,Coca-Cola,Portugal,beverages,bundled development fixture,EXAMPLE ONLY - not an independent observation
+4006381333931,,,,,tooling demonstration,Synthetic valid unknown
+123,,,,,tooling demonstration,Deliberately invalid test value

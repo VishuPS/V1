@@ -1,0 +1,30 @@
+[
+  {
+    "_id": "3017620422003",
+    "code": "3017620422003",
+    "product_name": "Nutella",
+    "brands": "Ferrero",
+    "categories_tags": ["en:spreads", "en:hazelnut-spreads"],
+    "quantity": "400 g",
+    "image_url": null,
+    "ingredients_text": "Sugar, palm oil, hazelnuts, skimmed milk powder, cocoa, lecithins, vanillin.",
+    "allergens_tags": ["en:milk", "en:nuts", "en:soybeans"],
+    "nutriments": {"energy-kcal_100g": 539, "fat_100g": 30.9},
+    "countries_tags": ["en:france", "en:portugal"],
+    "last_modified_t": 1710000000
+  },
+  {
+    "_id": "5449000000996",
+    "code": "5449000000996",
+    "product_name": "Coca-Cola",
+    "brands": "Coca-Cola",
+    "categories_tags": ["en:beverages", "en:sodas"],
+    "quantity": "330 ml",
+    "image_url": null,
+    "ingredients_text": null,
+    "allergens_tags": [],
+    "nutriments": {"energy-kcal_100ml": 42, "sugars_100ml": 10.6},
+    "countries_tags": ["en:world"],
+    "last_modified_t": 1710000000
+  }
+]
