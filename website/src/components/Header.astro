@@ -1,0 +1,36 @@
+---
+const { current = "" } = Astro.props;
+const links = [
+  ["Product", "/#product"],
+  ["Docs", "/docs/"],
+  ["Pricing", "/pricing/"],
+  ["Data", "/data/"],
+];
+---
+<header class="site-header">
+  <div class="container nav-wrap">
+    <a class="brand" href="/" aria-label="BarcodeNest home">
+      <img src="/logo-mark.svg" width="32" height="32" alt="" />
+      <span>BarcodeNest</span>
+    </a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav">
+      <span class="sr-only">Open navigation</span>
+      <span></span><span></span>
+    </button>
+    <nav id="primary-nav" aria-label="Primary navigation">
+      <div class="nav-links">
+        {links.map(([label, href]) => <a href={href} aria-current={current === label.toLowerCase() ? "page" : undefined}>{label}</a>)}
+      </div>
+      <a class="button button-small" href="/contact/?topic=api-access">Get API key <span aria-hidden="true">↗</span></a>
+    </nav>
+  </div>
+</header>
+<script>
+  const button = document.querySelector<HTMLButtonElement>(".menu-button");
+  const nav = document.querySelector<HTMLElement>("#primary-nav");
+  button?.addEventListener("click", () => {
+    const open = button.getAttribute("aria-expanded") === "true";
+    button.setAttribute("aria-expanded", String(!open));
+    nav?.classList.toggle("is-open", !open);
+  });
+</script>

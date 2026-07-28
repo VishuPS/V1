@@ -1,8 +1,21 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
+
+
+class PlanLimit(BaseModel):
+    monthly_lookups: int
+    requests_per_minute: int
+
+
+def default_plan_limits() -> dict[str, PlanLimit]:
+    return {
+        "FREE": PlanLimit(monthly_lookups=500, requests_per_minute=30),
+        "STARTER": PlanLimit(monthly_lookups=10_000, requests_per_minute=300),
+        "PRO": PlanLimit(monthly_lookups=100_000, requests_per_minute=1_200),
+    }
 
 
 class Settings(BaseSettings):
@@ -14,12 +27,19 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://localhost:5173",
     ]
+    trusted_hosts: Annotated[list[str], NoDecode] = [
+        "localhost",
+        "127.0.0.1",
+        "testserver",
+    ]
     log_level: str = "INFO"
     batch_limit: int = 100
     open_food_facts_dataset_url: str = (
         "https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz"
     )
     ingestion_batch_size: int = 1_000
+    api_key_hash_secret: str = "development-only-change-me"
+    plan_limits: dict[str, PlanLimit] = Field(default_factory=default_plan_limits)
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -34,12 +54,52 @@ class Settings(BaseSettings):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
+    @field_validator("trusted_hosts", mode="before")
+    @classmethod
+    def parse_trusted_hosts(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [item.strip() for item in value.split(",") if item.strip()]
+        return value
+
     @field_validator("batch_limit")
     @classmethod
     def validate_batch_limit(cls, value: int) -> int:
         if value < 1:
             raise ValueError("BATCH_LIMIT must be at least 1")
         return value
+
+    @field_validator("plan_limits")
+    @classmethod
+    def normalize_plan_names(
+        cls, value: dict[str, PlanLimit]
+    ) -> dict[str, PlanLimit]:
+        return {name.upper(): limits for name, limits in value.items()}
+
+    @model_validator(mode="after")
+    def validate_production_safety(self) -> "Settings":
+        if self.app_env.lower() not in {"production", "prod"}:
+            return self
+        insecure_secrets = {
+            "",
+            "development-only-change-me",
+            "replace-with-a-long-random-production-secret",
+            "changeme",
+        }
+        if (
+            self.api_key_hash_secret.lower() in insecure_secrets
+            or len(self.api_key_hash_secret) < 32
+        ):
+            raise ValueError(
+                "Production requires API_KEY_HASH_SECRET with at least 32 "
+                "characters and no placeholder value"
+            )
+        if self.auto_create_tables:
+            raise ValueError(
+                "Production requires AUTO_CREATE_TABLES=false; use Alembic migrations"
+            )
+        if not self.database_url.startswith(("postgresql://", "postgresql+")):
+            raise ValueError("Production requires a PostgreSQL DATABASE_URL")
+        return self
 
 
 @lru_cache

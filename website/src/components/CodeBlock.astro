@@ -1,0 +1,23 @@
+---
+const { label = "Example", code, language = "json" } = Astro.props;
+---
+<div class="code-block">
+  <div class="code-toolbar">
+    <span>{label}</span>
+    <button class="copy-button" type="button" aria-label={`Copy ${label}`} data-copy={code}>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/></svg>
+      <span>Copy</span>
+    </button>
+  </div>
+  <pre data-language={language}><code>{code}</code></pre>
+</div>
+<script>
+  document.querySelectorAll<HTMLButtonElement>(".copy-button").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(button.dataset.copy || "");
+      const label = button.querySelector("span");
+      if (label) label.textContent = "Copied";
+      setTimeout(() => { if (label) label.textContent = "Copy"; }, 1400);
+    });
+  });
+</script>

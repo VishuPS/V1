@@ -1,0 +1,14 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+const topic = Astro.url.searchParams.get("topic");
+const subject = topic === "api-access" ? "BarcodeNest API Access" : topic === "commercial" ? "BarcodeNest commercial enquiry" : "BarcodeNest enquiry";
+---
+<BaseLayout title="Contact — BarcodeNest" description="Request BarcodeNest API access or contact us about technical support, data, and commercial enquiries.">
+  <header class="page-hero"><div class="narrow"><div class="eyebrow">Contact</div><h1>How can we help?</h1><p class="lede">BarcodeNest is in early access. Email us directly and we’ll route your request to the right place.</p></div></header>
+  <section class="section"><div class="narrow"><a class="button" href={`mailto:support@barcodenest.com?subject=${encodeURIComponent(subject)}`}>Email support@barcodenest.com <span aria-hidden="true">↗</span></a><div class="contact-list">
+    <div class="contact-row"><strong>API access</strong><span>Request a Free plan API key.</span></div>
+    <div class="contact-row"><strong>Technical support</strong><span>Questions about authentication, responses or integration.</span></div>
+    <div class="contact-row"><strong>Data questions</strong><span>Coverage, provenance, fields or a specific barcode.</span></div>
+    <div class="contact-row"><strong>Commercial enquiries</strong><span>Planned volume, paid access and larger use cases.</span></div>
+  </div><p class="lede">To speed up API access requests, include your name, what you are building, and your expected monthly lookup volume.</p></div></section>
+</BaseLayout>

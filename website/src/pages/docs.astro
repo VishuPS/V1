@@ -1,0 +1,58 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
+  -H "X-API-Key: YOUR_API_KEY"`;
+const success = `{
+  "barcode": "3017620422003",
+  "barcode_type": "EAN-13",
+  "canonical_gtin": "03017620422003",
+  "valid": true,
+  "found": true,
+  "product": {
+    "name": "Nutella",
+    "brand": "Ferrero",
+    "categories": ["spreads", "hazelnut spreads"],
+    "quantity": "400 g",
+    "image_url": null,
+    "ingredients": "Sugar, palm oil, hazelnuts, skimmed milk powder…",
+    "allergens": ["milk", "nuts", "soybeans"],
+    "nutrition": { "energy-kcal_100g": 539, "fat_100g": 30.9 },
+    "countries": ["France", "Portugal"]
+  },
+  "source": {
+    "name": "Open Food Facts",
+    "source_id": "3017620422003"
+  },
+  "error": null
+}`;
+const batch = `curl -X POST "https://api.barcodenest.com/v1/products/batch" \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"barcodes":["3017620422003","4006381333931","123"]}'`;
+---
+<BaseLayout title="API Documentation — BarcodeNest" description="Quick start, endpoints, response schemas, errors, rate limits and batch lookup for the BarcodeNest grocery barcode API." current="docs">
+  <header class="page-hero"><div class="container"><div class="eyebrow">API documentation · v1</div><h1>Build your first product lookup.</h1><p class="lede">Everything you need to validate a barcode, retrieve a product, and handle production responses.</p></div></header>
+  <div class="container docs-layout">
+    <aside class="docs-nav" aria-label="Documentation sections">
+      <strong>On this page</strong>
+      <a href="#quick-start">Quick start</a><a href="#authentication">Authentication</a><a href="#single-lookup">Single lookup</a><a href="#barcodes">Barcode formats</a><a href="#batch">Batch lookup</a><a href="#errors">Errors</a><a href="#limits">Limits & headers</a>
+    </aside>
+    <div class="docs-content">
+      <section id="quick-start"><h2>Quick start</h2><p>All version 1 API requests use the base URL:</p><p><code class="inline-code">https://api.barcodenest.com</code></p><CodeBlock label="First request" code={curl} language="bash" /></section>
+      <section id="authentication"><h2>Authentication</h2><p>Send your API key in the <code class="inline-code">X-API-Key</code> request header. Keys are currently issued by the BarcodeNest team; do not expose one in client-side code or public repositories.</p><div class="callout"><strong>Need a key?</strong> <a href="/contact/?topic=api-access"><u>Request Free plan access</u></a>. Self-service signup is not live yet.</div></section>
+      <section id="single-lookup"><h2>Retrieve a product</h2><p><code class="inline-code">GET /v1/products/{barcode}</code></p><p>The endpoint validates the submitted code, resolves its canonical GTIN-14 identity, and returns the indexed product when found.</p><CodeBlock label="200 response" code={success} language="json" /><p>Fields can be <code class="inline-code">null</code> or empty when the source record does not contain them. Product field availability is not guaranteed.</p></section>
+      <section id="barcodes"><h2>Barcode formats</h2><p>The current implementation accepts ASCII digits with a valid check digit in these lengths:</p><table class="status-table"><thead><tr><th>Format</th><th>Length</th><th>Canonical behaviour</th></tr></thead><tbody><tr><td>EAN-8</td><td>8</td><td>Zero-padded to GTIN-14</td></tr><tr><td>UPC-A</td><td>12</td><td>Zero-padded to GTIN-14</td></tr><tr><td>EAN-13</td><td>13</td><td>Zero-padded to GTIN-14</td></tr><tr><td>GTIN-14</td><td>14</td><td>Used as supplied</td></tr></tbody></table><p>Equivalent UPC, EAN and GTIN-14 representations are matched to the same canonical identity where applicable. BarcodeNest currently documents EAN-8, EAN-13 and GTIN-14 as primary formats; UPC-A is also accepted by the API.</p></section>
+      <section id="batch"><h2>Batch lookup</h2><p><code class="inline-code">POST /v1/products/batch</code></p><p>Submit up to 100 barcodes. A mixed batch returns <code class="inline-code">200</code> with one result per input; invalid or unknown items do not fail the whole request.</p><CodeBlock label="Batch request" code={batch} language="bash" /><p>Monthly quota usage is charged per barcode in the batch. A batch of 20 consumes 20 lookups but counts as one request against the per-minute request rate.</p></section>
+      <section id="errors"><h2>Errors</h2><table class="status-table"><thead><tr><th>Status</th><th>Code / behaviour</th><th>Meaning</th></tr></thead><tbody>
+        <tr><td class="status">200</td><td>Found, or batch completed</td><td>Single lookup found a record; batches can contain found, unknown, and invalid results.</td></tr>
+        <tr><td class="status">400</td><td><code>invalid_barcode</code></td><td>Single lookup is non-numeric, has an unsupported length, or fails its check digit.</td></tr>
+        <tr><td class="status">401</td><td><code>missing_api_key</code>, <code>invalid_api_key</code>, <code>revoked_api_key</code>, or <code>expired_api_key</code></td><td>The API key cannot authenticate the request.</td></tr>
+        <tr><td class="status">404</td><td><code>product_not_found</code></td><td>The single barcode is valid, but no product is indexed.</td></tr>
+        <tr><td class="status">422</td><td><code>empty_batch</code>, <code>batch_limit_exceeded</code>, or <code>request_validation_error</code></td><td>The batch body is empty, contains more than 100 items, or is structurally invalid.</td></tr>
+        <tr><td class="status">429</td><td><code>rate_limit_exceeded</code> or <code>monthly_quota_exceeded</code></td><td>A per-minute request limit or monthly lookup quota was exceeded.</td></tr>
+      </tbody></table></section>
+      <section id="limits"><h2>Rate limits, quotas & headers</h2><p>Successful lookup responses include:</p><table class="status-table"><thead><tr><th>Header</th><th>Meaning</th></tr></thead><tbody><tr><td><code>X-RateLimit-Limit</code></td><td>Requests allowed per rolling 60-second window.</td></tr><tr><td><code>X-RateLimit-Remaining</code></td><td>Requests remaining in that window.</td></tr><tr><td><code>X-RateLimit-Reset</code></td><td>Unix timestamp when capacity begins to return.</td></tr><tr><td><code>X-Monthly-Quota-Limit</code></td><td>Barcode lookups allowed in the current month.</td></tr><tr><td><code>X-Monthly-Quota-Remaining</code></td><td>Barcode lookups remaining.</td></tr><tr><td><code>X-Monthly-Quota-Period</code></td><td>Quota period start date, for example <code>2026-07-01</code>.</td></tr></tbody></table><p>A rate-limit response also includes <code class="inline-code">Retry-After</code>. Monthly quota errors return the monthly quota headers.</p></section>
+    </div>
+  </div>
+</BaseLayout>

@@ -1,0 +1,63 @@
+{
+  "total_products": 4206754,
+  "completeness": {
+    "name": 100.0,
+    "brand": 66.88,
+    "category": 41.6,
+    "image": 76.3,
+    "quantity": 32.65,
+    "ingredients": 28.64,
+    "allergens": 17.21,
+    "nutrition": 24.98,
+    "country": 99.62
+  },
+  "barcode_types": {
+    "EAN-13": 4030065,
+    "EAN-8": 173744,
+    "GTIN-14": 2945
+  },
+  "top_countries": {
+    "en:france": 1108952,
+    "en:united-states": 864740,
+    "en:germany": 401415,
+    "en:spain": 324495,
+    "en:italy": 257919,
+    "en:united-kingdom": 175438,
+    "en:canada": 118626,
+    "en:switzerland": 100003,
+    "en:belgium": 90589,
+    "en:netherlands": 84926,
+    "en:australia": 74908,
+    "en:ireland": 71772,
+    "en:world": 71060,
+    "en:japan": 40897,
+    "en:romania": 36384,
+    "en:brazil": 33570,
+    "en:poland": 31582,
+    "en:russia": 26795,
+    "en:norway": 25644,
+    "en:sweden": 24964
+  },
+  "top_categories": {
+    "en:plant-based-foods-and-beverages": 534263,
+    "en:plant-based-foods": 466283,
+    "en:snacks": 323949,
+    "en:sweet-snacks": 238104,
+    "en:beverages": 211198,
+    "en:dairies": 168664,
+    "en:cereals-and-potatoes": 161395,
+    "en:meats-and-their-products": 141622,
+    "en:fermented-foods": 130732,
+    "en:fermented-milk-products": 125978,
+    "en:fruits-and-vegetables-based-foods": 120670,
+    "en:condiments": 118468,
+    "en:cereals-and-their-products": 104200,
+    "en:meats": 103521,
+    "en:desserts": 103180,
+    "en:beverages-and-beverages-preparations": 103148,
+    "en:biscuits-and-cakes": 101440,
+    "en:meals": 97863,
+    "en:spreads": 88745,
+    "en:confectioneries": 83386
+  }
+}

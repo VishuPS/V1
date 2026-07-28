@@ -43,9 +43,88 @@ Configuration is read from environment variables or `.env`:
 | `APP_ENV` | `development` | Environment label |
 | `OPEN_FOOD_FACTS_DATASET_URL` | official JSONL gzip export | Explicit download source |
 | `INGESTION_BATCH_SIZE` | `1000` | Records committed per ingestion batch |
+| `API_KEY_HASH_SECRET` | development-only placeholder | Stable server-side secret used to HMAC API keys |
+| `PLAN_LIMITS` | FREE/STARTER/PRO defaults | JSON object defining monthly lookup and per-minute request limits |
 
 Do not configure `CORS_ALLOWED_ORIGINS=*` for production. Use the exact client
-origins instead.
+origins instead. In production, replace `API_KEY_HASH_SECRET` with a strong,
+random secret and keep it stable; changing it invalidates all issued keys.
+
+## Developer API authentication and usage controls
+
+`GET /health` is public. Both product lookup endpoints require an API key in
+the `X-API-Key` header. Keys are generated from high-entropy random material;
+the raw value is displayed once and only an HMAC-SHA-256 digest plus a
+non-secret lookup prefix is stored. Raw keys cannot be recovered from the
+database.
+
+The built-in defaults are:
+
+| Plan | Monthly barcode lookups | Requests per minute |
+|---|---:|---:|
+| `FREE` | 500 | 30 |
+| `STARTER` | 10,000 | 300 |
+| `PRO` | 100,000 | 1,200 |
+
+A single lookup costs one lookup. A batch costs one lookup per submitted
+barcode and one request total, preventing batch requests from bypassing the
+monthly quota. Usage is stored as one aggregate row per key and calendar month,
+with atomic database increments. It does not create one row per request.
+
+For PowerShell, configure a stable secret and apply migrations before issuing
+keys:
+
+```powershell
+$env:API_KEY_HASH_SECRET="replace-with-a-long-random-secret"
+.\.venv\Scripts\alembic.exe upgrade head
+
+.\.venv\Scripts\python.exe -m app.tools.api_keys create-client `
+  --identifier demo --name "Demo client" --plan FREE
+.\.venv\Scripts\python.exe -m app.tools.api_keys create-key `
+  --client demo --name local-development
+```
+
+Copy the raw key when it is printed; it will not be shown again. Start the API
+and make authenticated requests:
+
+```powershell
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+
+# Expected: 401 missing_api_key
+Invoke-RestMethod http://127.0.0.1:8000/v1/products/3017620422003
+
+$headers = @{"X-API-Key" = "paste-the-raw-key-here"}
+Invoke-RestMethod http://127.0.0.1:8000/v1/products/3017620422003 `
+  -Headers $headers
+```
+
+Swagger UI at `http://127.0.0.1:8000/docs` exposes an **Authorize** control for
+the same header. Administrative operations are CLI-only and require trusted
+database access:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.tools.api_keys list-keys --client demo
+.\.venv\Scripts\python.exe -m app.tools.api_keys usage --client demo
+.\.venv\Scripts\python.exe -m app.tools.api_keys change-plan `
+  --client demo --plan STARTER
+.\.venv\Scripts\python.exe -m app.tools.api_keys revoke `
+  --key-prefix gpa_prefix-shown-by-list-keys
+.\.venv\Scripts\python.exe -m app.tools.api_keys reactivate `
+  --key-prefix gpa_prefix-shown-by-list-keys
+```
+
+Override plan limits with JSON, for example:
+
+```text
+PLAN_LIMITS={"FREE":{"monthly_lookups":500,"requests_per_minute":30},"STARTER":{"monthly_lookups":10000,"requests_per_minute":300},"PRO":{"monthly_lookups":100000,"requests_per_minute":1200}}
+```
+
+Monthly quota enforcement is durable and safe across application instances.
+The minute limiter is intentionally process-local for this MVP: it resets when
+the process restarts and is not shared across multiple workers or hosts. Before
+a multi-instance cloud deployment, replace it with a shared Redis-backed
+limiter. The project currently has no self-service key portal, billing,
+payments, or automatic key rotation; those are intentionally outside this MVP.
 
 ## Database setup and migrations
 
@@ -71,6 +150,20 @@ Apply the schema:
 ```bash
 alembic upgrade head
 ```
+
+The `20260726_0002` migration changes externally supplied product text
+(`name`, `brand`, `quantity`, and `image_url`) from restrictive `VARCHAR`
+columns to PostgreSQL/SQLite `TEXT`. This preserves real Open Food Facts values
+instead of truncating them. Controlled identifiers remain bounded:
+`barcode` is 14 characters, `barcode_type` is 16, `source` is 128, and
+`source_id` is 256.
+
+If a previous large import stopped with `StringDataRightTruncation`, keep the
+already committed rows, apply `alembic upgrade head`, and rerun the same import
+command. Canonical-GTIN upserts make the rerun idempotent. Database `DataError`
+failures caused by an individual source record are isolated to that record and
+reported with its barcode and field lengths; connectivity and other systemic
+database failures still stop the job.
 
 For a pre-existing SQLite database created before Alembic was added, first
 back it up, verify it matches the current model, then record the baseline with
@@ -196,6 +289,32 @@ At completion the CLI prints processed, inserted, updated, skipped, barcode
 quality, error, elapsed-time, throughput, and resulting database product count.
 Imports are idempotent: existing canonical GTINs are updated instead of
 duplicated. PostgreSQL is strongly recommended for million-record runs.
+
+### Backfill Open Food Facts images
+
+Current Open Food Facts JSONL exports store image metadata primarily under
+`images.selected.front.<language>` and `images.uploaded`, rather than always
+providing a top-level `image_url`. To populate images on an existing database
+without rewriting every product field:
+
+```powershell
+.\.venv\Scripts\python.exe -m app.ingestion.openfoodfacts `
+  --source-file data/openfoodfacts-products.jsonl.gz `
+  --update-images-only `
+  --batch-size 5000
+```
+
+This streams the existing compressed export, derives documented Open Food Facts
+image URLs from its metadata, and performs batched `UPDATE` statements only
+where a matching canonical GTIN has a different image URL. It does not insert
+products, clear existing images when the export has none, or call the live Open
+Food Facts API. The operation is idempotent and may be safely rerun.
+
+Image selection priority is: explicit front URL when present; selected front
+image in the product language, then English, then another available language;
+finally the most recently uploaded image when no front is selected. A 400px
+rendition is preferred for API use, with full size used only when 400px is not
+available.
 
 Each source implements `ProductSource`; future source adapters can feed the same
 normalizer without changing the API. The database retains source name, original
