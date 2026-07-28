@@ -7,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import SQLAlchemyError
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.routes import router
 from app.config import get_settings
@@ -31,14 +32,19 @@ app = FastAPI(
     title=settings.app_name,
     version="1.0.0",
     description="Local-database product lookup by validated GTIN.",
+    debug=False,
     lifespan=lifespan,
+)
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.trusted_hosts,
 )
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept"],
+    allow_headers=["Content-Type", "Accept", "X-API-Key"],
 )
 app.include_router(router)
 
@@ -47,7 +53,11 @@ app.include_router(router)
 async def http_error_handler(_: Request, exc: HTTPException) -> JSONResponse:
     detail = exc.detail
     if isinstance(detail, dict) and {"code", "message"} <= detail.keys():
-        return JSONResponse(status_code=exc.status_code, content={"error": detail})
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"error": detail},
+            headers=exc.headers,
+        )
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": {"code": "http_error", "message": str(detail)}},

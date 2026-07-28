@@ -1,0 +1,98 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
+  -H "X-API-Key: YOUR_API_KEY"`;
+---
+<BaseLayout current="product">
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Grocery barcode API</div>
+        <h1>Product data from a barcode.</h1>
+        <p class="lede">Turn EAN and GTIN barcodes into structured grocery product data through one simple API.</p>
+        <div class="hero-actions">
+          <a class="button" href="/contact/?topic=api-access">Get API key <span aria-hidden="true">↗</span></a>
+          <a class="button button-secondary" href="/docs/">View docs <span aria-hidden="true">→</span></a>
+        </div>
+        <p class="trust-line"><strong>4.2M+</strong> grocery products currently indexed · Global data with strong European coverage</p>
+      </div>
+      <div class="api-window" aria-label="Illustrative API response">
+        <div class="window-bar"><i></i><i></i><i></i><span>api.barcodenest.com</span></div>
+        <div class="request-line"><span class="method">GET</span> /v1/products/3017620422003<br><span class="header-key">X-API-Key:</span> ••••••••••••••••</div>
+        <pre><code>&#123;
+  <span class="json-key">"barcode"</span>: <span class="json-string">"3017620422003"</span>,
+  <span class="json-key">"barcode_type"</span>: <span class="json-string">"EAN-13"</span>,
+  <span class="json-key">"canonical_gtin"</span>: <span class="json-string">"03017620422003"</span>,
+  <span class="json-key">"valid"</span>: <span class="json-bool">true</span>,
+  <span class="json-key">"found"</span>: <span class="json-bool">true</span>,
+  <span class="json-key">"product"</span>: &#123;
+    <span class="json-key">"name"</span>: <span class="json-string">"Nutella"</span>,
+    <span class="json-key">"brand"</span>: <span class="json-string">"Ferrero"</span>,
+    <span class="json-key">"quantity"</span>: <span class="json-string">"400 g"</span>,
+    <span class="json-key">"image_url"</span>: <span class="json-null">null</span>,
+    <span class="json-key">"allergens"</span>: [<span class="json-string">"milk"</span>, <span class="json-string">"nuts"</span>, <span class="json-string">"soybeans"</span>]
+  &#125;
+&#125;</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="product">
+    <div class="container">
+      <div class="section-head"><div class="eyebrow">What you get</div><h2>A focused product lookup layer.</h2><p class="lede">Useful product fields in predictable JSON, with source metadata and canonical identifiers.</p></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-index">01 / IDENTITY</span><h3>Product identity</h3><p>Name, brand, submitted barcode and canonical GTIN.</p></article>
+        <article class="feature"><span class="feature-index">02 / DETAILS</span><h3>Product details</h3><p>Categories, quantity, countries and images where available.</p></article>
+        <article class="feature"><span class="feature-index">03 / FOOD</span><h3>Food intelligence</h3><p>Ingredients, allergens and nutrition where available.</p></article>
+        <article class="feature"><span class="feature-index">04 / API</span><h3>Developer-ready</h3><p>JSON responses, API keys and predictable REST endpoints.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head"><div class="eyebrow">Simple workflow</div><h2>From scan to structured data.</h2></div>
+      <div class="workflow" aria-label="Barcode lookup workflow">
+        <div class="workflow-step"><span>INPUT</span><strong>Barcode</strong><p>EAN-8, EAN-13, UPC-A or GTIN-14.</p></div>
+        <div class="workflow-arrow" aria-hidden="true">→</div>
+        <div class="workflow-step"><span>LOOKUP</span><strong>BarcodeNest API</strong><p>Validate, normalise and search the index.</p></div>
+        <div class="workflow-arrow" aria-hidden="true">→</div>
+        <div class="workflow-step"><span>OUTPUT</span><strong>Product data</strong><p>A clear JSON result with provenance.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container examples-layout">
+      <div><div class="eyebrow">One request</div><h2>Useful by default.</h2><p class="lede">Authenticate with a single header. The response keeps identity, product fields, and source metadata distinct.</p><a href="/docs/" class="button button-secondary">Explore the API <span aria-hidden="true">→</span></a></div>
+      <CodeBlock label="cURL" code={curl} language="bash" />
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head"><div class="eyebrow">Practical applications</div><h2>Built for products that need product data.</h2></div>
+      <div class="use-list"><div>Inventory tools</div><div>Nutrition apps</div><div>Grocery platforms</div><div>Retail prototypes</div><div>Product catalogues</div></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container metric-row">
+      <div class="big-metric">4.2M<span>+</span></div>
+      <div><div class="eyebrow">Current index</div><h2>Broad reach. Honest limits.</h2><p class="lede">BarcodeNest currently indexes more than 4.2 million grocery products. Coverage and field completeness vary by product and geography; no dataset covers every barcode.</p><a href="/data/" class="button button-secondary">How the data works <span aria-hidden="true">→</span></a></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-head"><div class="eyebrow">Pricing</div><h2>Start free. Scale when you need to.</h2></div>
+      <div class="pricing-grid">
+        <article class="plan featured"><span class="plan-tag">Available</span><h3>Free</h3><div class="price">€0</div><ul><li>500 lookups / month</li><li>30 requests / minute</li><li>Single and batch lookup</li></ul><a class="button button-signal" href="/contact/?topic=api-access">Get API key</a></article>
+        <article class="plan"><span class="plan-tag">Coming soon</span><h3>Starter</h3><div class="price">Pricing TBD</div><ul><li>10,000 lookups / month</li><li>300 requests / minute</li><li>For growing applications</li></ul><a class="button button-secondary" href="/contact/?topic=commercial">Contact us</a></article>
+        <article class="plan"><span class="plan-tag">Coming soon</span><h3>Pro</h3><div class="price">Pricing TBD</div><ul><li>100,000 lookups / month</li><li>1,200 requests / minute</li><li>For higher-volume products</li></ul><a class="button button-secondary" href="/contact/?topic=commercial">Contact us</a></article>
+      </div>
+    </div>
+  </section>
+  <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Your first lookup</div><h2>Start with a barcode.</h2></div><div class="hero-actions"><a class="button button-signal" href="/contact/?topic=api-access">Get API key</a><a class="button" href="/docs/">Read the docs</a></div></div></section>
+</BaseLayout>

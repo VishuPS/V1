@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Pricing — BarcodeNest Grocery Barcode API" description="Start free with 500 grocery barcode lookups per month. Starter and Pro plans are coming soon." current="pricing">
+  <header class="page-hero"><div class="container"><div class="eyebrow">Simple usage-based plans</div><h1>Start free. Grow without changing the API.</h1><p class="lede">Every plan uses the same endpoint and response shape. Paid access is coming soon; the Free plan is available by request.</p></div></header>
+  <section class="section"><div class="container"><div class="pricing-grid">
+    <article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">€0</div><ul><li>500 lookups / month</li><li>30 requests / minute</li><li>Single and batch lookup</li><li>Email support</li></ul><a class="button button-signal" href="/contact/?topic=api-access">Get API key</a></article>
+    <article class="plan"><span class="plan-tag">Coming soon</span><h3>Starter</h3><div class="price">Pricing TBD</div><ul><li>10,000 lookups / month</li><li>300 requests / minute</li><li>Single and batch lookup</li><li>Email support</li></ul><a class="button button-secondary" href="/contact/?topic=commercial">Contact us</a></article>
+    <article class="plan"><span class="plan-tag">Coming soon</span><h3>Pro</h3><div class="price">Pricing TBD</div><ul><li>100,000 lookups / month</li><li>1,200 requests / minute</li><li>Single and batch lookup</li><li>Commercial enquiries</li></ul><a class="button button-secondary" href="/contact/?topic=commercial">Contact us</a></article>
+  </div><div class="callout"><strong>How batch usage works:</strong> quota is based on individual barcode lookups. A batch containing 25 barcodes consumes 25 monthly lookups and one request against the per-minute request limit.</div></div></section>
+  <section class="section"><div class="narrow"><div class="eyebrow">Before paid plans launch</div><h2>Have a larger use case?</h2><p class="lede">Tell us about your application and expected volume. We’ll help you understand current coverage and whether BarcodeNest is a fit.</p><a class="button" href="mailto:support@barcodenest.com?subject=BarcodeNest%20commercial%20enquiry">Contact support</a></div></section>
+</BaseLayout>

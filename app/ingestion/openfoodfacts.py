@@ -7,6 +7,7 @@ from app.ingestion.open_food_facts import (
     OpenFoodFactsSource,
     download_dataset,
     import_dataset,
+    update_images_only,
 )
 
 
@@ -48,6 +49,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Download/validate the source file and exit without importing",
     )
+    parser.add_argument(
+        "--update-images-only",
+        action="store_true",
+        help="Only update image_url for matching products already in the database",
+    )
     return parser
 
 
@@ -70,12 +76,20 @@ def main() -> None:
             f"Dataset not found: {args.source_file}. Supply --source-file or --download."
         )
     init_db()
-    stats = import_dataset(
-        OpenFoodFactsSource(args.source_file),
-        SessionLocal,
-        limit=args.limit,
-        batch_size=args.batch_size,
-    )
+    if args.update_images_only:
+        stats = update_images_only(
+            OpenFoodFactsSource(args.source_file),
+            SessionLocal,
+            limit=args.limit,
+            batch_size=args.batch_size,
+        )
+    else:
+        stats = import_dataset(
+            OpenFoodFactsSource(args.source_file),
+            SessionLocal,
+            limit=args.limit,
+            batch_size=args.batch_size,
+        )
     print(stats.report())
 
 

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://barcodenest.com/sitemap-index.xml

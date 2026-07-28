@@ -8,8 +8,15 @@ data/*.jsonl.gz
 data/*.jsonl.bz2
 data/*.jsonl.xz
 .env
+.env.*
+!.env.example
 .pytest_cache/
 .venv/
 dist/
 build/
 *.egg-info/
+*.dump
+*.backup
+website/node_modules/
+website/dist/
+.pnpm-store/
