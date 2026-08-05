@@ -1,0 +1,39 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout title="Welcome - BarcodeNest" description="Copy your BarcodeNest API key and make your first request.">
+  <main class="onboarding-page"><div class="onboarding-shell">
+    <div class="success-mark" aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28"><path d="m7 12.5 3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+    <div class="eyebrow">Account created</div>
+    <h1>Welcome to BarcodeNest.</h1>
+    <p class="lede">Your Free API key has been created. Copy it now&mdash;for security, it won&rsquo;t be displayed again.</p>
+    <section id="onboarding-key" class="onboarding-key" aria-labelledby="key-heading">
+      <div class="code-toolbar"><span id="key-heading">Your API key &middot; shown once</span><button id="copy-key" class="copy-button" type="button">Copy key</button></div>
+      <pre><code id="api-key">Loading&hellip;</code></pre>
+    </section>
+    <div id="missing-key" class="onboarding-notice" hidden><p>This key is no longer available in this browser session. You can create a new one from your account.</p><a class="button button-secondary" href="/account/">Open account</a></div>
+    <section class="first-request" aria-labelledby="request-heading">
+      <div><span class="step-number">01</span><h2 id="request-heading">Try your first request</h2><p>Replace the placeholder below with the key you just copied.</p></div>
+      <div class="key-result request-example"><div class="code-toolbar"><span>Terminal</span><button id="copy-request" class="copy-button" type="button">Copy request</button></div><pre><code id="request-code">curl https://api.barcodenest.com/v1/products/3017620422003 \
+  -H "X-API-Key: YOUR_API_KEY"</code></pre></div>
+    </section>
+    <div class="onboarding-actions"><a class="button" href="/docs/">View API documentation</a><a class="button button-secondary" href="/account/">Go to your account</a></div>
+  </div></main>
+  <script>
+    const key = sessionStorage.getItem("barcodenest_new_api_key");
+    const keyNode = document.querySelector<HTMLElement>("#api-key");
+    const keyPanel = document.querySelector<HTMLElement>("#onboarding-key");
+    const missing = document.querySelector<HTMLElement>("#missing-key");
+    const requestNode = document.querySelector<HTMLElement>("#request-code");
+    if (key && keyNode) {
+      keyNode.textContent = key;
+      if (requestNode) requestNode.textContent = `curl https://api.barcodenest.com/v1/products/3017620422003 \\\n  -H "X-API-Key: ${key}"`;
+    } else {
+      if (keyPanel) keyPanel.hidden = true;
+      if (missing) missing.hidden = false;
+    }
+    async function copy(value: string | null | undefined, button: HTMLButtonElement) { if (!value) return; await navigator.clipboard.writeText(value); const original = button.textContent; button.textContent = "Copied"; setTimeout(() => { button.textContent = original; }, 1600); }
+    document.querySelector<HTMLButtonElement>("#copy-key")?.addEventListener("click", (event) => copy(key, event.currentTarget as HTMLButtonElement));
+    document.querySelector<HTMLButtonElement>("#copy-request")?.addEventListener("click", (event) => copy(requestNode?.textContent, event.currentTarget as HTMLButtonElement));
+  </script>
+</BaseLayout>

@@ -1,36 +1,25 @@
 ---
 const { current = "" } = Astro.props;
 const links = [
-  ["Product", "/#product"],
-  ["Docs", "/docs/"],
-  ["Pricing", "/pricing/"],
-  ["Data", "/data/"],
+  ["Features", "/#features", "features"],
+  ["Pricing", "/pricing/", "pricing"],
+  ["Documentation", "/docs/", "docs"],
 ];
 ---
 <header class="site-header">
   <div class="container nav-wrap">
-    <a class="brand" href="/" aria-label="BarcodeNest home">
-      <img src="/logo-mark.svg" width="32" height="32" alt="" />
-      <span>BarcodeNest</span>
-    </a>
-    <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav">
-      <span class="sr-only">Open navigation</span>
-      <span></span><span></span>
-    </button>
+    <a class="brand" href="/" aria-label="BarcodeNest home"><img src="/logo-mark.svg" width="32" height="32" alt="" /><span>BarcodeNest</span></a>
+    <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav"><span class="sr-only">Open navigation</span><span></span><span></span></button>
     <nav id="primary-nav" aria-label="Primary navigation">
-      <div class="nav-links">
-        {links.map(([label, href]) => <a href={href} aria-current={current === label.toLowerCase() ? "page" : undefined}>{label}</a>)}
-      </div>
-      <a class="button button-small" href="/contact/?topic=api-access">Get API key <span aria-hidden="true">↗</span></a>
+      <div class="nav-links">{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</div>
+      <div class="nav-account" id="guest-navigation"><a class="login-link" href="/login/">Login</a><a class="button button-small button-signal" href="/register">Register</a></div>
+      <a class="button button-small dashboard-link" id="dashboard-navigation" href="/account/" hidden>Dashboard</a>
     </nav>
   </div>
 </header>
 <script>
-  const button = document.querySelector<HTMLButtonElement>(".menu-button");
-  const nav = document.querySelector<HTMLElement>("#primary-nav");
-  button?.addEventListener("click", () => {
-    const open = button.getAttribute("aria-expanded") === "true";
-    button.setAttribute("aria-expanded", String(!open));
-    nav?.classList.toggle("is-open", !open);
-  });
+  const button = document.querySelector<HTMLButtonElement>(".menu-button"); const nav = document.querySelector<HTMLElement>("#primary-nav");
+  button?.addEventListener("click", () => { const open = button.getAttribute("aria-expanded") === "true"; button.setAttribute("aria-expanded", String(!open)); nav?.classList.toggle("is-open", !open); });
+  async function showAuthenticatedNavigation() { const API = "https://api.barcodenest.com/v1"; let response = await fetch(`${API}/account`, { credentials: "include" }); if (response.status === 401) { const refreshed = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" }); if (refreshed.ok) response = await fetch(`${API}/account`, { credentials: "include" }); } if (!response.ok) return; document.querySelector<HTMLElement>("#guest-navigation")?.setAttribute("hidden", ""); const dashboard = document.querySelector<HTMLElement>("#dashboard-navigation"); if (dashboard) dashboard.hidden = false; }
+  showAuthenticatedNavigation().catch(() => {});
 </script>
