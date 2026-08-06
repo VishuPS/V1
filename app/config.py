@@ -74,6 +74,14 @@ class Settings(BaseSettings):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
+    @field_validator("database_url")
+    @classmethod
+    def select_psycopg_driver(cls, value: str) -> str:
+        """Use psycopg v3 for standard PostgreSQL URLs supplied by cloud hosts."""
+        if value.startswith("postgresql://"):
+            return value.replace("postgresql://", "postgresql+psycopg://", 1)
+        return value
+
     @field_validator("batch_limit")
     @classmethod
     def validate_batch_limit(cls, value: int) -> int:

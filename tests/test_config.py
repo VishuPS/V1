@@ -25,6 +25,15 @@ def test_comma_separated_trusted_hosts(monkeypatch) -> None:
     ]
 
 
+def test_standard_postgresql_url_uses_psycopg_v3() -> None:
+    settings = Settings(
+        _env_file=None,
+        database_url="postgresql://user:pass@db.example/api",
+    )
+
+    assert settings.database_url == "postgresql+psycopg://user:pass@db.example/api"
+
+
 @pytest.mark.parametrize(
     ("override", "message"),
     [
