@@ -13,13 +13,13 @@ const links = [
     <nav id="primary-nav" aria-label="Primary navigation">
       <div class="nav-links">{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</div>
       <div class="nav-account" id="guest-navigation"><a class="login-link" href="/login/">Login</a><a class="button button-small button-signal" href="/register">Register</a></div>
-      <a class="button button-small dashboard-link" id="dashboard-navigation" href="/account/" hidden>Dashboard</a>
+      <div class="authenticated-navigation" id="authenticated-navigation" hidden><a class="admin-navigation-link" id="admin-navigation" href="/admin/" hidden>Admin</a><a class="button button-small dashboard-link" href="/account/">Dashboard</a></div>
     </nav>
   </div>
 </header>
 <script>
   const button = document.querySelector<HTMLButtonElement>(".menu-button"); const nav = document.querySelector<HTMLElement>("#primary-nav");
   button?.addEventListener("click", () => { const open = button.getAttribute("aria-expanded") === "true"; button.setAttribute("aria-expanded", String(!open)); nav?.classList.toggle("is-open", !open); });
-  async function showAuthenticatedNavigation() { const API = "https://api.barcodenest.com/v1"; let response = await fetch(`${API}/account`, { credentials: "include" }); if (response.status === 401) { const refreshed = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" }); if (refreshed.ok) response = await fetch(`${API}/account`, { credentials: "include" }); } if (!response.ok) return; document.querySelector<HTMLElement>("#guest-navigation")?.setAttribute("hidden", ""); const dashboard = document.querySelector<HTMLElement>("#dashboard-navigation"); if (dashboard) dashboard.hidden = false; }
+  async function showAuthenticatedNavigation() { const API = "https://api.barcodenest.com/v1"; let response = await fetch(`${API}/account`, { credentials: "include" }); if (response.status === 401) { const refreshed = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" }); if (refreshed.ok) response = await fetch(`${API}/account`, { credentials: "include" }); } if (!response.ok) return; const account = await response.json(); document.querySelector<HTMLElement>("#guest-navigation")?.setAttribute("hidden", ""); const authenticated = document.querySelector<HTMLElement>("#authenticated-navigation"); if (authenticated) authenticated.hidden = false; const admin = document.querySelector<HTMLElement>("#admin-navigation"); if (admin && account.is_admin) admin.hidden = false; }
   showAuthenticatedNavigation().catch(() => {});
 </script>

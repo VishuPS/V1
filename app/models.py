@@ -127,6 +127,24 @@ class MonthlyUsage(Base):
     api_key: Mapped[ApiKey] = relationship(back_populates="usage")
 
 
+class DailyUsage(Base):
+    __tablename__ = "daily_usage"
+    __table_args__ = (
+        UniqueConstraint("api_key_id", "usage_date", name="uq_daily_usage_key_date"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    api_key_id: Mapped[str] = mapped_column(
+        ForeignKey("api_keys.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    usage_date: Mapped[date] = mapped_column(Date, nullable=False, index=True)
+    request_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    lookup_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+
 class RegistrationRequest(Base):
     __tablename__ = "registration_requests"
 
@@ -153,6 +171,7 @@ class User(Base):
     display_name: Mapped[str] = mapped_column(String(160), nullable=False)
     organization: Mapped[str | None] = mapped_column(String(200))
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    is_admin: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

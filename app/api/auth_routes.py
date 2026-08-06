@@ -189,6 +189,7 @@ def account(context: CurrentUser, session: DbSession) -> UserResponse:
         organization=context.user.organization,
         plan=client.plan,
         created_at=context.user.created_at,
+        is_admin=context.user.is_admin,
     )
 
 

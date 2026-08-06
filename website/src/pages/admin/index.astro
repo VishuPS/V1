@@ -1,0 +1,21 @@
+---
+import AdminLayout from "../../layouts/AdminLayout.astro";
+---
+<AdminLayout title="Overview" current="dashboard">
+  <header class="admin-header"><div><div class="eyebrow">Operations</div><h1>Dashboard</h1><p>Account, credential and API activity at a glance.</p></div><span id="dashboard-updated" class="admin-updated"></span></header>
+  <div class="admin-metrics" aria-live="polite">
+    <article><span>Registered users</span><strong id="metric-users">—</strong><small><b id="metric-users-today">—</b> today · <b id="metric-users-month">—</b> this month</small></article>
+    <article><span>API keys</span><strong id="metric-keys">—</strong><small><b id="metric-active-keys">—</b> active</small></article>
+    <article><span>Requests today</span><strong id="metric-requests-today">—</strong><small>UTC calendar day</small></article>
+    <article><span>Requests this month</span><strong id="metric-requests-month">—</strong><small>Across all API keys</small></article>
+    <article class="admin-metric-placeholder"><span>Active subscriptions</span><strong>—</strong><small>Available when billing is connected</small></article>
+  </div>
+  <section class="admin-section admin-start"><div><span class="panel-label">Management</span><h2>Work with customer accounts</h2><p>Search registrations, inspect API usage, control account access and manage credentials.</p></div><a class="button" href="/admin/users/">Open users</a></section>
+  <div id="admin-status" class="form-status" role="status" aria-live="polite"></div>
+  <script>
+    import { requireAdmin } from "../../scripts/admin-api";
+    const set = (id: string, value: number) => { const node = document.getElementById(id); if (node) node.textContent = new Intl.NumberFormat().format(value); };
+    async function loadDashboard() { const response = await requireAdmin(); if (!response) return; const data = await response.json(); set("metric-users", data.total_users); set("metric-users-today", data.new_users_today); set("metric-users-month", data.new_users_this_month); set("metric-keys", data.total_api_keys); set("metric-active-keys", data.active_api_keys); set("metric-requests-today", data.total_requests_today); set("metric-requests-month", data.total_requests_this_month); const updated = document.getElementById("dashboard-updated"); if (updated) updated.textContent = `Updated ${new Intl.DateTimeFormat("en", { timeStyle: "short" }).format(new Date())}`; }
+    loadDashboard().catch((error) => { const status = document.getElementById("admin-status"); if (status) { status.className = "form-status error"; status.textContent = error instanceof Error ? error.message : "Dashboard unavailable."; } });
+  </script>
+</AdminLayout>

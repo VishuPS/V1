@@ -12,6 +12,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.routes import router
 from app.api.auth_routes import router as auth_router
+from app.api.admin_routes import router as admin_router
 from app.config import get_settings
 from app.db import init_db
 
@@ -50,6 +51,7 @@ app.add_middleware(
 )
 app.include_router(router)
 app.include_router(auth_router)
+app.include_router(admin_router)
 
 
 @app.exception_handler(HTTPException)

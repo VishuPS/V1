@@ -116,6 +116,7 @@ class UserResponse(BaseModel):
     organization: str | None
     plan: str
     created_at: datetime
+    is_admin: bool
 
 
 class ApiKeyCreate(BaseModel):

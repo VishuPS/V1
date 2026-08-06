@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import PlanLimit, Settings, get_settings
 from app.db import get_db
-from app.models import ApiClient, ApiKey, MonthlyUsage, new_uuid
+from app.models import ApiClient, ApiKey, DailyUsage, MonthlyUsage, new_uuid
 
 
 api_key_header = APIKeyHeader(
@@ -250,6 +250,29 @@ def consume_usage(
             )
         ) or 0
         raise _quota_error(quota, max(0, quota - current), period)
+    daily_values = {
+        "id": new_uuid(),
+        "api_key_id": context.api_key.id,
+        "usage_date": timestamp.date(),
+        "request_count": 1,
+        "lookup_count": lookup_units,
+        "updated_at": timestamp,
+    }
+    daily_insert = (
+        postgresql_insert(DailyUsage).values(**daily_values)
+        if dialect_name == "postgresql"
+        else sqlite_insert(DailyUsage).values(**daily_values)
+    )
+    session.execute(
+        daily_insert.on_conflict_do_update(
+            index_elements=[DailyUsage.api_key_id, DailyUsage.usage_date],
+            set_={
+                "request_count": DailyUsage.request_count + 1,
+                "lookup_count": DailyUsage.lookup_count + lookup_units,
+                "updated_at": timestamp,
+            },
+        )
+    )
     session.execute(
         update(ApiKey)
         .where(ApiKey.id == context.api_key.id)
