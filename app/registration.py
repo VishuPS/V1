@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from calendar import monthrange
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -64,14 +65,16 @@ def provision_free_account(
             plan_record = SubscriptionPlan(
                 code="FREE",
                 name="Free",
-                monthly_lookups=500,
+                monthly_lookups=250,
                 requests_per_minute=30,
                 price_cents=0,
-                currency="EUR",
+                currency="USD",
                 active=True,
             )
             session.add(plan_record)
-        session.add(Subscription(user_id=user.id, plan_code="FREE", status="active"))
+        now = datetime.now(timezone.utc)
+        period_end = now.replace(day=monthrange(now.year, now.month)[1], hour=23, minute=59, second=59, microsecond=999999)
+        session.add(Subscription(user_id=user.id, plan_code="FREE", status="active", monthly_call_limit=250, monthly_calls_used=0, usage_period_start=now, usage_period_end=period_end))
         session.commit()
     except IntegrityError as exc:
         session.rollback()

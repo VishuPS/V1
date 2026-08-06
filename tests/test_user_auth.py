@@ -19,8 +19,8 @@ def create_account(session_factory, email: str = "owner@example.com") -> tuple[s
         if plan is None:
             session.add(
                 SubscriptionPlan(
-                    code="FREE", name="Free", monthly_lookups=500,
-                    requests_per_minute=30, price_cents=0, currency="EUR",
+                    code="FREE", name="Free", monthly_lookups=250,
+                    requests_per_minute=30, price_cents=0, currency="USD",
                 )
             )
         user = User(
@@ -170,7 +170,7 @@ def test_user_manages_only_owned_api_keys_and_usage(
     usage = unauthenticated_client.get("/v1/account/usage", headers=headers)
     assert usage.status_code == 200
     assert usage.json()["lookup_count"] == 1
-    assert usage.json()["remaining"] == 499
+    assert usage.json()["remaining"] == 249
 
     created = unauthenticated_client.post(
         "/v1/account/api-keys", json={"name": "production"}, headers=headers

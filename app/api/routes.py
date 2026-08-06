@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.barcodes import BarcodeError, parse_barcode
@@ -9,6 +9,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.schemas import BatchRequest, BatchResponse, ErrorResponse, LookupResult
 from app.services import lookup_product
+from app.email_service import send_usage_warning_safely
 
 router = APIRouter()
 DbSession = Annotated[Session, Depends(get_db)]
@@ -44,10 +45,9 @@ def get_product(
     session: DbSession,
     auth: Authenticated,
     response: Response,
+    background_tasks: BackgroundTasks,
+    settings: Annotated[Settings, Depends(get_settings)],
 ) -> LookupResult:
-    usage = consume_usage(session, auth, 1)
-    for header, value in usage_headers(auth, usage).items():
-        response.headers[header] = value
     try:
         parse_barcode(barcode)
     except BarcodeError as exc:
@@ -59,6 +59,10 @@ def get_product(
             "product_not_found",
             "The barcode is valid, but no product was found",
         )
+    usage = consume_usage(session, auth, 1)
+    for header, value in usage_headers(auth, usage).items():
+        response.headers[header] = value
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
     return result
 
 
@@ -79,6 +83,7 @@ def batch_products(
     settings: Annotated[Settings, Depends(get_settings)],
     auth: Authenticated,
     response: Response,
+    background_tasks: BackgroundTasks,
 ) -> BatchResponse:
     if not payload.barcodes:
         raise api_error(422, "empty_batch", "At least one barcode is required")
@@ -88,9 +93,9 @@ def batch_products(
             "batch_limit_exceeded",
             f"A maximum of {settings.batch_limit} barcodes is allowed",
         )
-    usage = consume_usage(session, auth, len(payload.barcodes))
+    results = [lookup_product(session, barcode) for barcode in payload.barcodes]
+    usage = consume_usage(session, auth, 1)
     for header, value in usage_headers(auth, usage).items():
         response.headers[header] = value
-    return BatchResponse(
-        results=[lookup_product(session, barcode) for barcode in payload.barcodes]
-    )
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    return BatchResponse(results=results)

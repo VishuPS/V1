@@ -12,9 +12,9 @@ class PlanLimit(BaseModel):
 
 def default_plan_limits() -> dict[str, PlanLimit]:
     return {
-        "FREE": PlanLimit(monthly_lookups=500, requests_per_minute=30),
-        "STARTER": PlanLimit(monthly_lookups=10_000, requests_per_minute=300),
-        "PRO": PlanLimit(monthly_lookups=100_000, requests_per_minute=1_200),
+        "FREE": PlanLimit(monthly_lookups=250, requests_per_minute=30),
+        "STARTER": PlanLimit(monthly_lookups=2_000, requests_per_minute=300),
+        "GROWTH": PlanLimit(monthly_lookups=5_000, requests_per_minute=1_200),
     }
 
 
@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     github_oauth_client_id: str | None = None
     github_oauth_client_secret: str | None = None
     oauth_state_minutes: int = 10
+    resend_api_key: str | None = None
+    email_from: str = "BarcodeNest <notifications@barcodenest.com>"
+    stripe_secret_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_starter_price_id: str | None = None
+    stripe_growth_price_id: str | None = None
     plan_limits: dict[str, PlanLimit] = Field(default_factory=default_plan_limits)
 
     model_config = SettingsConfigDict(

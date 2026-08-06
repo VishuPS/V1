@@ -25,7 +25,7 @@ def create_user(
                 SubscriptionPlan(
                     code="FREE",
                     name="Free",
-                    monthly_lookups=500,
+                    monthly_lookups=250,
                     requests_per_minute=30,
                     price_cents=0,
                     currency="EUR",
@@ -98,7 +98,8 @@ def test_admin_dashboard_and_searchable_user_list(
     assert dashboard.status_code == 200
     assert dashboard.json()["total_users"] == 2
     assert dashboard.json()["total_api_keys"] == 2
-    assert dashboard.json()["active_subscriptions"] is None
+    assert dashboard.json()["active_subscriptions"] == 0
+    assert dashboard.json()["subscriptions_connected"] is True
 
     listed = unauthenticated_client.get(
         "/v1/admin/users?search=Nest", headers=headers

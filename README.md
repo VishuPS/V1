@@ -44,7 +44,7 @@ Configuration is read from environment variables or `.env`:
 | `OPEN_FOOD_FACTS_DATASET_URL` | official JSONL gzip export | Explicit download source |
 | `INGESTION_BATCH_SIZE` | `1000` | Records committed per ingestion batch |
 | `API_KEY_HASH_SECRET` | development-only placeholder | Stable server-side secret used to HMAC API keys |
-| `PLAN_LIMITS` | FREE/STARTER/PRO defaults | JSON object defining monthly lookup and per-minute request limits |
+| `PLAN_LIMITS` | FREE/STARTER/GROWTH defaults | JSON object defining monthly API-call and per-minute request limits |
 
 Do not configure `CORS_ALLOWED_ORIGINS=*` for production. Use the exact client
 origins instead. In production, replace `API_KEY_HASH_SECRET` with a strong,
@@ -62,9 +62,9 @@ The built-in defaults are:
 
 | Plan | Monthly barcode lookups | Requests per minute |
 |---|---:|---:|
-| `FREE` | 500 | 30 |
-| `STARTER` | 10,000 | 300 |
-| `PRO` | 100,000 | 1,200 |
+| `FREE` | 250 | 30 |
+| `STARTER` | 2,000 | 300 |
+| `GROWTH` | 5,000 | 1,200 |
 
 A single lookup costs one lookup. A batch costs one lookup per submitted
 barcode and one request total, preventing batch requests from bypassing the
@@ -116,7 +116,7 @@ database access:
 Override plan limits with JSON, for example:
 
 ```text
-PLAN_LIMITS={"FREE":{"monthly_lookups":500,"requests_per_minute":30},"STARTER":{"monthly_lookups":10000,"requests_per_minute":300},"PRO":{"monthly_lookups":100000,"requests_per_minute":1200}}
+PLAN_LIMITS={"FREE":{"monthly_lookups":250,"requests_per_minute":30},"STARTER":{"monthly_lookups":2000,"requests_per_minute":300},"GROWTH":{"monthly_lookups":5000,"requests_per_minute":1200}}
 ```
 
 Monthly quota enforcement is durable and safe across application instances.

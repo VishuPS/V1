@@ -159,6 +159,10 @@ class UsageSummary(BaseModel):
     lookup_count: int
     monthly_limit: int
     remaining: int
+    percentage_used: float = 0
+    period_end: datetime | None = None
+    warning: bool = False
+    blocked: bool = False
 
 
 class SubscriptionSummary(BaseModel):
@@ -168,3 +172,24 @@ class SubscriptionSummary(BaseModel):
     currency: str
     current_period_end: datetime | None
     cancel_at_period_end: bool
+    monthly_calls_used: int
+    monthly_call_limit: int
+    usage_period_start: datetime
+    usage_period_end: datetime
+    provider_customer_id: str | None
+
+
+class CheckoutCreate(BaseModel):
+    plan: str
+
+    @field_validator("plan")
+    @classmethod
+    def validate_plan(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if normalized not in {"STARTER", "GROWTH"}:
+            raise ValueError("Plan must be starter or growth")
+        return normalized
+
+
+class BillingRedirect(BaseModel):
+    url: str

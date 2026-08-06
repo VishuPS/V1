@@ -65,8 +65,13 @@ def dashboard_summary(session: Session) -> AdminDashboardSummary:
                 MonthlyUsage.period_start == usage_month
             )
         ) or 0,
-        active_subscriptions=None,
-        subscriptions_connected=False,
+        active_subscriptions=session.scalar(
+            select(func.count()).select_from(Subscription).where(
+                Subscription.plan_code.in_(["STARTER", "GROWTH"]),
+                Subscription.status.in_(["active", "trialing"]),
+            )
+        ) or 0,
+        subscriptions_connected=True,
     )
 
 
@@ -89,8 +94,9 @@ def list_users(
         total_query = total_query.where(where)
     total = session.scalar(total_query) or 0
     query = (
-        select(User, ApiClient)
+        select(User, ApiClient, Subscription)
         .outerjoin(ApiClient, ApiClient.owner_user_id == User.id)
+        .outerjoin(Subscription, Subscription.user_id == User.id)
         .order_by(User.created_at.desc())
         .limit(limit)
         .offset(offset)
@@ -99,7 +105,7 @@ def list_users(
         query = query.where(where)
     rows = session.execute(query).unique().all()
     items = []
-    for user, client in rows:
+    for user, client, subscription in rows:
         active_keys = session.scalar(
             select(func.count()).select_from(ApiKey).where(
                 ApiKey.owner_user_id == user.id, ApiKey.active.is_(True)
@@ -120,6 +126,12 @@ def list_users(
                 api_key_status=key_status,
                 is_admin=user.is_admin,
                 active=user.active,
+                usage=subscription.monthly_calls_used if subscription else 0,
+                usage_limit=subscription.monthly_call_limit if subscription else 0,
+                usage_percentage=(round(subscription.monthly_calls_used / subscription.monthly_call_limit * 100, 1) if subscription and subscription.monthly_call_limit else 0),
+                subscription_status=subscription.status if subscription else "none",
+                usage_period_start=subscription.usage_period_start if subscription else None,
+                usage_period_end=subscription.usage_period_end if subscription else None,
             )
         )
     return AdminUserList(items=items, total=total, limit=limit, offset=offset)
@@ -188,6 +200,11 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
                 status=subscription.status,
                 provider=subscription.provider,
                 current_period_end=subscription.current_period_end,
+                monthly_calls_used=subscription.monthly_calls_used,
+                monthly_call_limit=subscription.monthly_call_limit,
+                usage_percentage=(round(subscription.monthly_calls_used / subscription.monthly_call_limit * 100, 1) if subscription.monthly_call_limit else 0),
+                usage_period_start=subscription.usage_period_start,
+                usage_period_end=subscription.usage_period_end,
             )
             if subscription else None
         ),

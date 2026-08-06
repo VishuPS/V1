@@ -43,7 +43,20 @@ CORS_ALLOWED_ORIGINS=https://barcodenest.com,https://www.barcodenest.com
 TRUSTED_HOSTS=api.barcodenest.com,localhost,127.0.0.1,YOUR_PROVIDER_HOSTNAME
 FORWARDED_ALLOW_IPS=127.0.0.1
 REGISTRATION_ENABLED=true
+RESEND_API_KEY=re_your_key
+EMAIL_FROM=BarcodeNest <notifications@barcodenest.com>
+STRIPE_SECRET_KEY=sk_live_your_key
+STRIPE_WEBHOOK_SECRET=whsec_your_secret
+STRIPE_STARTER_PRICE_ID=price_your_starter_price
+STRIPE_GROWTH_PRICE_ID=price_your_growth_price
 ```
+
+Create the two recurring Stripe catalog entries once with
+`stripe-catalog-sync` (or `python -m app.tools.stripe_catalog`), then copy the
+printed price IDs into Render. Configure Stripe to send subscription events to
+`https://api.barcodenest.com/v1/billing/webhooks/stripe`; copy that endpoint's
+signing secret into `STRIPE_WEBHOOK_SECRET`. Upgrades are activated only by a
+verified webhook, never by the browser checkout redirect.
 
 Generate `API_KEY_HASH_SECRET` with a secure secret manager or:
 

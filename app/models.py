@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from calendar import monthrange
 from typing import Any
 from uuid import uuid4
 
@@ -25,6 +26,11 @@ def utcnow() -> datetime:
 
 def new_uuid() -> str:
     return str(uuid4())
+
+
+def current_month_end() -> datetime:
+    now = utcnow()
+    return now.replace(day=monthrange(now.year, now.month)[1], hour=23, minute=59, second=59, microsecond=999999)
 
 
 class Product(Base):
@@ -252,6 +258,12 @@ class Subscription(Base):
     provider: Mapped[str | None] = mapped_column(String(32))
     provider_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
     provider_subscription_id: Mapped[str | None] = mapped_column(String(255), unique=True)
+    provider_price_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    monthly_call_limit: Mapped[int] = mapped_column(BigInteger, nullable=False, default=250)
+    monthly_calls_used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    usage_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    usage_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=current_month_end, nullable=False)
+    usage_warning_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
@@ -260,3 +272,11 @@ class Subscription(Base):
 
     user: Mapped[User] = relationship(back_populates="subscriptions")
     plan: Mapped[SubscriptionPlan] = relationship()
+
+
+class StripeWebhookEvent(Base):
+    __tablename__ = "stripe_webhook_events"
+
+    event_id: Mapped[str] = mapped_column(String(255), primary_key=True)
+    event_type: Mapped[str] = mapped_column(String(128), nullable=False)
+    processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

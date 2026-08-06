@@ -310,8 +310,15 @@ def regenerate_api_key(
 
 @router.get("/account/usage", response_model=UsageSummary)
 def usage(context: CurrentUser, session: DbSession, settings: SettingsDep) -> UsageSummary:
-    client = account_client(session, context.user)
-    period = current_period()
+    account_client(session, context.user)
+    subscription = session.scalar(
+        select(Subscription)
+        .where(Subscription.user_id == context.user.id)
+        .order_by(Subscription.created_at.desc())
+    )
+    if subscription is None:
+        raise HTTPException(404, detail={"code": "subscription_not_found", "message": "No subscription was found"})
+    period = subscription.usage_period_start.date()
     request_count, lookup_count = session.execute(
         select(
             func.coalesce(func.sum(MonthlyUsage.request_count), 0),
@@ -320,10 +327,14 @@ def usage(context: CurrentUser, session: DbSession, settings: SettingsDep) -> Us
         .join(ApiKey, ApiKey.id == MonthlyUsage.api_key_id)
         .where(ApiKey.owner_user_id == context.user.id, MonthlyUsage.period_start == period)
     ).one()
-    limit = settings.plan_limits[client.plan.upper()].monthly_lookups
+    used = subscription.monthly_calls_used
+    limit = subscription.monthly_call_limit
+    percentage = round((used / limit * 100), 1) if limit else 100.0
     return UsageSummary(
-        period_start=period, request_count=request_count, lookup_count=lookup_count,
-        monthly_limit=limit, remaining=max(0, limit - lookup_count),
+        period_start=period, request_count=request_count, lookup_count=used,
+        monthly_limit=limit, remaining=max(0, limit - used),
+        percentage_used=percentage, period_end=subscription.usage_period_end,
+        warning=percentage >= 90, blocked=used >= limit,
     )
 
 
@@ -344,4 +355,9 @@ def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummar
         price_cents=record.plan.price_cents, currency=record.plan.currency,
         current_period_end=record.current_period_end,
         cancel_at_period_end=record.cancel_at_period_end,
+        monthly_calls_used=record.monthly_calls_used,
+        monthly_call_limit=record.monthly_call_limit,
+        usage_period_start=record.usage_period_start,
+        usage_period_end=record.usage_period_end,
+        provider_customer_id=record.provider_customer_id,
     )

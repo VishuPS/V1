@@ -32,6 +32,7 @@ lookup-benchmark = "app.tools.performance:main"
 database-quality = "app.tools.data_quality:main"
 database-check = "app.tools.db_check:main"
 api-key-admin = "app.tools.api_keys:main"
+stripe-catalog-sync = "app.tools.stripe_catalog:main"
 
 [tool.setuptools.packages.find]
 include = ["app*"]

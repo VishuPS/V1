@@ -6,6 +6,8 @@ import time
 from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
+from calendar import monthrange
+from math import ceil
 from typing import Annotated
 
 from fastapi import Depends, HTTPException, Security, status
@@ -17,7 +19,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import PlanLimit, Settings, get_settings
 from app.db import get_db
-from app.models import ApiClient, ApiKey, DailyUsage, MonthlyUsage, new_uuid
+from app.email_service import UsageWarning
+from app.models import ApiClient, ApiKey, DailyUsage, MonthlyUsage, Subscription, User, new_uuid
 
 
 api_key_header = APIKeyHeader(
@@ -198,6 +201,8 @@ class UsageResult:
     period_start: date
     request_count: int
     lookup_count: int
+    period_end: datetime | None = None
+    warning: UsageWarning | None = None
 
 
 def consume_usage(
@@ -211,9 +216,50 @@ def consume_usage(
         raise ValueError("lookup_units must be at least 1")
     timestamp = now or datetime.now(timezone.utc)
     period = current_period(timestamp)
-    quota = context.plan.monthly_lookups
+    subscription = None
+    if context.api_key.owner_user_id:
+        subscription = session.scalar(
+            select(Subscription)
+            .where(Subscription.user_id == context.api_key.owner_user_id)
+            .order_by(Subscription.created_at.desc())
+            .with_for_update()
+        )
+    quota = subscription.monthly_call_limit if subscription else context.plan.monthly_lookups
     if lookup_units > quota:
-        raise _quota_error(quota, 0, period)
+        raise _quota_error(context.client.plan, quota, quota, subscription.usage_period_end if subscription else None)
+
+    warning = None
+    if subscription:
+        period_end = _aware_utc(subscription.usage_period_end)
+        if subscription.plan_code == "FREE" and period_end <= timestamp:
+            subscription.monthly_calls_used = 0
+            subscription.usage_warning_sent_at = None
+            subscription.usage_period_start = timestamp
+            subscription.usage_period_end = timestamp.replace(
+                day=monthrange(timestamp.year, timestamp.month)[1],
+                hour=23, minute=59, second=59, microsecond=999999,
+            )
+            period_end = subscription.usage_period_end
+            session.flush()
+        updated = session.execute(
+            update(Subscription)
+            .where(
+                Subscription.id == subscription.id,
+                Subscription.monthly_calls_used + lookup_units <= Subscription.monthly_call_limit,
+            )
+            .values(monthly_calls_used=Subscription.monthly_calls_used + lookup_units)
+            .returning(Subscription.monthly_calls_used, Subscription.monthly_call_limit)
+        ).one_or_none()
+        if updated is None:
+            session.rollback()
+            used = subscription.monthly_calls_used
+            raise _quota_error(subscription.plan_code, used, quota, period_end)
+        account_used, quota = updated
+        if account_used >= ceil(quota * 0.9) and subscription.usage_warning_sent_at is None:
+            subscription.usage_warning_sent_at = timestamp
+            email = session.scalar(select(User.email).where(User.id == subscription.user_id))
+            if email:
+                warning = UsageWarning(email=email, used=account_used, limit=quota, period_end=period_end)
 
     values = {
         "id": new_uuid(),
@@ -249,7 +295,7 @@ def consume_usage(
                 MonthlyUsage.period_start == period,
             )
         ) or 0
-        raise _quota_error(quota, max(0, quota - current), period)
+        raise _quota_error(context.client.plan, current, quota, subscription.usage_period_end if subscription else None)
     daily_values = {
         "id": new_uuid(),
         "api_key_id": context.api_key.id,
@@ -285,20 +331,26 @@ def consume_usage(
         period_start=period,
         request_count=row.request_count,
         lookup_count=row.lookup_count,
+        period_end=subscription.usage_period_end if subscription else None,
+        warning=warning,
     )
 
 
-def _quota_error(quota: int, remaining: int, period: date) -> HTTPException:
+def _quota_error(plan: str, used: int, quota: int, period_end: datetime | None) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail={
-            "code": "monthly_quota_exceeded",
-            "message": "The monthly barcode lookup quota was exceeded",
+            "code": "usage_limit_reached",
+            "message": "Your monthly API call limit has been reached.",
+            "plan": plan.lower(),
+            "used": used,
+            "limit": quota,
+            "upgrade_url": "/pricing/",
         },
         headers={
             "X-Monthly-Quota-Limit": str(quota),
-            "X-Monthly-Quota-Remaining": str(remaining),
-            "X-Monthly-Quota-Period": period.isoformat(),
+            "X-Monthly-Quota-Remaining": "0",
+            "X-Monthly-Quota-Period": period_end.date().isoformat() if period_end else current_period().isoformat(),
         },
     )
 

@@ -21,7 +21,7 @@ def test_registration_immediately_issues_free_key_and_session(
     body = response.json()
     assert body["email"] == "ada@example.com"
     assert body["plan"] == "FREE"
-    assert body["monthly_lookups"] == 500
+    assert body["monthly_lookups"] == 250
     assert body["requests_per_minute"] == 30
     assert body["api_key"].startswith("gpa_")
     assert "HttpOnly" in response.headers["set-cookie"]

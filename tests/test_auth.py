@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -15,7 +16,7 @@ from app.auth import (
 from app.config import PlanLimit, Settings, get_settings
 from app.db import Base, get_db
 from app.main import app
-from app.models import ApiClient, ApiKey, MonthlyUsage
+from app.models import ApiClient, ApiKey, MonthlyUsage, Subscription, SubscriptionPlan, User
 
 
 def key_prefix(raw_key: str) -> str:
@@ -112,7 +113,7 @@ def test_quota_accounting_and_exhaustion(
     exhausted = client.get("/v1/products/3017620422003")
     assert first.status_code == second.status_code == 200
     assert exhausted.status_code == 429
-    assert exhausted.json()["error"]["code"] == "monthly_quota_exceeded"
+    assert exhausted.json()["error"]["code"] == "usage_limit_reached"
     assert exhausted.headers["X-Monthly-Quota-Remaining"] == "0"
     with session_factory() as session:
         usage = session.scalar(select(MonthlyUsage))
@@ -122,7 +123,7 @@ def test_quota_accounting_and_exhaustion(
     app.dependency_overrides.pop(get_settings, None)
 
 
-def test_batch_charged_by_barcode_lookup(
+def test_batch_charged_as_one_successful_api_call(
     client: TestClient, session_factory: sessionmaker[Session]
 ) -> None:
     response = client.post(
@@ -130,11 +131,11 @@ def test_batch_charged_by_barcode_lookup(
         json={"barcodes": ["3017620422003", "4006381333931", "123"]},
     )
     assert response.status_code == 200
-    assert response.headers["X-Monthly-Quota-Remaining"] == "497"
+    assert response.headers["X-Monthly-Quota-Remaining"] == "249"
     with session_factory() as session:
         usage = session.scalar(select(MonthlyUsage))
         assert usage.request_count == 1
-        assert usage.lookup_count == 3
+        assert usage.lookup_count == 1
 
 
 def test_monthly_period_rollover(
@@ -213,3 +214,36 @@ def test_atomic_concurrent_usage_updates(tmp_path: Path) -> None:
         assert usage.request_count == 20
         assert usage.lookup_count == 20
         assert session.scalar(select(func.count()).select_from(MonthlyUsage)) == 1
+
+
+def test_concurrent_account_calls_cannot_exceed_subscription_limit(tmp_path: Path) -> None:
+    database = tmp_path / "subscription-concurrent.db"
+    engine = create_engine(f"sqlite:///{database.as_posix()}", connect_args={"check_same_thread": False, "timeout": 30})
+    Base.metadata.create_all(engine)
+    factory = sessionmaker(bind=engine, expire_on_commit=False)
+    with factory() as session:
+        plan = SubscriptionPlan(code="FREE", name="Free", monthly_lookups=10, requests_per_minute=1_000, price_cents=0, currency="USD")
+        user = User(email="concurrent@example.com", display_name="Concurrent", email_verified_at=datetime.now(timezone.utc))
+        session.add_all([plan, user]); session.flush()
+        client = ApiClient(identifier="subscription-concurrent", owner_user_id=user.id, plan="FREE")
+        session.add(client); session.flush()
+        key = ApiKey(client=client, owner_user_id=user.id, key_prefix="gpa_subscription", key_hash="0" * 64)
+        subscription = Subscription(user_id=user.id, plan_code="FREE", monthly_call_limit=10)
+        session.add_all([key, subscription]); session.commit()
+        key_id, client_id, subscription_id = key.id, client.id, subscription.id
+
+    def consume_once(_: int) -> bool:
+        with factory() as session:
+            context = AuthContext(api_key=session.get(ApiKey, key_id), client=session.get(ApiClient, client_id), plan=PlanLimit(monthly_lookups=10, requests_per_minute=1_000), rate_limit=RateLimitResult(1_000, 999, 0))
+            try:
+                consume_usage(session, context, 1)
+                return True
+            except HTTPException as exc:
+                assert exc.status_code == 429
+                return False
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        outcomes = list(executor.map(consume_once, range(20)))
+    assert sum(outcomes) == 10
+    with factory() as session:
+        assert session.get(Subscription, subscription_id).monthly_calls_used == 10

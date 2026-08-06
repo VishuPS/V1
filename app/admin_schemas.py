@@ -25,6 +25,12 @@ class AdminUserListItem(BaseModel):
     api_key_status: str
     is_admin: bool
     active: bool
+    usage: int
+    usage_limit: int
+    usage_percentage: float
+    subscription_status: str
+    usage_period_start: datetime | None
+    usage_period_end: datetime | None
 
 
 class AdminUserList(BaseModel):
@@ -48,6 +54,11 @@ class AdminSubscription(BaseModel):
     status: str
     provider: str | None
     current_period_end: datetime | None
+    monthly_calls_used: int
+    monthly_call_limit: int
+    usage_percentage: float
+    usage_period_start: datetime
+    usage_period_end: datetime
 
 
 class AdminActivity(BaseModel):

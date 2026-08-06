@@ -1,12 +1,12 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
-<BaseLayout title="Pricing | BarcodeNest" description="Create a free BarcodeNest account with 500 product lookups per month and immediate API-key access." current="pricing">
+<BaseLayout title="Pricing | BarcodeNest" description="Start with 250 free BarcodeNest API calls per month, or upgrade for larger monthly allowances." current="pricing">
   <header class="page-hero"><div class="container"><div class="eyebrow">Developer pricing</div><h1>Start free. Use the same API as you grow.</h1><p class="lede">Create an account now, receive an API key immediately, and manage usage from your dashboard.</p></div></header>
   <section class="section"><div class="container"><div class="pricing-grid">
-    <article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">&euro;0</div><ul><li>500 lookups / month</li><li>30 requests / minute</li><li>Single and batch lookup</li><li>Dashboard and key management</li></ul><a class="button button-signal" href="/register">Get API Key</a></article>
-    <article class="plan"><span class="plan-tag">Starter</span><h3>10K monthly lookups</h3><div class="plan-rate">300 requests / minute</div><ul><li>Single and batch lookup</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
-    <article class="plan"><span class="plan-tag">Pro</span><h3>100K monthly lookups</h3><div class="plan-rate">1,200 requests / minute</div><ul><li>Single and batch lookup</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
-  </div><div class="callout"><strong>Batch quota:</strong> usage is based on individual barcode lookups. A batch containing 25 barcodes consumes 25 monthly lookups and one request against the per-minute request limit.</div></div></section>
+    <article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch lookup</li><li>Dashboard and key management</li></ul><a class="button button-signal" href="/register">Get API Key</a></article>
+    <article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="price">$9.99 <small>/ month</small></div><ul><li>300 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
+    <article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="price">$19.99 <small>/ month</small></div><ul><li>1,200 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
+  </div><div class="callout"><strong>Usage accounting:</strong> each successful product API request consumes one call. Authentication failures, health checks, account pages and failed product lookups do not consume allowance.</div></div></section>
   <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Free developer tier</div><h2>Create your account and make the first request.</h2></div><div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button" href="/docs">Documentation</a></div></div></section>
 </BaseLayout>

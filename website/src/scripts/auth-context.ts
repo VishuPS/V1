@@ -49,6 +49,13 @@ export async function authFetch(path: string, options: RequestInit = {}): Promis
   return response;
 }
 
+export async function responseMessage(response: Response): Promise<string> {
+  try {
+    const body = await response.json();
+    return body?.error?.message || body?.detail?.message || body?.message || "The request could not be completed.";
+  } catch { return "The request could not be completed."; }
+}
+
 export function getCachedAuthState(): AuthState { return state; }
 
 export async function getAuthState(force = false): Promise<AuthState> {
