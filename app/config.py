@@ -74,6 +74,19 @@ class Settings(BaseSettings):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
 
+    @property
+    def effective_cors_allowed_origins(self) -> list[str]:
+        """Include the canonical website origins required by browser account flows."""
+        origins = list(self.cors_allowed_origins)
+        website_origin = self.website_url.rstrip("/")
+        if website_origin and website_origin not in origins:
+            origins.append(website_origin)
+        if website_origin == "https://barcodenest.com":
+            www_origin = "https://www.barcodenest.com"
+            if www_origin not in origins:
+                origins.append(www_origin)
+        return origins
+
     @field_validator("database_url")
     @classmethod
     def select_psycopg_driver(cls, value: str) -> str:

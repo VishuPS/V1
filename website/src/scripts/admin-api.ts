@@ -32,7 +32,11 @@ export async function requireAdmin(probe = "/dashboard"): Promise<Response | nul
     const denied = document.querySelector<HTMLElement>("#admin-denied"); if (denied) denied.hidden = false;
     return null;
   }
-  if (auth.status === "error") throw new Error(auth.message);
+  if (auth.status === "error") {
+    const loading = document.querySelector<HTMLElement>("#admin-loading");
+    if (loading) { loading.className = "admin-loading error"; loading.textContent = `${auth.message} Refresh the page to try again.`; }
+    return null;
+  }
   const response = await adminFetch(probe);
   if (response.status === 401) {
     const destination = encodeURIComponent(location.pathname + location.search);

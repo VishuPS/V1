@@ -16,6 +16,19 @@ def test_comma_separated_cors_origins(monkeypatch) -> None:
     ]
 
 
+def test_effective_cors_origins_include_production_website() -> None:
+    settings = Settings(
+        _env_file=None,
+        cors_allowed_origins=["http://localhost:5173"],
+        website_url="https://barcodenest.com",
+    )
+    assert settings.effective_cors_allowed_origins == [
+        "http://localhost:5173",
+        "https://barcodenest.com",
+        "https://www.barcodenest.com",
+    ]
+
+
 def test_comma_separated_trusted_hosts(monkeypatch) -> None:
     monkeypatch.setenv("TRUSTED_HOSTS", "api.barcodenest.com, provider.example")
     settings = Settings(_env_file=None)

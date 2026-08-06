@@ -257,7 +257,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .admin-sidebar nav a:hover,.admin-sidebar nav a[aria-current="page"] { background:var(--white); color:var(--ink); }
 .admin-back { margin-top:auto; font-weight:500; }
 .admin-main { min-width:0; }
-.admin-loading { padding:52px 0; color:var(--muted); }
+.admin-loading { padding:52px 0; color:var(--muted); }.admin-loading.error { color:#8b2727; }
 .admin-denied { max-width:650px; padding:70px 0; }
 .admin-denied h1 { margin:20px 0; font-size:clamp(42px,6vw,64px); }
 .admin-denied p { max-width:560px; margin-bottom:28px; color:var(--muted); }
