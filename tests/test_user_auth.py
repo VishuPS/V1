@@ -5,7 +5,8 @@ from sqlalchemy import select
 from app.auth import issue_api_key
 from app.config import get_settings
 from app.models import ApiClient, ApiKey, AuthSession, Subscription, SubscriptionPlan, User
-from app.user_auth import hash_password
+from app.user_auth import ensure_allowed_origin, hash_password
+from starlette.requests import Request
 
 
 PASSWORD = "correct horse battery staple"
@@ -225,3 +226,21 @@ def test_state_change_rejects_untrusted_browser_origin(
         headers={"Origin": "https://attacker.example"},
     )
     assert response.status_code == 403
+
+
+def test_production_website_origin_passes_state_change_guard():
+    settings = get_settings().model_copy(
+        update={
+            "website_url": "https://barcodenest.com",
+            "cors_allowed_origins": ["http://localhost:5173"],
+        }
+    )
+    request = Request(
+        {
+            "type": "http",
+            "method": "POST",
+            "path": "/v1/auth/logout",
+            "headers": [(b"origin", b"https://barcodenest.com")],
+        }
+    )
+    ensure_allowed_origin(request, settings)

@@ -87,8 +87,8 @@ export async function requireUser(): Promise<AuthUser | null> {
 }
 
 export async function signOut(): Promise<void> {
-  try { await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" }); } finally {
-    publish({ status: "unauthenticated", user: null });
-    location.assign("/");
-  }
+  const response = await fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" });
+  if (!response.ok) throw new Error("Sign out could not be completed. Please try again.");
+  publish({ status: "unauthenticated", user: null });
+  location.assign("/");
 }

@@ -55,7 +55,7 @@ def _auth_error(code: str, message: str) -> HTTPException:
 
 def ensure_allowed_origin(request: Request, settings: Settings) -> None:
     origin = request.headers.get("origin")
-    if origin and origin not in settings.cors_allowed_origins:
+    if origin and origin not in settings.effective_cors_allowed_origins:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail={"code": "untrusted_origin", "message": "The request origin is not allowed"},

@@ -23,6 +23,6 @@ const links = [
   button?.addEventListener("click", () => { const open = button.getAttribute("aria-expanded") === "true"; button.setAttribute("aria-expanded", String(!open)); nav?.classList.toggle("is-open", !open); });
   import { getAuthState, signOut } from "../scripts/auth-context";
   async function syncNavigation() { const result = await getAuthState(); if (result.status === "authenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const authenticated = document.querySelector<HTMLElement>("#authenticated-navigation"); if (authenticated) authenticated.hidden = false; } else if (result.status === "unauthenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const guest = document.querySelector<HTMLElement>("#guest-navigation"); if (guest) guest.hidden = false; } }
-  document.querySelector("#header-signout")?.addEventListener("click", () => signOut());
+  document.querySelector<HTMLButtonElement>("#header-signout")?.addEventListener("click", async (event) => { const signout = event.currentTarget as HTMLButtonElement; signout.disabled = true; signout.textContent = "Signing out..."; try { await signOut(); } catch (error) { signout.disabled = false; signout.textContent = error instanceof Error ? error.message : "Try sign out again"; } });
   syncNavigation();
 </script>
