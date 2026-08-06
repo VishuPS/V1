@@ -35,6 +35,7 @@ img { max-width: 100%; }
 .nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--ink); }
 .nav-account { display:flex; align-items:center; gap:14px; }
 .authenticated-navigation { display:flex; align-items:center; gap:14px; }
+.nav-auth-check { width:92px; height:40px; border-radius:6px; background:var(--paper-2); }
 .admin-navigation-link { min-height:40px; display:inline-flex; align-items:center; color:var(--muted); font-size:14px; font-weight:600; }
 .admin-navigation-link:hover { color:var(--ink); }
 .login-link { min-height:44px; display:inline-flex; align-items:center; color:var(--muted); font-size:14px; font-weight:600; }
@@ -232,6 +233,19 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .key-actions { display:flex; align-items:center; gap:6px; }.regenerate-button { color:var(--ink); }
 .empty-state { padding:28px 0; color:var(--muted); }
 .account-start { display:flex; align-items:center; justify-content:space-between; gap:40px; margin-top:56px; padding:32px; border:1px solid var(--line); background:var(--paper-2); }.account-start h2 { margin:10px 0; }.account-start p { max-width:670px; margin:0; color:var(--muted); }.account-start code { font-family:"Geist Mono"; color:var(--ink); }
+.portal-page { min-height:75vh; padding:40px 0 96px; }
+.portal-shell { display:grid; grid-template-columns:190px minmax(0,1fr); gap:46px; align-items:start; }
+.portal-sidebar { position:sticky; top:24px; min-height:calc(100vh - 48px); padding:22px 18px; display:flex; flex-direction:column; border:1px solid var(--line); background:rgba(255,255,255,.25); }
+.portal-identity { padding:0 8px 20px; border-bottom:1px solid var(--line); }.portal-identity span,.portal-identity strong { display:block; }.portal-identity span { color:var(--muted); font:10px "Geist Mono"; text-transform:uppercase; letter-spacing:.08em; }.portal-identity strong { margin-top:5px; font-size:15px; }
+.portal-sidebar nav { padding:18px 0; }.portal-sidebar nav a { min-height:42px; padding:0 10px; display:flex; align-items:center; border-radius:5px; color:var(--muted); font-size:14px; font-weight:550; }.portal-sidebar nav a:hover { color:var(--ink); background:var(--paper-2); }.portal-sidebar nav a[aria-current="page"] { background:var(--ink); color:var(--paper); }
+.portal-main { min-width:0; }.protected-state { min-height:240px; display:flex; align-items:center; color:var(--muted); }.protected-state.error { color:#8b2727; }
+.portal-header { min-height:190px; padding:24px 0 42px; display:flex; align-items:end; justify-content:space-between; gap:32px; border-bottom:1px solid var(--line); }.portal-header .eyebrow { margin-bottom:18px; }.portal-header h1 { margin-bottom:12px; font-size:clamp(44px,6vw,68px); }.portal-header p { margin:0; color:var(--muted); }
+.portal-metrics { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); border-top:0; }.portal-metrics article { min-height:156px; padding:24px; border-right:1px solid var(--line); }.portal-metrics article:last-child { border-right:0; }.portal-metrics span,.portal-metrics strong,.portal-metrics small { display:block; }.portal-metrics span { color:var(--muted); font:11px "Geist Mono"; text-transform:uppercase; letter-spacing:.06em; }.portal-metrics strong { margin:26px 0 8px; font-size:28px; line-height:1; letter-spacing:-.04em; }.portal-metrics strong b { font-weight:650; }.portal-metrics small { color:var(--muted); font-size:12px; }
+.portal-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:18px; }.portal-panel { padding:30px; border:1px solid var(--line); background:rgba(255,255,255,.18); }.portal-panel h2 { margin:14px 0; font-size:30px; }.portal-panel p { color:var(--muted); }.portal-panel a:not(.button),.portal-section a { text-decoration:underline; text-underline-offset:3px; }
+.portal-section { margin-top:48px; padding-top:34px; border-top:1px solid var(--line); }.portal-section-head { display:flex; justify-content:space-between; align-items:end; gap:24px; }.portal-section-head h2 { margin:10px 0 0; font-size:32px; }
+.activity-list { margin-top:22px; border-top:1px solid var(--line); }.activity-row { min-height:72px; display:flex; align-items:center; justify-content:space-between; gap:24px; border-bottom:1px solid var(--line); }.activity-row strong,.activity-row span { display:block; }.activity-row span,.activity-row time { color:var(--muted); font:12px "Geist Mono"; }.activity-row time { white-space:nowrap; }
+.detail-list { margin:0; }.detail-list > div { min-height:74px; padding:14px 0; display:grid; grid-template-columns:190px minmax(0,1fr); align-items:center; gap:20px; border-bottom:1px solid var(--line); }.detail-list > div:last-child { border-bottom:0; }.detail-list dt { color:var(--muted); }.detail-list dd { margin:0; font-weight:600; overflow-wrap:anywhere; }.detail-list.compact { margin-top:18px; }.profile-panel { margin-top:18px; }.portal-note { margin:28px 0 0; padding-top:22px; border-top:1px solid var(--line); }
+.settings-list { margin-top:18px; }.settings-list > div { min-height:112px; display:flex; align-items:center; justify-content:space-between; gap:30px; border-bottom:1px solid var(--line); }.settings-list > div:last-child { border-bottom:0; }.settings-list p { margin:5px 0 0; max-width:620px; }.status-badge { padding:4px 9px; border:1px solid var(--line); border-radius:99px; font:11px "Geist Mono"; }.status-badge.active { background:#e5f1d0; color:#30430e; border-color:#bdcc9e; }
 .admin-page { min-height:75vh; padding:40px 0 90px; }
 .admin-shell { display:grid; grid-template-columns:190px minmax(0,1fr); gap:46px; align-items:start; }
 .admin-sidebar { position:sticky; top:24px; min-height:calc(100vh - 48px); padding:22px 18px; display:flex; flex-direction:column; border:1px solid var(--line); background:rgba(255,255,255,.25); }
@@ -301,6 +315,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
   .footer-grid { grid-template-columns:1fr 1fr; }
   .footer-meta { grid-column:1 / -1; }
   .admin-shell { grid-template-columns:150px minmax(0,1fr); gap:26px; }.admin-metrics { grid-template-columns:1fr 1fr; }
+  .portal-shell { grid-template-columns:150px minmax(0,1fr); gap:26px; }.portal-metrics { grid-template-columns:1fr 1fr; }.portal-metrics article:nth-child(2) { border-right:0; }.portal-metrics article:nth-child(-n+2) { border-bottom:1px solid var(--line); }
   .launch-feature-grid { grid-template-columns:repeat(2,1fr); }
   .journey { grid-template-columns:repeat(3,1fr); }
 }
@@ -341,6 +356,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
   .key-create-form { min-width:0; width:100%; }.key-create-form > div { flex-direction:column; }.key-create-form input { width:100%; }
   .first-request { grid-template-columns:1fr; gap:24px; }
   .admin-page { padding-top:18px; }.admin-shell { display:block; }.admin-sidebar { position:static; min-height:0; margin-bottom:22px; padding:10px; flex-direction:row; align-items:center; gap:8px; overflow-x:auto; }.admin-sidebar > div { padding:0 10px; border:0; }.admin-sidebar nav { display:flex; padding:0; }.admin-sidebar nav a,.admin-back { flex:0 0 auto; margin:0; }.admin-header { min-height:130px; align-items:flex-start; flex-direction:column; }.admin-metrics { grid-template-columns:1fr 1fr; }.admin-metric-placeholder { grid-column:span 2; }.admin-start,.admin-panel-head,.admin-controls > div { align-items:stretch; flex-direction:column; }.admin-detail-grid { grid-template-columns:1fr; }.admin-search > div { flex-direction:column; }.admin-stat-row { grid-template-columns:1fr 1fr; }.admin-key-list > div,.admin-activity li { align-items:flex-start; flex-direction:column; }.admin-header-badges { align-self:flex-start; }
+  .portal-page { padding-top:18px; }.portal-shell { display:block; }.portal-sidebar { position:static; min-height:0; margin-bottom:22px; padding:10px; overflow-x:auto; }.portal-identity { padding:4px 10px 10px; }.portal-sidebar nav { display:flex; gap:6px; padding:8px 0 0; }.portal-sidebar nav a { flex:0 0 auto; }.portal-header { min-height:150px; align-items:flex-start; flex-direction:column; }.portal-grid { grid-template-columns:1fr; }.portal-section-head,.settings-list > div { align-items:flex-start; flex-direction:column; }.activity-row { align-items:flex-start; flex-direction:column; padding:16px 0; }.detail-list > div { grid-template-columns:1fr; gap:4px; }.portal-panel { padding:22px; }
   .footer-grid { grid-template-columns:1fr; }
   .footer-meta { grid-column:auto; }
 }

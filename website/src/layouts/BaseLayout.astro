@@ -6,6 +6,7 @@ const {
   title = "BarcodeNest | Barcode Product API for Developers",
   description = "Access over 4.2 million products through BarcodeNest's REST API. Create a free account, generate an API key, and start building today.",
   current = "",
+  noindex = false,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -16,6 +17,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#f5f4ed" />
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BarcodeNest" />
     <meta property="og:title" content={title} />

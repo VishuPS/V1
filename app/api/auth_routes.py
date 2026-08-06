@@ -21,6 +21,7 @@ from app.schemas import (
     ApiKeyCreated,
     ApiKeySummary,
     LoginRequest,
+    MeResponse,
     RefreshRequest,
     RegistrationCreate,
     RegistrationVerified,
@@ -101,7 +102,7 @@ async def oauth_callback(
     user, registration = authenticate_oauth_identity(session, identity, settings)
     tokens = issue_session_tokens(session, user, settings)
     if registration is None:
-        destination = f"{settings.website_url.rstrip('/')}/{'admin/' if user.is_admin else 'account/'}"
+        destination = f"{settings.website_url.rstrip('/')}/{'admin/' if user.is_admin else 'dashboard/'}"
     else:
         destination = f"{settings.website_url.rstrip('/')}/oauth-complete/#api_key={registration.api_key}"
     response = RedirectResponse(destination, status_code=302)
@@ -190,6 +191,29 @@ def account(context: CurrentUser, session: DbSession) -> UserResponse:
         plan=client.plan,
         created_at=context.user.created_at,
         is_admin=context.user.is_admin,
+    )
+
+
+@router.get("/me", response_model=MeResponse)
+def me(context: CurrentUser, session: DbSession) -> MeResponse:
+    client = account_client(session, context.user)
+    active_keys, total_keys = session.execute(
+        select(
+            func.count(ApiKey.id).filter(ApiKey.active.is_(True)),
+            func.count(ApiKey.id),
+        ).where(ApiKey.owner_user_id == context.user.id)
+    ).one()
+    key_status = "active" if active_keys else "revoked" if total_keys else "none"
+    return MeResponse(
+        id=context.user.id,
+        name=context.user.display_name,
+        email=context.user.email,
+        company=context.user.organization,
+        is_admin=context.user.is_admin,
+        current_plan=client.plan,
+        api_key_status=key_status,
+        account_status="active" if context.user.active else "disabled",
+        created_at=context.user.created_at,
     )
 
 

@@ -6,20 +6,20 @@ const links = [
   ["Users", "/admin/users/", "users"],
 ];
 ---
-<BaseLayout title={`${title} - BarcodeNest Admin`} description="BarcodeNest administration.">
+<BaseLayout title={`${title} - BarcodeNest Admin`} description="BarcodeNest administration." noindex={true}>
   <section class="admin-page">
     <div class="admin-shell container">
       <aside class="admin-sidebar" aria-label="Admin navigation">
         <div><span class="admin-kicker">BarcodeNest</span><strong>Admin</strong></div>
         <nav>{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</nav>
-        <a class="admin-back" href="/account/">Back to account</a>
+        <a class="admin-back" href="/dashboard/">Back to dashboard</a>
       </aside>
       <div class="admin-main">
         <div id="admin-loading" class="admin-loading" role="status">Checking administrator access…</div>
         <div id="admin-denied" class="admin-denied" hidden>
           <div class="eyebrow">Restricted</div><h1>Administrator access required.</h1>
           <p>Your account is authenticated but does not have permission to open this area.</p>
-          <a class="button button-secondary" href="/account/">Return to account</a>
+          <a class="button button-secondary" href="/dashboard/">Return to dashboard</a>
         </div>
         <div id="admin-app" hidden><slot /></div>
       </div>

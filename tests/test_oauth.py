@@ -66,7 +66,7 @@ def test_new_oauth_user_gets_one_key_and_repeat_login_does_not_create_another(
         follow_redirects=False,
     )
     assert second.status_code == 302
-    assert second.headers["location"] == "https://barcodenest.com/account/"
+    assert second.headers["location"] == "https://barcodenest.com/dashboard/"
     with session_factory() as session:
         assert session.scalar(select(func.count()).select_from(ApiKey)) == 1
 

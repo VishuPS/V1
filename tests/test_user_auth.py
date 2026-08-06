@@ -75,11 +75,36 @@ def test_login_uses_argon2_and_access_token_reads_account(
     assert account.json()["email"] == "owner@example.com"
     assert account.json()["plan"] == "FREE"
 
+    me = unauthenticated_client.get(
+        "/v1/me", headers={"Authorization": f"Bearer {body['access_token']}"}
+    )
+    assert me.status_code == 200
+    assert me.json() == {
+        "id": user_id,
+        "name": "Account Owner",
+        "email": "owner@example.com",
+        "company": None,
+        "is_admin": False,
+        "current_plan": "FREE",
+        "api_key_status": "active",
+        "account_status": "active",
+        "created_at": me.json()["created_at"],
+    }
+
+    cookie_me = unauthenticated_client.get("/v1/me")
+    assert cookie_me.status_code == 200
+    assert cookie_me.json()["id"] == user_id
+
     with session_factory() as session:
         user = session.get(User, user_id)
         assert user.password_hash.startswith("$argon2id$")
         assert user.last_login_at is not None
 
+
+def test_me_requires_an_active_session(unauthenticated_client):
+    response = unauthenticated_client.get("/v1/me")
+    assert response.status_code == 401
+    assert response.json()["error"]["code"] == "authentication_required"
 
 def test_invalid_login_is_generic(unauthenticated_client, session_factory):
     create_account(session_factory)

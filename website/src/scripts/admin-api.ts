@@ -20,6 +20,19 @@ export async function adminFetch(path: string, options: RequestInit = {}): Promi
 }
 
 export async function requireAdmin(probe = "/dashboard"): Promise<Response | null> {
+  const { getAuthState } = await import("./auth-context");
+  const auth = await getAuthState();
+  if (auth.status === "unauthenticated") {
+    const destination = encodeURIComponent(location.pathname + location.search);
+    location.replace(`/login/?next=${destination}`);
+    return null;
+  }
+  if (auth.status === "authenticated" && !auth.user.is_admin) {
+    document.querySelector<HTMLElement>("#admin-loading")?.setAttribute("hidden", "");
+    const denied = document.querySelector<HTMLElement>("#admin-denied"); if (denied) denied.hidden = false;
+    return null;
+  }
+  if (auth.status === "error") throw new Error(auth.message);
   const response = await adminFetch(probe);
   if (response.status === 401) {
     const destination = encodeURIComponent(location.pathname + location.search);

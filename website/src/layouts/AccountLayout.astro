@@ -1,0 +1,18 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+const { title, current = "dashboard" } = Astro.props;
+const links = [
+  ["Dashboard", "/dashboard/", "dashboard"],
+  ["Profile", "/profile/", "profile"],
+  ["Account", "/account/", "account"],
+  ["API keys", "/api-keys/", "api-keys"],
+  ["Billing", "/billing/", "billing"],
+  ["Settings", "/settings/", "settings"],
+];
+---
+<BaseLayout title={`${title} - BarcodeNest`} description="Manage your BarcodeNest developer account." noindex={true}>
+  <section class="portal-page"><div class="portal-shell container">
+    <aside class="portal-sidebar" aria-label="Account navigation"><div class="portal-identity"><span>BarcodeNest</span><strong>Developer account</strong></div><nav>{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</nav></aside>
+    <div class="portal-main"><div id="protected-loading" class="protected-state" role="status">Verifying your session&hellip;</div><div id="protected-app" hidden><slot /></div></div>
+  </div></section>
+</BaseLayout>

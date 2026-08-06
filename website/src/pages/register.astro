@@ -20,6 +20,8 @@ import OAuthButtons from "../components/OAuthButtons.astro";
     <p class="auth-switch">Already have an account? <a href="/login/">Sign in</a>.</p>
   </div></section>
   <script>
+    import { getAuthState } from "../scripts/auth-context";
+    getAuthState().then((auth) => { if (auth.status === "authenticated") location.replace(auth.user.is_admin ? "/admin/" : "/dashboard/"); });
     const form = document.querySelector<HTMLFormElement>("#registration-form");
     const status = document.querySelector<HTMLElement>("#form-status");
     document.querySelector<HTMLButtonElement>('[aria-controls="password"]')?.addEventListener("click", (event) => { const button = event.currentTarget as HTMLButtonElement; const input = document.querySelector<HTMLInputElement>("#password"); if (!input) return; const show = input.type === "password"; input.type = show ? "text" : "password"; button.textContent = show ? "Hide" : "Show"; button.setAttribute("aria-label", `${show ? "Hide" : "Show"} password`); });
@@ -35,6 +37,7 @@ import OAuthButtons from "../components/OAuthButtons.astro";
         const body = await response.json();
         if (!response.ok) throw new Error(body?.error?.message || "Registration is temporarily unavailable. Please try again later.");
         sessionStorage.setItem("barcodenest_new_api_key", body.api_key);
+        await getAuthState(true);
         location.assign("/onboarding/");
       } catch (error) {
         status.className = "form-status error";

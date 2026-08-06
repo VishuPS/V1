@@ -12,14 +12,17 @@ const links = [
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav"><span class="sr-only">Open navigation</span><span></span><span></span></button>
     <nav id="primary-nav" aria-label="Primary navigation">
       <div class="nav-links">{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</div>
-      <div class="nav-account" id="guest-navigation"><a class="login-link" href="/login/">Login</a><a class="button button-small button-signal" href="/register">Register</a></div>
-      <div class="authenticated-navigation" id="authenticated-navigation" hidden><a class="admin-navigation-link" id="admin-navigation" href="/admin/" hidden>Admin</a><a class="button button-small dashboard-link" href="/account/">Dashboard</a></div>
+      <div class="nav-auth-check" id="auth-navigation-loading" aria-hidden="true"></div>
+      <div class="nav-account" id="guest-navigation" hidden><a class="login-link" href="/login/">Login</a><a class="button button-small button-signal" href="/register/">Register</a></div>
+      <div class="authenticated-navigation" id="authenticated-navigation" hidden><button class="button button-small button-secondary" id="header-signout" type="button">Sign out</button></div>
     </nav>
   </div>
 </header>
 <script>
   const button = document.querySelector<HTMLButtonElement>(".menu-button"); const nav = document.querySelector<HTMLElement>("#primary-nav");
   button?.addEventListener("click", () => { const open = button.getAttribute("aria-expanded") === "true"; button.setAttribute("aria-expanded", String(!open)); nav?.classList.toggle("is-open", !open); });
-  async function showAuthenticatedNavigation() { const API = "https://api.barcodenest.com/v1"; let response = await fetch(`${API}/account`, { credentials: "include" }); if (response.status === 401) { const refreshed = await fetch(`${API}/auth/refresh`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json" }, body: "{}" }); if (refreshed.ok) response = await fetch(`${API}/account`, { credentials: "include" }); } if (!response.ok) return; const account = await response.json(); document.querySelector<HTMLElement>("#guest-navigation")?.setAttribute("hidden", ""); const authenticated = document.querySelector<HTMLElement>("#authenticated-navigation"); if (authenticated) authenticated.hidden = false; const admin = document.querySelector<HTMLElement>("#admin-navigation"); if (admin && account.is_admin) admin.hidden = false; }
-  showAuthenticatedNavigation().catch(() => {});
+  import { getAuthState, signOut } from "../scripts/auth-context";
+  async function syncNavigation() { const result = await getAuthState(); if (result.status === "authenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const authenticated = document.querySelector<HTMLElement>("#authenticated-navigation"); if (authenticated) authenticated.hidden = false; } else if (result.status === "unauthenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const guest = document.querySelector<HTMLElement>("#guest-navigation"); if (guest) guest.hidden = false; } }
+  document.querySelector("#header-signout")?.addEventListener("click", () => signOut());
+  syncNavigation();
 </script>

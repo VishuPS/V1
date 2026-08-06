@@ -11,13 +11,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <div class="code-toolbar"><span id="key-heading">Your API key &middot; shown once</span><button id="copy-key" class="copy-button" type="button">Copy key</button></div>
       <pre><code id="api-key">Loading&hellip;</code></pre>
     </section>
-    <div id="missing-key" class="onboarding-notice" hidden><p>This key is no longer available in this browser session. You can create a new one from your account.</p><a class="button button-secondary" href="/account/">Open account</a></div>
+    <div id="missing-key" class="onboarding-notice" hidden><p>This key is no longer available in this browser session. You can create a new one from your account.</p><a class="button button-secondary" href="/api-keys/">Open API keys</a></div>
     <section class="first-request" aria-labelledby="request-heading">
       <div><span class="step-number">01</span><h2 id="request-heading">Try your first request</h2><p>Replace the placeholder below with the key you just copied.</p></div>
       <div class="key-result request-example"><div class="code-toolbar"><span>Terminal</span><button id="copy-request" class="copy-button" type="button">Copy request</button></div><pre><code id="request-code">curl https://api.barcodenest.com/v1/products/3017620422003 \
   -H "X-API-Key: YOUR_API_KEY"</code></pre></div>
     </section>
-    <div class="onboarding-actions"><a class="button" href="/docs/">View API documentation</a><a class="button button-secondary" href="/account/">Go to your account</a></div>
+    <div class="onboarding-actions"><a class="button" href="/docs/">View API documentation</a><a class="button button-secondary" href="/dashboard/">Go to your dashboard</a></div>
   </div></main>
   <script>
     const key = sessionStorage.getItem("barcodenest_new_api_key");

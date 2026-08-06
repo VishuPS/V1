@@ -1,0 +1,4 @@
+---
+import AccountLayout from "../layouts/AccountLayout.astro";
+---
+<AccountLayout title="Settings" current="settings"><header class="portal-header"><div><div class="eyebrow">Security</div><h1>Settings</h1><p>Session and account support settings.</p></div></header><section class="portal-panel settings-list"><div><div><strong>Authenticated session</strong><p>BarcodeNest uses secure, HTTP-only session cookies. Refreshing this page keeps you signed in.</p></div><span class="status-badge active">Active</span></div><div><div><strong>Account support</strong><p>Request identity changes, security help, or account closure from the verified account email.</p></div><a class="button button-secondary" href="mailto:support@barcodenest.com?subject=BarcodeNest%20account%20support">Contact support</a></div></section><script>import { requireUser } from "../scripts/auth-context";requireUser();</script></AccountLayout>

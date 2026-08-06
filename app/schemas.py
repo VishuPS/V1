@@ -119,6 +119,18 @@ class UserResponse(BaseModel):
     is_admin: bool
 
 
+class MeResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+    company: str | None
+    is_admin: bool
+    current_plan: str
+    api_key_status: str
+    account_status: str
+    created_at: datetime
+
+
 class ApiKeyCreate(BaseModel):
     name: str = Field(default="default", min_length=1, max_length=128)
 
