@@ -24,12 +24,25 @@ Create a local `.env.production` file. It is excluded by `.dockerignore` and
 APP_ENV=production
 DATABASE_URL=postgresql+psycopg://USER:PASSWORD@HOST:5432/DATABASE
 API_KEY_HASH_SECRET=replace-with-at-least-32-random-characters
+JWT_SECRET=replace-with-a-different-32-character-or-longer-secret
+JWT_ISSUER=https://api.barcodenest.com
+JWT_AUDIENCE=barcodenest-account
+ACCESS_TOKEN_MINUTES=15
+WEBSITE_URL=https://barcodenest.com
+GOOGLE_OAUTH_CLIENT_ID=provider-client-id
+GOOGLE_OAUTH_CLIENT_SECRET=provider-client-secret
+GITHUB_OAUTH_CLIENT_ID=provider-client-id
+GITHUB_OAUTH_CLIENT_SECRET=provider-client-secret
+OAUTH_STATE_MINUTES=10
+REFRESH_TOKEN_DAYS=30
+AUTH_COOKIE_SECURE=true
 AUTO_CREATE_TABLES=false
 PORT=8000
 LOG_LEVEL=INFO
 CORS_ALLOWED_ORIGINS=https://barcodenest.com,https://www.barcodenest.com
 TRUSTED_HOSTS=api.barcodenest.com,localhost,127.0.0.1,YOUR_PROVIDER_HOSTNAME
 FORWARDED_ALLOW_IPS=127.0.0.1
+REGISTRATION_ENABLED=true
 ```
 
 Generate `API_KEY_HASH_SECRET` with a secure secret manager or:
@@ -44,6 +57,12 @@ in the database username/password. `TRUSTED_HOSTS` contains hostnames only,
 without schemes or paths. Include the provider hostname during initial
 deployment and remove it later if it is no longer needed.
 
+Keep `JWT_SECRET` separate from `API_KEY_HASH_SECRET`. Rotating it invalidates
+account sessions but does not invalidate developer API keys. Account access
+uses short-lived JWTs in Secure, HttpOnly cookies for the website and Bearer
+tokens for non-browser clients. Refresh tokens rotate and server-side session
+records make logout and reuse revocation immediate.
+
 `CORS_ALLOWED_ORIGINS` is relevant only to browser clients. Server-to-server
 clients do not need CORS. Do not use `*` in production.
 
@@ -53,6 +72,10 @@ proxy address or network; do not broaden it blindly.
 
 Optional settings are documented in `.env.example`, including `BATCH_LIMIT`
 and the JSON `PLAN_LIMITS` override.
+
+Registration accepts a name, email address and password. It creates the Free
+account, signs the user in, and displays the first API key once during onboarding.
+Set `REGISTRATION_ENABLED=false` if you need to pause new account creation.
 
 ## B. Build the Docker image
 
@@ -104,7 +127,7 @@ docker run --rm --env-file .env.production `
 The migration chain remains:
 
 ```text
-20260725_0001 -> 20260726_0002 -> 20260728_0003
+20260725_0001 -> 20260726_0002 -> 20260728_0003 -> 20260803_0004
 ```
 
 Do not use `AUTO_CREATE_TABLES=true` in production.
@@ -156,7 +179,7 @@ psql "$env:PRODUCTION_PG_URL" -c "SELECT to_regclass('public.api_clients') AS ap
 ```
 
 For the current source database, expect approximately 4.2 million products and
-Alembic version `20260728_0003`.
+Alembic version `20260803_0004` after applying the registration migration.
 
 ## F. Start the API
 

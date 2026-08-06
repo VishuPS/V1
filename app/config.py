@@ -39,6 +39,19 @@ class Settings(BaseSettings):
     )
     ingestion_batch_size: int = 1_000
     api_key_hash_secret: str = "development-only-change-me"
+    jwt_secret: str = "development-only-jwt-secret-change-me"
+    jwt_issuer: str = "https://api.barcodenest.com"
+    jwt_audience: str = "barcodenest-account"
+    access_token_minutes: int = 15
+    refresh_token_days: int = 30
+    auth_cookie_secure: bool = False
+    registration_enabled: bool = True
+    website_url: str = "http://localhost:3000"
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    github_oauth_client_id: str | None = None
+    github_oauth_client_secret: str | None = None
+    oauth_state_minutes: int = 10
     plan_limits: dict[str, PlanLimit] = Field(default_factory=default_plan_limits)
 
     model_config = SettingsConfigDict(
@@ -83,6 +96,7 @@ class Settings(BaseSettings):
             "",
             "development-only-change-me",
             "replace-with-a-long-random-production-secret",
+            "development-only-jwt-secret-change-me",
             "changeme",
         }
         if (
@@ -93,12 +107,21 @@ class Settings(BaseSettings):
                 "Production requires API_KEY_HASH_SECRET with at least 32 "
                 "characters and no placeholder value"
             )
+        if len(self.jwt_secret) < 32 or self.jwt_secret.lower() in insecure_secrets:
+            raise ValueError(
+                "Production requires JWT_SECRET with at least 32 characters "
+                "and no placeholder value"
+            )
+        if not self.auth_cookie_secure:
+            raise ValueError("Production requires AUTH_COOKIE_SECURE=true")
         if self.auto_create_tables:
             raise ValueError(
                 "Production requires AUTO_CREATE_TABLES=false; use Alembic migrations"
             )
         if not self.database_url.startswith(("postgresql://", "postgresql+")):
             raise ValueError("Production requires a PostgreSQL DATABASE_URL")
+        if self.website_url.rstrip("/") != "https://barcodenest.com":
+            raise ValueError("Production requires WEBSITE_URL=https://barcodenest.com")
         return self
 
 

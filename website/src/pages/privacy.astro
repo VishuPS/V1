@@ -2,5 +2,12 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Privacy Policy | BarcodeNest" description="How BarcodeNest handles account, authentication, and API usage information.">
-  <article class="narrow legal"><div class="eyebrow">Privacy Policy</div><h1>Privacy Policy</h1><p><strong>Last updated: August 2026</strong></p><h2>Registration</h2><p>Registration collects your name and email address. We use this information to create and administer API access, provide support, enforce quotas, and protect the service from abuse.</p><h2>Authentication</h2><p>Passwords are stored as one-way Argon2id hashes. Account-session records support login, token rotation, security monitoring, and logout; raw passwords are never stored.</p><h2>API access</h2><p>Operational records include API-key identifiers, request counts, quota usage, and security logs needed to provide and protect the service. Raw API keys are shown once; BarcodeNest stores a cryptographic digest rather than the raw key.</p><h2>Product data</h2><p>Initial grocery data is derived from Open Food Facts. BarcodeNest provides an indexed API service layer and does not claim ownership of Open Food Facts data.</p><h2>Contact</h2><p>For privacy questions, email <a href="mailto:support@barcodenest.com"><u>support@barcodenest.com</u></a>.</p></article>
+  <article class="narrow legal">
+    <div class="eyebrow">Privacy Policy</div><h1>Privacy Policy</h1><p><strong>Last updated: August 2026</strong></p>
+    <h2>Registration</h2><p>Registration collects your name and email address. If you continue with Google or GitHub, we also store the provider name and its durable account identifier so future sign-ins reach the correct BarcodeNest account. We use this information to create and administer API access, provide support, enforce quotas, and protect the service from abuse.</p>
+    <h2>Authentication</h2><p>Passwords are stored as one-way Argon2id hashes. OAuth-only accounts do not have a BarcodeNest password. Account-session records support login, token rotation, security monitoring, and logout; raw passwords are never stored.</p>
+    <h2>API access</h2><p>Operational records include API-key identifiers, request counts, quota usage, and security logs needed to provide and protect the service. Raw API keys are shown once; BarcodeNest stores a cryptographic digest rather than the raw key.</p>
+    <h2>Product data</h2><p>Initial grocery data is derived from Open Food Facts. BarcodeNest provides an indexed API service layer and does not claim ownership of Open Food Facts data.</p>
+    <h2>Contact</h2><p>For privacy questions, email <a href="mailto:support@barcodenest.com"><u>support@barcodenest.com</u></a>.</p>
+  </article>
 </BaseLayout>

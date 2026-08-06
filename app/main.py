@@ -6,10 +6,12 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.routes import router
+from app.api.auth_routes import router as auth_router
 from app.config import get_settings
 from app.db import init_db
 
@@ -43,10 +45,11 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "X-API-Key"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Accept", "Authorization", "X-API-Key"],
 )
 app.include_router(router)
+app.include_router(auth_router)
 
 
 @app.exception_handler(HTTPException)
@@ -75,7 +78,7 @@ async def validation_error_handler(
             "error": {
                 "code": "request_validation_error",
                 "message": "The request body is invalid",
-                "details": exc.errors(),
+                "details": jsonable_encoder(exc.errors()),
             }
         },
     )

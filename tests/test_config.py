@@ -32,6 +32,8 @@ def test_comma_separated_trusted_hosts(monkeypatch) -> None:
             {"api_key_hash_secret": "development-only-change-me"},
             "API_KEY_HASH_SECRET",
         ),
+        ({"jwt_secret": "development-only-jwt-secret-change-me"}, "JWT_SECRET"),
+        ({"auth_cookie_secure": False}, "AUTH_COOKIE_SECURE=true"),
         ({"auto_create_tables": True}, "AUTO_CREATE_TABLES=false"),
         ({"database_url": "sqlite:///./products.db"}, "PostgreSQL DATABASE_URL"),
     ],
@@ -43,6 +45,8 @@ def test_production_rejects_unsafe_configuration(
         "_env_file": None,
         "app_env": "production",
         "api_key_hash_secret": "a-secure-production-secret-that-is-long-enough",
+        "jwt_secret": "a-separate-jwt-production-secret-that-is-long-enough",
+        "auth_cookie_secure": True,
         "auto_create_tables": False,
         "database_url": "postgresql+psycopg://user:pass@db/api",
     }
@@ -56,7 +60,10 @@ def test_safe_production_configuration_is_accepted() -> None:
         _env_file=None,
         app_env="production",
         api_key_hash_secret="a-secure-production-secret-that-is-long-enough",
+        jwt_secret="a-separate-jwt-production-secret-that-is-long-enough",
+        auth_cookie_secure=True,
         auto_create_tables=False,
         database_url="postgresql+psycopg://user:pass@db/api",
+        website_url="https://barcodenest.com",
     )
     assert settings.app_env == "production"

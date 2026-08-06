@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import OAuthButtons from "../components/OAuthButtons.astro";
 ---
 <BaseLayout title="Create an account - BarcodeNest" description="Create a BarcodeNest account and receive a Free API key immediately.">
   <section class="auth-page"><div class="auth-shell register-shell">
     <div class="eyebrow">Free API access</div>
     <h1>Create your account.</h1>
     <p class="lede">Get your Free API key and make your first request in a few minutes.</p>
+    <OAuthButtons mode="register" />
     <form id="registration-form" class="registration-form auth-form" novalidate>
       <div class="field"><label for="name">Name</label><input id="name" name="name" autocomplete="name" required minlength="2" maxlength="160"></div>
       <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="email" required maxlength="320"></div>
@@ -14,6 +16,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <button class="button" type="submit">Create account and API key</button>
       <div id="form-status" class="form-status" role="status" aria-live="polite"></div>
     </form>
+    <p class="oauth-terms">By continuing with Google or GitHub, you agree to the <a href="/terms/">Terms</a> and acknowledge the <a href="/privacy/">Privacy notice</a>.</p>
     <p class="auth-switch">Already have an account? <a href="/login/">Sign in</a>.</p>
   </div></section>
   <script>

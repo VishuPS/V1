@@ -59,6 +59,9 @@ class ApiClient(Base):
     __tablename__ = "api_clients"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
     identifier: Mapped[str] = mapped_column(String(128), unique=True, index=True)
     display_name: Mapped[str | None] = mapped_column(Text)
     plan: Mapped[str] = mapped_column(String(32), nullable=False, default="FREE")
@@ -73,6 +76,7 @@ class ApiClient(Base):
     api_keys: Mapped[list["ApiKey"]] = relationship(
         back_populates="client", cascade="all, delete-orphan"
     )
+    owner: Mapped["User | None"] = relationship(back_populates="api_clients")
 
 
 class ApiKey(Base):
@@ -81,6 +85,9 @@ class ApiKey(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     client_id: Mapped[str] = mapped_column(
         ForeignKey("api_clients.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    owner_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
     )
     name: Mapped[str | None] = mapped_column(String(128))
     key_prefix: Mapped[str] = mapped_column(String(32), unique=True, nullable=False, index=True)
@@ -93,6 +100,7 @@ class ApiKey(Base):
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     client: Mapped[ApiClient] = relationship(back_populates="api_keys")
+    owner: Mapped["User | None"] = relationship(back_populates="api_keys")
     usage: Mapped[list["MonthlyUsage"]] = relationship(
         back_populates="api_key", cascade="all, delete-orphan"
     )
@@ -117,3 +125,119 @@ class MonthlyUsage(Base):
     )
 
     api_key: Mapped[ApiKey] = relationship(back_populates="usage")
+
+
+class RegistrationRequest(Base):
+    __tablename__ = "registration_requests"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    organization: Mapped[str | None] = mapped_column(String(200))
+    use_case: Mapped[str | None] = mapped_column(Text)
+    password_hash: Mapped[str | None] = mapped_column(Text)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    token_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    api_client_id: Mapped[str | None] = mapped_column(ForeignKey("api_clients.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
+    password_hash: Mapped[str | None] = mapped_column(Text)
+    display_name: Mapped[str] = mapped_column(String(160), nullable=False)
+    organization: Mapped[str | None] = mapped_column(String(200))
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    email_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    api_clients: Mapped[list[ApiClient]] = relationship(back_populates="owner")
+    api_keys: Mapped[list[ApiKey]] = relationship(back_populates="owner")
+    sessions: Mapped[list["AuthSession"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    subscriptions: Mapped[list["Subscription"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    oauth_identities: Mapped[list["OAuthIdentity"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class OAuthIdentity(Base):
+    __tablename__ = "oauth_identities"
+    __table_args__ = (
+        UniqueConstraint("provider", "provider_subject", name="uq_oauth_provider_subject"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    provider_subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_email: Mapped[str] = mapped_column(String(320), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="oauth_identities")
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    refresh_token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="sessions")
+
+
+class SubscriptionPlan(Base):
+    __tablename__ = "subscription_plans"
+
+    code: Mapped[str] = mapped_column(String(32), primary_key=True)
+    name: Mapped[str] = mapped_column(String(80), nullable=False)
+    monthly_lookups: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    requests_per_minute: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    price_cents: Mapped[int | None] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="EUR")
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class Subscription(Base):
+    __tablename__ = "subscriptions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    plan_code: Mapped[str] = mapped_column(
+        ForeignKey("subscription_plans.code"), nullable=False, index=True
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="active")
+    provider: Mapped[str | None] = mapped_column(String(32))
+    provider_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    provider_subscription_id: Mapped[str | None] = mapped_column(String(255), unique=True)
+    current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    user: Mapped[User] = relationship(back_populates="subscriptions")
+    plan: Mapped[SubscriptionPlan] = relationship()

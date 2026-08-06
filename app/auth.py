@@ -57,6 +57,7 @@ def issue_api_key(
     *,
     name: str | None = None,
     expires_at: datetime | None = None,
+    commit: bool = True,
 ) -> tuple[ApiKey, str]:
     raw_key, key_prefix = generate_api_key()
     record = ApiKey(
@@ -67,8 +68,11 @@ def issue_api_key(
         expires_at=expires_at,
     )
     session.add(record)
-    session.commit()
-    session.refresh(record)
+    if commit:
+        session.commit()
+        session.refresh(record)
+    else:
+        session.flush()
     return record, raw_key
 
 
