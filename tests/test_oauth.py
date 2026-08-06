@@ -77,3 +77,32 @@ def test_unconfigured_oauth_provider_is_unavailable(unauthenticated_client):
     response = unauthenticated_client.get("/v1/auth/oauth/google", follow_redirects=False)
     assert response.status_code == 503
     assert response.json()["error"]["code"] == "oauth_provider_unavailable"
+
+
+def test_returning_admin_oauth_user_is_sent_to_admin(
+    unauthenticated_client, session_factory, monkeypatch
+):
+    settings = oauth_settings()
+    app.dependency_overrides[get_settings] = lambda: settings
+
+    async def identity(*_args, **_kwargs):
+        return ProviderIdentity("google", "admin-123", "admin@example.com", "Admin")
+
+    monkeypatch.setattr(auth_routes, "fetch_provider_identity", identity)
+    unauthenticated_client.get("/v1/auth/oauth/google", follow_redirects=False)
+    state = unauthenticated_client.cookies.get("barcodenest_oauth_state")
+    unauthenticated_client.get(
+        f"/v1/auth/oauth/google/callback?code=test-code&state={state}", follow_redirects=False
+    )
+    with session_factory() as session:
+        user = session.scalar(select(User).where(User.email == "admin@example.com"))
+        user.is_admin = True
+        session.commit()
+
+    start = unauthenticated_client.get("/v1/auth/oauth/google", follow_redirects=False)
+    state = unauthenticated_client.cookies.get("barcodenest_oauth_state")
+    response = unauthenticated_client.get(
+        f"/v1/auth/oauth/google/callback?code=test-code&state={state}", follow_redirects=False
+    )
+    assert start.status_code == 302
+    assert response.headers["location"] == "https://barcodenest.com/admin/"

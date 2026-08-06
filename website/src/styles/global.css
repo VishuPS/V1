@@ -220,6 +220,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .account-loading { padding:60px 0; color:var(--muted); }
 .account-head { display:flex; justify-content:space-between; align-items:end; gap:30px; padding-bottom:50px; }
 .account-head .eyebrow { margin-bottom:18px; }.account-head h1 { margin-bottom:10px; font-size:clamp(44px,6vw,68px); }.account-head p { margin:0; }
+.account-actions,.account-start-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .account-grid { display:grid; grid-template-columns:1.25fr .75fr; border:1px solid var(--line); }
 .account-panel { min-height:220px; padding:30px; border-right:1px solid var(--line); }.account-panel:last-child { border-right:0; }
 .account-panel h2 { margin:38px 0 12px; font-size:38px; }.account-panel p { color:var(--muted); }
@@ -230,6 +231,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .keys-list { margin-top:30px; border-top:1px solid var(--line); }.key-row { display:flex; min-height:76px; align-items:center; justify-content:space-between; gap:20px; border-bottom:1px solid var(--line); }.key-row strong,.key-row span { display:block; }.key-row span { color:var(--muted); font:13px "Geist Mono"; }.text-button { min-width:64px; min-height:44px; border:0; background:transparent; color:#8b2727; font-weight:600; cursor:pointer; }
 .key-actions { display:flex; align-items:center; gap:6px; }.regenerate-button { color:var(--ink); }
 .empty-state { padding:28px 0; color:var(--muted); }
+.account-start { display:flex; align-items:center; justify-content:space-between; gap:40px; margin-top:56px; padding:32px; border:1px solid var(--line); background:var(--paper-2); }.account-start h2 { margin:10px 0; }.account-start p { max-width:670px; margin:0; color:var(--muted); }.account-start code { font-family:"Geist Mono"; color:var(--ink); }
 .admin-page { min-height:75vh; padding:40px 0 90px; }
 .admin-shell { display:grid; grid-template-columns:190px minmax(0,1fr); gap:46px; align-items:start; }
 .admin-sidebar { position:sticky; top:24px; min-height:calc(100vh - 48px); padding:22px 18px; display:flex; flex-direction:column; border:1px solid var(--line); background:rgba(255,255,255,.25); }
@@ -334,7 +336,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
   .status-table { display:block; overflow-x:auto; }
   .contact-row { grid-template-columns:1fr; gap:4px; }
   .registration-layout { grid-template-columns:1fr; gap:36px; }
-  .account-head,.keys-head { align-items:stretch; flex-direction:column; }
+  .account-head,.keys-head,.account-start { align-items:stretch; flex-direction:column; }
   .account-grid { grid-template-columns:1fr; }.account-panel { border-right:0; border-bottom:1px solid var(--line); }.account-panel:last-child { border-bottom:0; }
   .key-create-form { min-width:0; width:100%; }.key-create-form > div { flex-direction:column; }.key-create-form input { width:100%; }
   .first-request { grid-template-columns:1fr; gap:24px; }

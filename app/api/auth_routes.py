@@ -101,7 +101,7 @@ async def oauth_callback(
     user, registration = authenticate_oauth_identity(session, identity, settings)
     tokens = issue_session_tokens(session, user, settings)
     if registration is None:
-        destination = f"{settings.website_url.rstrip('/')}/account/"
+        destination = f"{settings.website_url.rstrip('/')}/{'admin/' if user.is_admin else 'account/'}"
     else:
         destination = f"{settings.website_url.rstrip('/')}/oauth-complete/#api_key={registration.api_key}"
     response = RedirectResponse(destination, status_code=302)
