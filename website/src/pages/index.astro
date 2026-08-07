@@ -4,23 +4,23 @@ import CodeBlock from "../components/CodeBlock.astro";
 const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
   -H "X-API-Key: YOUR_API_KEY"`;
 const features = [
-  ["01", "Instant barcode lookup", "Retrieve indexed product information from EAN and GTIN barcodes with one request."],
+  ["01", "Instant barcode lookup", "Retrieve indexed product information from EAN and GTIN codes with one request."],
   ["02", "4.2 million searchable products", "Query a global grocery index with particularly strong European coverage."],
   ["03", "Developer-friendly REST API", "Predictable endpoints and structured JSON designed for straightforward integration."],
   ["04", "Secure API authentication", "Authenticate requests with user-owned API keys stored as cryptographic digests."],
   ["05", "User dashboard", "Manage credentials, subscription details, and current usage from one account."],
   ["06", "API key management", "Create, regenerate, and revoke keys without exposing stored credentials."],
-  ["07", "Monthly usage tracking", "See lookup consumption and remaining monthly quota at a glance."],
+  ["07", "Monthly usage tracking", "See barcode lookup consumption and remaining monthly quota at a glance."],
   ["08", "Production-ready infrastructure", "Built on FastAPI, PostgreSQL, Neon, and quota-aware authentication."],
   ["09", "Fast global delivery", "A static Cloudflare-delivered website paired with a focused production API."],
 ];
 ---
-<BaseLayout title="BarcodeNest | Barcode Product API for Developers" description="Access over 4.2 million products through BarcodeNest's REST API. Create a free account, generate an API key, and start building today.">
+<BaseLayout title="BarcodeNest | Barcode Lookup API for Developers" description="Access over 4.2 million products through BarcodeNest's barcode lookup REST API. Create a free account, generate an API key, and start building today.">
   <section class="hero launch-hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Production barcode infrastructure</div>
-        <h1>Barcode Data API for Developers</h1>
+        <div class="eyebrow">Production barcode lookup infrastructure</div>
+        <h1>Barcode Lookup API for Developers</h1>
         <p class="lede">Search over 4.2 million products through a fast REST API. Create a free account and receive your API key in under one minute.</p>
         <div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button button-secondary" href="/docs">View Documentation</a></div>
         <p class="hero-note">Free tier includes 250 API calls per month. No payment details required.</p>
@@ -46,15 +46,15 @@ const features = [
 
   <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong>4.2M+</strong><span>Products</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Developer Tier</span></div><div><strong>API Key</strong><span>In Under 1 Minute</span></div></div></section>
 
-  <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Everything needed to move from barcode to product data.</h2><p class="lede">A focused API and account experience built for real developer workflows.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
+  <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Everything needed for reliable barcode lookups.</h2><p class="lede">A focused API and account experience built for real developer workflows.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
 
-  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Shortest path to production</div><h2>Your first lookup in six clear steps.</h2></div><ol class="journey"><li><span>01</span>Register</li><li><span>02</span>Automatic login</li><li><span>03</span>Open onboarding</li><li><span>04</span>Copy API key</li><li><span>05</span>Send request</li><li><span>06</span>Receive product data</li></ol></div></section>
+  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Shortest path to production</div><h2>Your first barcode lookup in six clear steps.</h2></div><ol class="journey"><li><span>01</span>Register</li><li><span>02</span>Automatic login</li><li><span>03</span>Open onboarding</li><li><span>04</span>Copy API key</li><li><span>05</span>Send request</li><li><span>06</span>Receive product data</li></ol></div></section>
 
-  <section class="section"><div class="container examples-layout"><div><div class="eyebrow">One authenticated request</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
+  <section class="section"><div class="container examples-layout"><div><div class="eyebrow">One authenticated barcode lookup</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
 
   <section class="section"><div class="container metric-row"><div class="big-metric">4.2M<span>+</span></div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
 
-  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Pricing</div><h2>Start on the Free developer tier.</h2></div><div class="pricing-grid"><article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch lookup</li></ul><a class="button button-signal" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="plan-rate">$9.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="plan-rate">$19.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article></div></div></section>
+  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Pricing</div><h2>Start on the Free developer tier.</h2></div><div class="pricing-grid"><article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch barcode lookups</li></ul><a class="button button-signal" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="plan-rate">$9.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="plan-rate">$19.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article></div></div></section>
 
-  <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Ready to build?</div><h2>Turn your first barcode into product data.</h2></div><div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button" href="/docs">Documentation</a></div></div></section>
+  <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Ready to build?</div><h2>Run your first barcode lookup.</h2></div><div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button" href="/docs">Documentation</a></div></div></section>
 </BaseLayout>
