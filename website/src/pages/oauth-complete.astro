@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
-<BaseLayout title="Completing sign in - BarcodeNest" description="Completing secure BarcodeNest sign in.">
+<BaseLayout title="Completing sign in - BarcodeNest" description="Completing secure BarcodeNest sign in." noindex={true}>
   <section class="auth-page"><div class="auth-shell"><div class="eyebrow">Secure sign in</div><h1>Finishing your account setup.</h1><p class="lede" id="oauth-status" role="status">Preparing your one-time API key…</p><noscript><p>JavaScript is required to finish OAuth onboarding. Return to <a href="/login/">sign in</a>.</p></noscript></div></section>
   <script>
     const params = new URLSearchParams(location.hash.slice(1));

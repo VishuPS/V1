@@ -2,7 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import OAuthButtons from "../components/OAuthButtons.astro";
 ---
-<BaseLayout title="Sign in - BarcodeNest" description="Sign in to manage your BarcodeNest API keys and usage.">
+<BaseLayout title="Sign in - BarcodeNest" description="Sign in to manage your BarcodeNest API keys and usage." noindex={true}>
   <section class="auth-page"><div class="auth-shell">
     <div class="eyebrow">Developer account</div><h1>Welcome back.</h1><p class="lede">Manage API keys, usage and account access.</p>
     <OAuthButtons mode="login" />

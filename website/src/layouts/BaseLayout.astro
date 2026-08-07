@@ -7,8 +7,21 @@ const {
   description = "Access over 4.2 million products through BarcodeNest's REST API. Create a free account, generate an API key, and start building today.",
   current = "",
   noindex = false,
+  structuredData = null,
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const websiteSchema = {
+  "@context": "https://schema.org", "@type": "WebSite", "@id": "https://barcodenest.com/#website",
+  url: "https://barcodenest.com/", name: "BarcodeNest",
+  description: "A barcode lookup API for structured grocery product data.",
+  publisher: { "@id": "https://barcodenest.com/#organization" },
+};
+const organizationSchema = {
+  "@context": "https://schema.org", "@type": "Organization", "@id": "https://barcodenest.com/#organization",
+  name: "BarcodeNest", url: "https://barcodenest.com/", logo: "https://barcodenest.com/logo-mark.svg",
+  email: "support@barcodenest.com",
+};
+const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structuredData] : [websiteSchema, organizationSchema];
 ---
 <!doctype html>
 <html lang="en">
@@ -17,17 +30,19 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#f5f4ed" />
     <meta name="description" content={description} />
-    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <meta name="robots" content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BarcodeNest" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <link rel="canonical" href={canonical} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaGraph)} />
     <title>{title}</title>
   </head>
   <body>
