@@ -482,3 +482,34 @@ Third-party product data remains attributed to its provider. This project does
 not claim ownership of Open Food Facts data. Provenance is visible in both the
 database (`source`, `source_id`, `source_updated_at`) and API responses.
 No partnership with or endorsement by Open Food Facts is implied.
+
+## Website SEO
+
+The canonical public website is `https://barcodenest.com/`. Its machine-readable
+discovery files are:
+
+- sitemap: `https://barcodenest.com/sitemap.xml`
+- robots rules: `https://barcodenest.com/robots.txt`
+
+Public marketing, pricing, data, legal, API landing, and documentation pages are
+indexable. Login, registration, onboarding, OAuth completion, account,
+dashboard, billing, settings, API-key, and admin pages intentionally emit
+`noindex,nofollow`; private route families are also excluded in `robots.txt`.
+
+`website/src/layouts/BaseLayout.astro` supplies canonical URLs, robots metadata,
+Open Graph/Twitter metadata, Organization and WebSite JSON-LD, and optional
+page-specific structured data. The homepage adds SoftwareApplication schema.
+`website/src/layouts/BlogPostLayout.astro` is the reusable foundation for future
+articles, including author and publish/update dates plus visible Article schema
+fields. Create deliberate, useful posts under `website/src/pages/blog/`, give
+each a unique title, description, clean lowercase slug, and add its public URL
+to `website/src/pages/sitemap.xml.js`. Do not publish empty or thin placeholder
+articles.
+
+Google Search Console and Bing Webmaster Tools require externally issued
+verification tokens. Set `PUBLIC_GOOGLE_SITE_VERIFICATION` and/or
+`PUBLIC_BING_SITE_VERIFICATION` during the Cloudflare Pages build to emit the
+corresponding verification meta tag; neither variable is required to build or
+serve the site. After deployment, verify the canonical domain and submit the
+sitemap URL in each webmaster service. No verification token is stored in the
+repository.

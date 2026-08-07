@@ -1,0 +1,21 @@
+---
+import SeoApiPage from "../components/SeoApiPage.astro";
+const response = `{
+  "barcode": "3017620422003",
+  "canonical_gtin": "03017620422003",
+  "found": true,
+  "product": {
+    "name": "Nutella",
+    "brand": "Ferrero",
+    "categories": ["spreads"],
+    "image_url": null
+  },
+  "source": { "name": "Open Food Facts" }
+}`;
+const sections = [
+  { heading: "A searchable grocery product database", paragraphs: ["BarcodeNest indexes more than 4.2 million grocery product records for lookup by UPC, EAN, and GTIN. The service is intended for developers who need product information behind a barcode without operating their own import, validation, normalization, and query infrastructure.", "The database is global, with particularly strong European coverage. It can support inventory applications, nutrition products, grocery platforms, retail prototypes, product catalogues, and internal business tools that need a programmatic barcode search."] },
+  { heading: "Indexed, normalized, and served through an API", paragraphs: ["BarcodeNest validates barcode formats, maps supported values to canonical GTIN-14 identifiers, indexes selected product attributes, and returns a stable response envelope through a REST API. This service layer helps keep integration logic predictable even when underlying source records vary.", "Product identity fields can include name, brand, barcode type, and canonical GTIN. Depending on the source record, product details can also include categories, quantity, countries, image URL, ingredients, allergens, and nutrition."] },
+  { heading: "Transparent coverage and provenance", paragraphs: ["Initial grocery data is derived from Open Food Facts. BarcodeNest does not claim ownership of Open Food Facts data and exposes source metadata in API responses. The value of the service lies in its indexed API layer, authentication, normalization, quota management, and developer account experience.", "No barcode database offers perfect coverage. A barcode can be syntactically valid but absent from the current index, and a found product can have incomplete optional fields. Integrations should use the valid and found indicators and treat optional product properties defensively."] },
+];
+---
+<SeoApiPage title="Barcode Database API | UPC, EAN & GTIN Products | BarcodeNest" description="Search a 4.2M+ grocery barcode database by UPC, EAN or GTIN and retrieve normalized product information through a REST API." eyebrow="Barcode product database" heading="Barcode database API for grocery products" intro="Search more than 4.2 million indexed grocery products by barcode and retrieve normalized JSON data with visible source provenance." sections={sections} response={response} related={[["Barcode API", "/barcode-api/"], ["Data coverage and sources", "/data/"], ["API documentation", "/docs/"], ["Barcode API pricing", "/pricing/"]]} />

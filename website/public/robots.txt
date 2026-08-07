@@ -1,4 +1,13 @@
 User-agent: *
 Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api-keys/
+Disallow: /billing/
+Disallow: /dashboard/
+Disallow: /profile/
+Disallow: /settings/
+Disallow: /auth/
+Disallow: /oauth-complete/
 
 Sitemap: https://barcodenest.com/sitemap.xml

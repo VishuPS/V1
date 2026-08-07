@@ -1,0 +1,16 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const error = `{
+  "error": {
+    "code": "product_not_found",
+    "message": "No product was found for this barcode."
+  }
+}`;
+---
+<DocsLayout title="Barcode Lookup API Error Reference | BarcodeNest" description="Handle BarcodeNest API errors for invalid barcodes, authentication, missing products, validation, rate limits and monthly usage quotas." heading="Handle API errors predictably." intro="BarcodeNest uses HTTP status codes and structured error identifiers so integrations can distinguish input, authentication, coverage, and usage failures." current="errors">
+  <section><h2>Error response model</h2><p>Error responses provide a stable machine-readable code and a human-readable message. Use the code for application logic and the message for debugging or carefully presented user feedback.</p><CodeBlock label="Example error" code={error} language="json" /></section>
+  <section><h2>HTTP status reference</h2><table class="status-table"><thead><tr><th>Status</th><th>Code or behavior</th><th>Meaning</th></tr></thead><tbody><tr><td>200</td><td>Found or batch completed</td><td>A single product was found, or a batch returned per-item results.</td></tr><tr><td>400</td><td><code>invalid_barcode</code></td><td>The value is non-numeric, has an unsupported length, or fails its check digit.</td></tr><tr><td>401</td><td><code>missing_api_key</code>, <code>invalid_api_key</code>, <code>revoked_api_key</code>, <code>expired_api_key</code></td><td>The request could not authenticate.</td></tr><tr><td>404</td><td><code>product_not_found</code></td><td>The single barcode is valid but no product is indexed.</td></tr><tr><td>422</td><td><code>empty_batch</code>, <code>batch_limit_exceeded</code>, <code>request_validation_error</code></td><td>The batch body is invalid or exceeds 100 items.</td></tr><tr><td>429</td><td><code>rate_limit_exceeded</code>, <code>usage_limit_reached</code></td><td>The request window or monthly plan allowance is exhausted.</td></tr></tbody></table></section>
+  <section><h2>Retry behavior</h2><p>Retry transient rate-limit responses only after the duration indicated by <code class="inline-code">Retry-After</code>. Do not automatically retry invalid input, authentication failures, unknown products, or exhausted monthly quotas without changing the condition that caused the error.</p><p>For server-side failures, avoid exposing raw database or internal error details to end users. Log the request context safely, omit credentials, and retry only idempotent operations with a bounded policy.</p></section>
+  <section><h2>Valid but not found</h2><p>A <code class="inline-code">404 product_not_found</code> does not mean the barcode is malformed. It means the identifier passed validation but the current database has no matching product. Coverage varies by product and geography.</p><p>Review the <a href="/docs/barcode-lookup/">barcode lookup endpoint</a>, <a href="/docs/authentication/">API key authentication</a>, and <a href="/docs/rate-limits/">rate-limit handling</a> for implementation details.</p></section>
+</DocsLayout>

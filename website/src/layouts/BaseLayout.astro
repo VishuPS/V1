@@ -8,8 +8,12 @@ const {
   current = "",
   noindex = false,
   structuredData = null,
+  image = "/barcode-lookup-api-social.svg",
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const socialImage = new URL(image, Astro.site);
+const googleSiteVerification = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingSiteVerification = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 const websiteSchema = {
   "@context": "https://schema.org", "@type": "WebSite", "@id": "https://barcodenest.com/#website",
   url: "https://barcodenest.com/", name: "BarcodeNest",
@@ -30,17 +34,25 @@ const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structu
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#f5f4ed" />
     <meta name="description" content={description} />
+    {googleSiteVerification && <meta name="google-site-verification" content={googleSiteVerification} />}
+    {bingSiteVerification && <meta name="msvalidate.01" content={bingSiteVerification} />}
     <meta name="robots" content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"} />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="BarcodeNest" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="BarcodeNest barcode lookup API" />
     <meta property="og:locale" content="en_US" />
-    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
-    <link rel="canonical" href={canonical} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content="BarcodeNest barcode lookup API" />
+    {!noindex && <link rel="canonical" href={canonical} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaGraph)} />
     <title>{title}</title>

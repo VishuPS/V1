@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">BarcodeNest barcode lookup API</title>
+  <desc id="desc">Product data from UPC, EAN and GTIN barcodes through a developer REST API.</desc>
+  <rect width="1200" height="630" fill="#f5f4ed"/>
+  <rect x="72" y="72" width="72" height="72" rx="15" fill="#151914"/>
+  <g fill="#b8ff38"><rect x="91" y="91" width="4" height="34"/><rect x="99" y="91" width="7" height="34"/><rect x="110" y="91" width="3" height="34"/><rect x="118" y="91" width="7" height="34"/></g>
+  <text x="168" y="125" fill="#151914" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">BarcodeNest</text>
+  <text x="72" y="300" fill="#151914" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="700">Barcode lookup API</text>
+  <text x="72" y="380" fill="#50544d" font-family="Arial, Helvetica, sans-serif" font-size="36">UPC, EAN &amp; GTIN product data</text>
+  <g transform="translate(72 470)" fill="#151914"><rect width="5" height="80"/><rect x="12" width="10" height="80"/><rect x="29" width="4" height="80"/><rect x="42" width="15" height="80"/><rect x="65" width="6" height="80"/><rect x="79" width="12" height="80"/><rect x="99" width="4" height="80"/><rect x="111" width="18" height="80"/><rect x="137" width="7" height="80"/><rect x="152" width="4" height="80"/><rect x="165" width="13" height="80"/><rect x="187" width="6" height="80"/></g>
+  <text x="864" y="525" fill="#151914" font-family="monospace" font-size="24">barcodenest.com</text>
+</svg>

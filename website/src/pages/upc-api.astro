@@ -1,0 +1,17 @@
+---
+import SeoApiPage from "../components/SeoApiPage.astro";
+const response = `{
+  "barcode": "012345678905",
+  "barcode_type": "UPC-A",
+  "canonical_gtin": "00012345678905",
+  "valid": true,
+  "found": false,
+  "product": null
+}`;
+const sections = [
+  { heading: "UPC product lookup for developer applications", paragraphs: ["A UPC lookup API turns a 12-digit UPC-A identifier into machine-readable product data. BarcodeNest accepts the code in the URL path, verifies its check digit, normalizes it to GTIN-14, and checks the grocery product index.", "This workflow suits inventory tools, product catalogues, retail prototypes, nutrition applications, and internal systems that capture UPC values from scanners or imported datasets. The JSON response makes the validation and lookup outcome explicit."] },
+  { heading: "UPC-A and the GTIN system", paragraphs: ["UPC-A is a GTIN-12 identifier commonly used on retail products. BarcodeNest represents supported identifiers internally as canonical GTIN-14 values by adding leading zeroes where appropriate. This avoids treating a UPC-A and its equivalent GTIN-14 as unrelated products.", "The response reports the submitted barcode, detected barcode type, canonical GTIN, validity, and lookup result. If a code is valid but absent from the current product database, the single lookup returns a structured product-not-found response rather than fabricated product fields."] },
+  { heading: "What the UPC database can return", paragraphs: ["When an indexed product is found, available fields can include product name, brand, categories, quantity, image URL, ingredients, allergens, nutrition, countries, and source metadata. Not every field exists for every record, and BarcodeNest does not claim universal UPC coverage.", "API keys are tied to user accounts. Monthly usage tracking and rate limiting make the same endpoint suitable for early prototypes and production services while keeping limits visible in the dashboard."] },
+];
+---
+<SeoApiPage title="UPC Lookup API | UPC Product Database | BarcodeNest" description="Look up UPC-A product data with BarcodeNest's UPC API. Validate GTIN-12 codes and retrieve structured grocery product data as JSON." eyebrow="UPC lookup API" heading="UPC lookup API for product data" intro="Validate 12-digit UPC-A codes and search a structured grocery product database through a simple JSON REST API." barcode="012345678905" sections={sections} response={response} related={[["General barcode API", "/barcode-api/"], ["GTIN lookup API", "/gtin-api/"], ["Barcode database", "/barcode-database/"], ["Authentication guide", "/docs/authentication/"]]} />

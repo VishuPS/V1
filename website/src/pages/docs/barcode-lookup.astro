@@ -1,0 +1,28 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
+  -H "X-API-Key: YOUR_API_KEY"`;
+const response = `{
+  "barcode": "3017620422003",
+  "barcode_type": "EAN-13",
+  "canonical_gtin": "03017620422003",
+  "valid": true,
+  "found": true,
+  "product": {
+    "name": "Nutella",
+    "brand": "Ferrero",
+    "quantity": "400 g",
+    "image_url": null,
+    "allergens": ["milk", "nuts"]
+  },
+  "source": { "name": "Open Food Facts" },
+  "error": null
+}`;
+---
+<DocsLayout title="Barcode Lookup API Endpoint Documentation | BarcodeNest" description="Use the BarcodeNest product lookup endpoint for UPC-A, EAN-8, EAN-13 and GTIN-14 barcodes, with curl and JSON examples." heading="Look up a product by barcode." intro="Validate a UPC, EAN, or GTIN and retrieve the indexed grocery product with one authenticated request." current="lookup">
+  <section><h2>Endpoint</h2><p><code class="inline-code">GET /v1/products/&#123;barcode&#125;</code></p><p>The endpoint accepts a supported barcode as a URL path parameter. It validates the length and check digit, derives a canonical GTIN-14 value, and searches the product index.</p><CodeBlock label="cURL request" code={curl} language="bash" /></section>
+  <section><h2>Supported formats</h2><table class="status-table"><thead><tr><th>Format</th><th>Digits</th><th>Canonical behavior</th></tr></thead><tbody><tr><td>EAN-8</td><td>8</td><td>Left-padded to GTIN-14</td></tr><tr><td>UPC-A / GTIN-12</td><td>12</td><td>Left-padded to GTIN-14</td></tr><tr><td>EAN-13 / GTIN-13</td><td>13</td><td>Left-padded to GTIN-14</td></tr><tr><td>GTIN-14</td><td>14</td><td>Used as supplied</td></tr></tbody></table><p>Only ASCII digits are accepted. A supported length is not enough: the identifier must also have a valid check digit.</p></section>
+  <section><h2>Successful response</h2><CodeBlock label="200 response" code={response} language="json" /><p>Product attributes are optional because source records vary. A found product can still have missing or <code class="inline-code">null</code> fields.</p></section>
+  <section><h2>Single and batch behavior</h2><p>A valid single barcode that is not indexed returns <code class="inline-code">404 product_not_found</code>. Invalid input returns <code class="inline-code">400 invalid_barcode</code>. For multiple values, use <code class="inline-code">POST /v1/products/batch</code>; the batch endpoint accepts up to 100 barcodes and returns one result per input.</p><p>See the <a href="/docs/errors/">error reference</a>, <a href="/docs/rate-limits/">rate-limit and quota guide</a>, or the product-specific <a href="/ean-api/">EAN lookup API overview</a>.</p></section>
+</DocsLayout>

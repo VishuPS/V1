@@ -1,0 +1,23 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+const { title, description, heading, author, published, updated = published, image = "/barcode-lookup-api-social.svg" } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site).toString();
+const articleSchema = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: heading,
+  description,
+  author: { "@type": "Person", name: author },
+  datePublished: published,
+  dateModified: updated,
+  mainEntityOfPage: canonical,
+  image: new URL(image, Astro.site).toString(),
+  publisher: { "@id": "https://barcodenest.com/#organization" },
+};
+---
+<BaseLayout title={title} description={description} image={image} structuredData={articleSchema}>
+  <article class="narrow legal blog-article">
+    <header><div class="eyebrow">BarcodeNest resources</div><h1>{heading}</h1><p class="article-meta">By {author} · Published <time datetime={published}>{published}</time>{updated !== published && <> · Updated <time datetime={updated}>{updated}</time></>}</p></header>
+    <slot />
+  </article>
+</BaseLayout>

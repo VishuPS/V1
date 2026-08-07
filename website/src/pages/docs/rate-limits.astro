@@ -1,0 +1,18 @@
+---
+import DocsLayout from "../../layouts/DocsLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const limit = `{
+  "error": "usage_limit_reached",
+  "message": "Your monthly API call limit has been reached.",
+  "plan": "free",
+  "used": 250,
+  "limit": 250,
+  "upgrade_url": "/pricing"
+}`;
+---
+<DocsLayout title="Barcode API Rate Limits & Monthly Quotas | BarcodeNest" description="Understand BarcodeNest per-minute rate limits, monthly API call allowances, response headers, quota resets and HTTP 429 responses." heading="Rate limits and monthly usage quotas." intro="Use response headers and structured 429 errors to keep product lookup traffic within your plan's limits." current="limits">
+  <section><h2>Two independent limits</h2><p>BarcodeNest applies a short-window request rate and a billing-period usage allowance. The rate limit protects service stability; the monthly allowance controls billable product lookup usage for the current plan.</p><table class="status-table"><thead><tr><th>Plan</th><th>Monthly API calls</th></tr></thead><tbody><tr><td>Free</td><td>250</td></tr><tr><td>Starter</td><td>2,000</td></tr><tr><td>Growth</td><td>5,000</td></tr></tbody></table></section>
+  <section><h2>Response headers</h2><table class="status-table"><thead><tr><th>Header</th><th>Meaning</th></tr></thead><tbody><tr><td><code>X-RateLimit-Limit</code></td><td>Requests allowed in the rolling 60-second window.</td></tr><tr><td><code>X-RateLimit-Remaining</code></td><td>Capacity remaining in that window.</td></tr><tr><td><code>X-RateLimit-Reset</code></td><td>Unix timestamp when capacity begins to return.</td></tr><tr><td><code>X-Monthly-Quota-Limit</code></td><td>API calls available in the current billing period.</td></tr><tr><td><code>X-Monthly-Quota-Remaining</code></td><td>Calls remaining in that period.</td></tr><tr><td><code>X-Monthly-Quota-Period</code></td><td>Start date for the active quota period.</td></tr></tbody></table></section>
+  <section><h2>When a limit is reached</h2><p>Rate-limit and monthly quota enforcement use HTTP <code class="inline-code">429</code>. Short-window rate-limit responses include <code class="inline-code">Retry-After</code>. A monthly usage-limit response includes the current plan, usage, limit, and pricing path.</p><CodeBlock label="Monthly usage limit response" code={limit} language="json" /></section>
+  <section><h2>Integration guidance</h2><p>Read the returned headers instead of hard-coding account limits. For transient rate limits, wait for the reset window and use exponential backoff with jitter. Do not retry a monthly quota error until the billing period resets or the account plan changes.</p><p>Authentication failures, health checks, and account/dashboard requests do not consume the product lookup allowance. Monitor usage in the BarcodeNest dashboard and see <a href="/pricing/">barcode API pricing</a> for plan allowances.</p></section>
+</DocsLayout>

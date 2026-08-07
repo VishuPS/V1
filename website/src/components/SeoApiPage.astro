@@ -1,0 +1,47 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import CodeBlock from "./CodeBlock.astro";
+
+interface ContentSection {
+  heading: string;
+  paragraphs: string[];
+  items?: string[];
+}
+interface Props {
+  title: string;
+  description: string;
+  eyebrow: string;
+  heading: string;
+  intro: string;
+  sections: ContentSection[];
+  barcode?: string;
+  response: string;
+  related: [string, string][];
+}
+const {
+  title,
+  description,
+  eyebrow,
+  heading,
+  intro,
+  sections,
+  barcode = "3017620422003",
+  response,
+  related,
+} = Astro.props as Props;
+const request = `curl "https://api.barcodenest.com/v1/products/${barcode}" \\
+  -H "X-API-Key: YOUR_API_KEY"`;
+---
+<BaseLayout title={title} description={description}>
+  <article>
+    <header class="page-hero"><div class="container"><div class="eyebrow">{eyebrow}</div><h1>{heading}</h1><p class="lede">{intro}</p><div class="hero-actions"><a class="button button-signal" href="/register/">Get Free API Key</a><a class="button button-secondary" href="/docs/">Read Documentation</a></div></div></header>
+    <div class="container seo-article-layout">
+      <div class="seo-article-content">
+        {sections.map((section) => <section><h2>{section.heading}</h2>{section.paragraphs.map((paragraph) => <p>{paragraph}</p>)}{section.items && <ul>{section.items.map((item) => <li>{item}</li>)}</ul>}</section>)}
+        <section><h2>Example API request</h2><p>Send the barcode as a path parameter and authenticate with the <code class="inline-code">X-API-Key</code> header. Examples use the production API hostname.</p><CodeBlock label="cURL" code={request} language="bash" /><CodeBlock label="Abbreviated JSON response" code={response} language="json" /><p>Product fields vary by source record, geography, and product. Applications should handle missing or <code class="inline-code">null</code> values.</p></section>
+        <section><h2>Related barcode API resources</h2><nav class="related-links" aria-label="Related barcode API pages">{related.map(([label, href]) => <a href={href}>{label}<span aria-hidden="true">→</span></a>)}</nav></section>
+      </div>
+      <aside class="seo-article-aside" aria-label="Get started"><span class="panel-label">Build with BarcodeNest</span><h2>Start with 250 free monthly calls.</h2><p>Create an account, copy the API key shown during onboarding, and make your first lookup in under one minute.</p><a class="button button-signal" href="/register/">Get Free API Key</a><a class="text-link" href="/pricing/">Compare API plans →</a></aside>
+    </div>
+  </article>
+</BaseLayout>

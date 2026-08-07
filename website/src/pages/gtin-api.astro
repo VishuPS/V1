@@ -1,0 +1,17 @@
+---
+import SeoApiPage from "../components/SeoApiPage.astro";
+const response = `{
+  "barcode": "03017620422003",
+  "barcode_type": "GTIN-14",
+  "canonical_gtin": "03017620422003",
+  "valid": true,
+  "found": true,
+  "product": { "name": "Nutella", "brand": "Ferrero" }
+}`;
+const sections = [
+  { heading: "A lookup API for the GTIN family", paragraphs: ["Global Trade Item Numbers identify trade items across retail and supply-chain contexts. BarcodeNest accepts the common GTIN lengths used for grocery lookup: GTIN-8, GTIN-12, GTIN-13, and GTIN-14, represented by EAN-8, UPC-A, EAN-13, and GTIN-14 barcode formats.", "The API validates the supplied identifier and exposes a canonical 14-digit GTIN in every valid lookup. That normalization gives applications one stable value for storage and comparison even when a product identifier is submitted in a shorter representation."] },
+  { heading: "Canonical GTIN behaviour", paragraphs: ["Valid 8-, 12-, and 13-digit identifiers are left-padded with zeroes to produce GTIN-14. A valid 14-digit identifier is used as supplied. The check digit is validated before the product database is queried.", "Canonicalization is especially useful when data arrives from multiple scanners, catalogues, or markets. Rather than building separate matching logic for UPC, EAN, and GTIN-14, a service can store the canonical value returned by BarcodeNest."] },
+  { heading: "Clear results for reliable integrations", paragraphs: ["A found response includes the product fields available in the indexed source record. A valid but unknown single identifier returns a product-not-found response, while invalid lengths, non-digit characters, and bad check digits return an invalid-barcode response.", "API-key authentication, rate-limit headers, and monthly quota headers make consumption predictable. The Free plan provides 250 calls each month, and larger monthly allowances are available through Starter and Growth plans."] },
+];
+---
+<SeoApiPage title="GTIN Lookup API | GTIN-8, 12, 13 & 14 | BarcodeNest" description="Validate and look up GTIN-8, GTIN-12, GTIN-13 and GTIN-14 product identifiers with a structured JSON product lookup API." eyebrow="GTIN lookup API" heading="GTIN lookup API with canonical identifiers" intro="Validate GTIN-8, GTIN-12, GTIN-13, and GTIN-14 values and retrieve normalized product information through one REST endpoint." barcode="03017620422003" sections={sections} response={response} related={[["UPC lookup API", "/upc-api/"], ["EAN lookup API", "/ean-api/"], ["Barcode database", "/barcode-database/"], ["Error reference", "/docs/errors/"]]} />

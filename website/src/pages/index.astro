@@ -28,13 +28,13 @@ const softwareSchema = {
   ],
 };
 ---
-<BaseLayout title="Barcode Lookup API for Product Data | BarcodeNest" description="Use BarcodeNest's barcode lookup API to search 4.2M+ grocery products by EAN or GTIN. Create a free API key and start building in minutes." structuredData={softwareSchema}>
+<BaseLayout title="Barcode Lookup API | UPC, EAN & GTIN Product Database | BarcodeNest" description="Use BarcodeNest's fast REST API to look up UPC, EAN and GTIN barcodes across 4.2M+ grocery products and retrieve structured JSON product data in seconds." structuredData={softwareSchema}>
   <section class="hero launch-hero">
     <div class="container hero-grid">
       <div class="hero-copy">
         <div class="eyebrow">Production barcode lookup infrastructure</div>
-        <h1>BARCODE LOOKUP API for Developers</h1>
-        <p class="lede">Search over 4.2 million products with a fast barcode API for EAN and GTIN lookups. Create a free account and receive your API key in under one minute.</p>
+        <h1>Fast Barcode Lookup API for UPC, EAN &amp; GTIN</h1>
+        <p class="lede">Search over 4.2 million products with a fast barcode search API for UPC, EAN, and GTIN lookups. Create a free account and receive your API key in under one minute.</p>
         <div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button button-secondary" href="/docs">View Documentation</a></div>
         <p class="hero-note">Free tier includes 250 API calls per month. No payment details required.</p>
       </div>
@@ -59,7 +59,7 @@ const softwareSchema = {
 
   <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong>4.2M+</strong><span>Products</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Developer Tier</span></div><div><strong>API Key</strong><span>In Under 1 Minute</span></div></div></section>
 
-  <section class="section"><div class="narrow"><div class="eyebrow">Barcode lookup API</div><h2>Turn an EAN or GTIN into structured product data.</h2><p class="lede">A barcode lookup API lets an application submit a product identifier and receive machine-readable information such as a product name, brand, quantity, categories, ingredients, allergens, nutrition, countries, and images where those fields are available.</p><p>BarcodeNest provides this lookup through a documented REST endpoint with JSON responses, API-key authentication, monthly usage tracking, and support for EAN-8, EAN-13, UPC-A, and GTIN-14 identifiers.</p><p><a href="/docs/"><u>Read the barcode lookup API documentation</u></a> or <a href="/pricing/"><u>compare barcode API pricing</u></a>.</p></div></section>
+  <section class="section"><div class="narrow"><div class="eyebrow">Barcode lookup API</div><h2>Turn a UPC, EAN, or GTIN into structured product data.</h2><p class="lede">A barcode lookup API lets an application submit a product identifier and receive machine-readable information such as a product name, brand, quantity, categories, ingredients, allergens, nutrition, countries, and images where those fields are available.</p><p>BarcodeNest combines a grocery barcode database with a documented REST API and structured JSON responses. It supports UPC lookup, EAN lookup, and GTIN lookup with API-key authentication and monthly usage tracking.</p><p>Explore the <a href="/barcode-api/"><u>barcode API</u></a>, <a href="/upc-api/"><u>UPC lookup API</u></a>, <a href="/ean-api/"><u>EAN product lookup</u></a>, and <a href="/gtin-api/"><u>GTIN lookup API</u></a>. You can also <a href="/docs/"><u>read the product database API documentation</u></a> or <a href="/pricing/"><u>compare barcode API pricing</u></a>.</p></div></section>
 
   <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Everything needed for reliable barcode lookups.</h2><p class="lede">A focused API and account experience built for real developer workflows.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
 

@@ -1,0 +1,18 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+const { title, description, eyebrow = "API documentation · v1", heading, intro, current = "" } = Astro.props;
+const links = [
+  ["Overview", "/docs/", "overview"],
+  ["Barcode lookup", "/docs/barcode-lookup/", "lookup"],
+  ["Authentication", "/docs/authentication/", "authentication"],
+  ["Rate limits", "/docs/rate-limits/", "limits"],
+  ["Errors", "/docs/errors/", "errors"],
+];
+---
+<BaseLayout title={title} description={description} current="docs">
+  <header class="page-hero"><div class="container"><div class="eyebrow">{eyebrow}</div><h1>{heading}</h1><p class="lede">{intro}</p></div></header>
+  <div class="container docs-layout">
+    <aside class="docs-nav" aria-label="Documentation navigation"><strong>Documentation</strong>{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</aside>
+    <article class="docs-content"><slot /></article>
+  </div>
+</BaseLayout>
