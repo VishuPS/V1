@@ -8,7 +8,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.billing import process_stripe_event, verify_stripe_event
+from app.billing import payment_link_checkout, process_stripe_event, verified_reference, verify_stripe_event
 from app.config import get_settings
 from app.email_service import UsageWarning
 from app.models import ApiClient, ApiKey, StripeWebhookEvent, Subscription
@@ -104,3 +104,42 @@ def test_stripe_signature_verification():
     assert verify_stripe_event(payload, f"t={timestamp},v1={digest}", secret)["id"] == "evt_1"
     with pytest.raises(HTTPException):
         verify_stripe_event(payload, f"t={timestamp},v1=invalid", secret)
+
+
+def test_payment_link_contains_verified_account_reference():
+    settings = get_settings().model_copy(update={
+        "stripe_starter_payment_link": "https://buy.stripe.com/starter",
+        "stripe_growth_payment_link": "https://buy.stripe.com/growth",
+    })
+    url = payment_link_checkout(settings, "user-123", "owner@example.com", "STARTER")
+    assert url.startswith("https://buy.stripe.com/starter?")
+    reference = url.split("client_reference_id=", 1)[1].split("&", 1)[0]
+    assert verified_reference(reference, settings) == "user-123"
+    assert verified_reference(reference.replace("user-123", "user-456"), settings) is None
+
+
+def test_payment_link_webhook_maps_price_to_account(session_factory):
+    user_id, _ = account(session_factory)
+    settings = get_settings()
+    link = payment_link_checkout(
+        settings.model_copy(update={"stripe_growth_payment_link": "https://buy.stripe.com/growth"}),
+        user_id,
+        "growth@example.com",
+        "GROWTH",
+    )
+    reference = link.split("client_reference_id=", 1)[1].split("&", 1)[0]
+    subscription = stripe_subscription(user_id, "GROWTH")
+    subscription["metadata"] = {}
+    subscription["items"]["data"][0]["price"].update({"unit_amount": 1999, "currency": "usd"})
+
+    class StripeStub:
+        def subscription(self, _subscription_id):
+            return subscription
+
+    event = {"id": "evt_payment_link", "type": "checkout.session.completed", "data": {"object": {
+        "subscription": "sub_123", "client_reference_id": reference,
+    }}}
+    with session_factory() as session:
+        assert process_stripe_event(session, settings, event, StripeStub()) is True
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        assert (record.plan_code, record.monthly_call_limit) == ("GROWTH", 5_000)

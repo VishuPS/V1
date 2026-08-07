@@ -58,6 +58,8 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str | None = None
     stripe_starter_price_id: str | None = None
     stripe_growth_price_id: str | None = None
+    stripe_starter_payment_link: str | None = "https://buy.stripe.com/8x25kw3UB0DH81kbtF0Ny01"
+    stripe_growth_payment_link: str | None = "https://buy.stripe.com/3cI8wIezffyB81k1T50Ny00"
     plan_limits: dict[str, PlanLimit] = Field(default_factory=default_plan_limits)
 
     model_config = SettingsConfigDict(

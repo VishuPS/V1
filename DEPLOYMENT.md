@@ -49,6 +49,8 @@ STRIPE_SECRET_KEY=sk_live_your_key
 STRIPE_WEBHOOK_SECRET=whsec_your_secret
 STRIPE_STARTER_PRICE_ID=price_your_starter_price
 STRIPE_GROWTH_PRICE_ID=price_your_growth_price
+STRIPE_STARTER_PAYMENT_LINK=https://buy.stripe.com/8x25kw3UB0DH81kbtF0Ny01
+STRIPE_GROWTH_PAYMENT_LINK=https://buy.stripe.com/3cI8wIezffyB81k1T50Ny00
 ```
 
 Create the two recurring Stripe catalog entries once with

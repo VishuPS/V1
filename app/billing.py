@@ -2,6 +2,7 @@ import hashlib
 import hmac
 import json
 import time
+from urllib.parse import urlencode
 from datetime import datetime, timezone
 
 import httpx
@@ -12,6 +13,23 @@ from sqlalchemy.orm import Session
 
 from app.config import Settings
 from app.models import ApiClient, StripeWebhookEvent, Subscription, current_month_end
+
+
+def payment_link_checkout(settings: Settings, user_id: str, email: str, plan: str) -> str | None:
+    link = settings.stripe_starter_payment_link if plan == "STARTER" else settings.stripe_growth_payment_link
+    if not link:
+        return None
+    signature = hmac.new(settings.api_key_hash_secret.encode(), user_id.encode(), hashlib.sha256).hexdigest()
+    query = urlencode({"client_reference_id": f"{user_id}_{signature}", "prefilled_email": email})
+    return f"{link}{'&' if '?' in link else '?'}{query}"
+
+
+def verified_reference(value: str | None, settings: Settings) -> str | None:
+    if not value or "_" not in value:
+        return None
+    user_id, signature = value.rsplit("_", 1)
+    expected = hmac.new(settings.api_key_hash_secret.encode(), user_id.encode(), hashlib.sha256).hexdigest()
+    return user_id if hmac.compare_digest(expected, signature) else None
 
 
 class StripeClient:
@@ -84,10 +102,13 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     metadata = obj.get("metadata") or {}
     user_id = metadata.get("user_id") or fallback_user_id
     if not user_id: return
-    price_id = (((obj.get("items") or {}).get("data") or [{}])[0].get("price") or {}).get("id") or obj.get("price_id")
-    plan = metadata.get("plan") or ("STARTER" if price_id == settings.stripe_starter_price_id else "GROWTH" if price_id == settings.stripe_growth_price_id else None)
-    if not plan: return
     first_item = ((obj.get("items") or {}).get("data") or [{}])[0]
+    price_id = (first_item.get("price") or {}).get("id") or obj.get("price_id")
+    price = (first_item.get("price") or {})
+    plan = metadata.get("plan") or ("STARTER" if price_id == settings.stripe_starter_price_id else "GROWTH" if price_id == settings.stripe_growth_price_id else None)
+    if not plan and price.get("currency") == "usd":
+        plan = "STARTER" if price.get("unit_amount") == 999 else "GROWTH" if price.get("unit_amount") == 1999 else None
+    if not plan: return
     period_start = _timestamp(obj.get("current_period_start")) or _timestamp(first_item.get("current_period_start")) or datetime.now(timezone.utc)
     period_end = _timestamp(obj.get("current_period_end")) or _timestamp((((obj.get("items") or {}).get("data") or [{}])[0]).get("current_period_end"))
     if not period_end: return
@@ -124,7 +145,8 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
     if event_type == "checkout.session.completed":
         subscription_id = _subscription_id(obj)
         subscription_obj = stripe.subscription(subscription_id) if subscription_id and stripe else obj.get("subscription_object")
-        if subscription_obj: _apply_subscription(session, settings, subscription_obj, obj.get("client_reference_id") or (obj.get("metadata") or {}).get("user_id"))
+        reference_user = verified_reference(obj.get("client_reference_id"), settings)
+        if subscription_obj: _apply_subscription(session, settings, subscription_obj, reference_user or (obj.get("metadata") or {}).get("user_id"))
     elif event_type == "customer.subscription.updated":
         _apply_subscription(session, settings, obj)
     elif event_type in {"invoice.paid", "invoice.payment_succeeded", "invoice.payment_failed"}:

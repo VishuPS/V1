@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.billing import StripeClient, process_stripe_event, verify_stripe_event
+from app.billing import StripeClient, payment_link_checkout, process_stripe_event, verify_stripe_event
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.models import Subscription
@@ -25,7 +25,9 @@ def current_subscription(session: Session, user_id: str) -> Subscription:
 def checkout(payload: CheckoutCreate, request: Request, context: CurrentUser, session: DbSession, settings: SettingsDep) -> BillingRedirect:
     ensure_allowed_origin(request, settings)
     subscription = current_subscription(session, context.user.id)
-    url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, subscription.provider_customer_id if subscription else None)
+    url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan)
+    if not url:
+        url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, subscription.provider_customer_id if subscription else None)
     return BillingRedirect(url=url)
 
 
