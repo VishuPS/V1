@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CodeBlock from "../components/CodeBlock.astro";
+import ComparisonSection from "../components/ComparisonSection.astro";
 const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
   -H "X-API-Key: YOUR_API_KEY"`;
 const features = [
@@ -75,6 +76,8 @@ const softwareSchema = {
   <section class="section"><div class="container examples-layout"><div><div class="eyebrow">One authenticated barcode lookup</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
 
   <section class="section"><div class="container metric-row"><div class="big-metric">4.35M<span>+</span></div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
+
+  <ComparisonSection />
 
   <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Pricing</div><h2>Start on the Free developer tier.</h2></div><div class="pricing-grid"><article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch barcode lookups</li></ul><a class="button button-signal" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="plan-rate">$9.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="plan-rate">$19.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article></div></div></section>
 

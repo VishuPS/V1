@@ -1,0 +1,73 @@
+---
+const competitors = ["BarcodeNest", "Barcode Lookup", "UPCitemdb", "Go-UPC", "Barcode Spider"];
+
+const rows = [
+  ["Free API access", "250 calls / month", "Test account", "100 requests / day", "150 requests / month", "7-day trial"],
+  ["Starting paid price", "$9.99 / month", "$99 / month", "$99 / month", "$74.95 / month", "$39 / month"],
+  ["Starting paid allowance", "2,000 / month", "5,000 / month", "20,000 / day", "5,000 / month", "10,000 / month"],
+  ["UPC / EAN / GTIN lookup", "UPC-A, EAN, GTIN-14", "UPC, EAN, GTIN", "UPC, EAN", "UPC, EAN, GTIN", "UPC, EAN"],
+  ["JSON API", "Yes", "Yes", "Yes", "Yes", "Yes"],
+  ["Batch lookup", "Up to 100 barcodes", "Up to 10 barcodes", "Bulk lookup", "Not listed", "Paid tiers"],
+  ["Food products", "Dedicated data", "General catalog", "General catalog", "General catalog", "General catalog"],
+  ["Beauty products", "Dedicated data", "General catalog", "General catalog", "General catalog", "General catalog"],
+  ["Pet products", "Dedicated data", "General catalog", "General catalog", "General catalog", "General catalog"],
+  ["Multi-source product data", "Five indexed sources", "General catalog", "General catalog", "General catalog", "General catalog"],
+];
+
+const sources = [
+  ["Barcode Lookup API", "https://www.barcodelookup.com/api"],
+  ["Barcode Lookup documentation", "https://www.barcodelookup.com/api-documentation"],
+  ["UPCitemdb API", "https://www.upcitemdb.com/api/"],
+  ["UPCitemdb rate limits", "https://www.upcitemdb.com/wp/docs/main/development/api-rate-limits/"],
+  ["Go-UPC plans", "https://go-upc.com/plans"],
+  ["Go-UPC product site", "https://go-upc.com/"],
+  ["Barcode Spider API", "https://www.barcodespider.com/api"],
+];
+---
+
+<section class="section comparison-section" aria-labelledby="comparison-heading">
+  <div class="container">
+    <div class="section-head comparison-head">
+      <div class="eyebrow">Barcode API comparison</div>
+      <h2 id="comparison-heading">How BarcodeNest Compares</h2>
+      <p class="lede">Simple product lookup without enterprise-level API pricing.</p>
+    </div>
+
+    <div class="comparison-scroll" tabindex="0" role="region" aria-label="Barcode API provider comparison table">
+      <table class="comparison-table">
+        <caption class="sr-only">Comparison of BarcodeNest with four established barcode and product lookup APIs</caption>
+        <thead>
+          <tr>
+            <th scope="col">Feature</th>
+            {competitors.map((competitor, index) => <th scope="col" class:list={{ "is-barcodenest": index === 0 }}>{competitor}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([feature, ...values]) => (
+            <tr>
+              <th scope="row">{feature}</th>
+              {values.map((value, index) => <td class:list={{ "is-barcodenest": index === 0 }}><span>{value}</span></td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+
+    <p class="comparison-mobile-hint" aria-hidden="true">Swipe horizontally to compare all providers.</p>
+    <details class="comparison-sources">
+      <summary>Competitor pricing and features checked August 2026. See sources.</summary>
+      <ul>
+        {sources.map(([label, url]) => <li><a href={url} rel="nofollow noopener noreferrer" target="_blank">{label}<span class="sr-only"> (opens in a new tab)</span></a></li>)}
+      </ul>
+    </details>
+
+    <div class="comparison-cta">
+      <div>
+        <div class="eyebrow">Test with your own catalog</div>
+        <h3>Test BarcodeNest with your real products</h3>
+        <p>Start with 250 free lookups each month and see how BarcodeNest performs against the barcodes your application actually encounters.</p>
+      </div>
+      <a class="button button-signal" href="/register">Get your API key</a>
+    </div>
+  </div>
+</section>
