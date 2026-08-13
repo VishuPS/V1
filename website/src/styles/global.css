@@ -173,6 +173,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .content-grid { display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1px solid var(--line); border-left:1px solid var(--line); }
 .content-block { padding:34px; border-right:1px solid var(--line); border-bottom:1px solid var(--line); }
 .content-block p { color:var(--muted); margin-bottom:0; }
+.coverage-note { max-width:760px; margin:24px 0 0; color:var(--muted); font-size:15px; }
 .contact-list { margin:40px 0; border-top:1px solid var(--line); }
 .contact-row { display:grid; grid-template-columns:220px 1fr; padding:22px 0; border-bottom:1px solid var(--line); }
 .contact-row span { color:var(--muted); }

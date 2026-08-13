@@ -5,7 +5,7 @@ const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
   -H "X-API-Key: YOUR_API_KEY"`;
 const features = [
   ["01", "Instant barcode lookup", "Retrieve indexed product information from EAN and GTIN codes with one request."],
-  ["02", "4.2 million searchable products", "Query a global grocery index with particularly strong European coverage."],
+  ["02", "4.35 million searchable products", "Query a multi-source index spanning food, beauty, pet food, and general packaged products."],
   ["03", "Developer-friendly REST API", "Predictable endpoints and structured JSON designed for straightforward integration."],
   ["04", "Secure API authentication", "Authenticate requests with user-owned API keys stored as cryptographic digests."],
   ["05", "User dashboard", "Manage credentials, subscription details, and current usage from one account."],
@@ -18,7 +18,7 @@ const softwareSchema = {
   "@context": "https://schema.org", "@type": "SoftwareApplication", "@id": "https://barcodenest.com/#software",
   name: "BarcodeNest Barcode Lookup API", url: "https://barcodenest.com/",
   applicationCategory: "DeveloperApplication", applicationSubCategory: "Barcode API", operatingSystem: "Any",
-  description: "A REST barcode lookup API for retrieving structured grocery product data from EAN and GTIN codes.",
+  description: "A REST barcode lookup API for retrieving structured product data from UPC, EAN, and GTIN codes.",
   featureList: ["EAN-8, EAN-13, UPC-A and GTIN-14 lookup", "Structured JSON responses", "API key authentication", "Usage dashboard"],
   provider: { "@id": "https://barcodenest.com/#organization" },
   offers: [
@@ -28,13 +28,13 @@ const softwareSchema = {
   ],
 };
 ---
-<BaseLayout title="Barcode Lookup API | UPC, EAN & GTIN Product Database | BarcodeNest" description="Use BarcodeNest's fast REST API to look up UPC, EAN and GTIN barcodes across 4.2M+ grocery products and retrieve structured JSON product data in seconds." structuredData={softwareSchema}>
+<BaseLayout title="Barcode Lookup API | UPC, EAN & GTIN Product Database | BarcodeNest" description="Use BarcodeNest's REST API to look up UPC, EAN and GTIN barcodes across 4.35M+ food, beauty, pet food and general products." structuredData={softwareSchema}>
   <section class="hero launch-hero">
     <div class="container hero-grid">
       <div class="hero-copy">
         <div class="eyebrow">Production barcode lookup infrastructure</div>
         <h1>Fast Barcode Lookup API for UPC, EAN &amp; GTIN</h1>
-        <p class="lede">Search over 4.2 million products with a fast barcode search API for UPC, EAN, and GTIN lookups. Create a free account and receive your API key in under one minute.</p>
+        <p class="lede">Search over 4.35 million food, beauty, pet food, and general products with a fast API for UPC, EAN, and GTIN lookups. Create a free account and receive your API key in under one minute.</p>
         <div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button button-secondary" href="/docs">View Documentation</a></div>
         <p class="hero-note">Free tier includes 250 API calls per month. No payment details required.</p>
       </div>
@@ -57,17 +57,24 @@ const softwareSchema = {
     </div>
   </section>
 
-  <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong>4.2M+</strong><span>Products</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Developer Tier</span></div><div><strong>API Key</strong><span>In Under 1 Minute</span></div></div></section>
+  <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong>4.35M+</strong><span>Products</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Developer Tier</span></div><div><strong>API Key</strong><span>In Under 1 Minute</span></div></div></section>
 
   <section class="section"><div class="narrow"><div class="eyebrow">Barcode lookup API</div><h2>Turn a UPC, EAN, or GTIN into structured product data.</h2><p class="lede">A barcode lookup API lets an application submit a product identifier and receive machine-readable information such as a product name, brand, quantity, categories, ingredients, allergens, nutrition, countries, and images where those fields are available.</p><p>BarcodeNest combines a grocery barcode database with a documented REST API and structured JSON responses. It supports UPC lookup, EAN lookup, and GTIN lookup with API-key authentication and monthly usage tracking.</p><p>Explore the <a href="/barcode-api/"><u>barcode API</u></a>, <a href="/upc-api/"><u>UPC lookup API</u></a>, <a href="/ean-api/"><u>EAN product lookup</u></a>, and <a href="/gtin-api/"><u>GTIN lookup API</u></a>. You can also <a href="/docs/"><u>read the product database API documentation</u></a> or <a href="/pricing/"><u>compare barcode API pricing</u></a>.</p></div></section>
 
   <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Everything needed for reliable barcode lookups.</h2><p class="lede">A focused API and account experience built for real developer workflows.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
 
+  <section class="section" aria-labelledby="coverage-heading"><div class="container"><div class="section-head"><div class="eyebrow">Product coverage</div><h2 id="coverage-heading">More than groceries.</h2><p class="lede">BarcodeNest combines multiple open product datasets into one canonical GTIN index. Coverage currently includes these broad product groups.</p></div><div class="content-grid">
+    <article class="content-block"><h3>Food &amp; beverages</h3><p>Packaged groceries, drinks, ingredients, nutrition products, and branded foods from global markets.</p></article>
+    <article class="content-block"><h3>Beauty &amp; personal care</h3><p>Cosmetics, skincare, haircare, hygiene, and other personal-care products where indexed.</p></article>
+    <article class="content-block"><h3>Pet food</h3><p>Packaged food, treats, and nutrition products for companion animals.</p></article>
+    <article class="content-block"><h3>General products</h3><p>A growing selection of household and other packaged retail products outside the food categories.</p></article>
+  </div><p class="coverage-note">Coverage is not universal. Product availability and field completeness vary by source, barcode, market, and geography. <a href="/data/"><u>See data coverage and sources</u></a>.</p></div></section>
+
   <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Shortest path to production</div><h2>Your first barcode lookup in six clear steps.</h2></div><ol class="journey"><li><span>01</span>Register</li><li><span>02</span>Automatic login</li><li><span>03</span>Open onboarding</li><li><span>04</span>Copy API key</li><li><span>05</span>Send request</li><li><span>06</span>Receive product data</li></ol></div></section>
 
   <section class="section"><div class="container examples-layout"><div><div class="eyebrow">One authenticated barcode lookup</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
 
-  <section class="section"><div class="container metric-row"><div class="big-metric">4.2M<span>+</span></div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
+  <section class="section"><div class="container metric-row"><div class="big-metric">4.35M<span>+</span></div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
 
   <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Pricing</div><h2>Start on the Free developer tier.</h2></div><div class="pricing-grid"><article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch barcode lookups</li></ul><a class="button button-signal" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="plan-rate">$9.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article><article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="plan-rate">$19.99 / month</div><ul><li>User dashboard</li><li>Usage tracking</li><li>API key management</li></ul><a class="button" href="/register">Get API Key</a></article></div></div></section>
 
