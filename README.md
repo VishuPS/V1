@@ -588,7 +588,7 @@ archive and support index. Database growth depends on GTIN overlap and metadata
 length; plan for roughly 2â€“6 GB before measuring a representative 10,000-record
 import in the target PostgreSQL instance.
 
-### Other prepared source adapters
+### Open Facts sibling source adapters
 
 Open Beauty Facts, Open Pet Food Facts, and Open Products Facts are explicit,
 opt-in jobs using the existing Open Facts JSONL parser:
@@ -599,10 +599,37 @@ python -m app.ingestion.sources --source pet --dry-run --limit 1000
 python -m app.ingestion.sources --source products --dry-run --limit 1000
 ```
 
-Their database content is marked `ODbL-1.0`; image URLs retain separate image
-licensing considerations. Review the upstream reuse terms before each
-production import. `--source all` is available only for an intentional combined
-run and is never invoked by deployment.
+Each command locates its official Product Opener JSONL export, downloads it with
+retry/resume support, validates the gzip stream, caches it under
+`data/source-cache/`, streams records with bounded memory, and uses the same
+batch checkpoint and provenance tables as USDA. Add `--resume` after an
+interruption, `--force-download` to intentionally refresh a cached export, and
+`--stats` for the database coverage report.
+
+The source identifiers are `OPEN_BEAUTY_FACTS`, `OPEN_PET_FOOD_FACTS`, and
+`OPEN_PRODUCTS_FACTS`. Database provenance records carry `ODbL-1.0` plus the
+source URL and timestamps. Individual contents are covered by the Database
+Contents License. Product images have separate CC BY-SA terms: these adapters
+do not download images or promote source image URLs into canonical product
+fields; a source image reference may be retained in provenance metadata.
+Beauty and Products nutrition fields are intentionally ignored because the
+official sibling-project documentation states that those projects have no
+nutrition table. Pet nutrition data is mapped when present.
+
+Review the upstream reuse and attribution terms before production import.
+`--source all` is available only for an intentional combined run and is never
+invoked by deployment. Official documentation:
+
+- [Sibling Open Facts project behavior](https://openfoodfacts.github.io/openfoodfacts-server/api/tutorials/scanning-cosmetics-pet-food-and-other-products/)
+- [Open Facts licensing](https://openfoodfacts.github.io/documentation/docs/Product-Opener/api/tutorials/license-be-on-the-legal-side/)
+
+Full imports remain explicit operations:
+
+```bash
+python -m app.ingestion.sources --source beauty --resume --stats
+python -m app.ingestion.sources --source pet --resume --stats
+python -m app.ingestion.sources --source products --resume --stats
+```
 
 ### Coverage and adding another source
 

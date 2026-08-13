@@ -41,6 +41,7 @@ class MappedSourceProduct:
 @dataclass(slots=True)
 class SourceImportStats:
     source: str
+    source_records_read: int = 0
     processed: int = 0
     inserted: int = 0
     enriched: int = 0
@@ -59,7 +60,9 @@ class SourceImportStats:
 
     def report(self) -> str:
         return "\n".join([
-            f"Source: {self.source}", f"Processed: {self.processed:,}",
+            f"Source: {self.source}",
+            f"Source records read: {self.source_records_read or self.processed:,}",
+            f"Valid GTIN records processed: {self.processed:,}",
             f"Canonical products inserted: {self.inserted:,}",
             f"Existing products enriched: {self.enriched:,}",
             f"Existing products unchanged: {self.unchanged:,}",

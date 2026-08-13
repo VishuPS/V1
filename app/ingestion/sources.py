@@ -45,6 +45,8 @@ def _run_usda(args) -> None:
     )
     stats.invalid_barcodes += adapter.invalid_barcodes
     stats.skipped += adapter.skipped
+    stats.errors += getattr(adapter, "errors", 0)
+    stats.source_records_read = stats.processed + stats.invalid_barcodes + stats.skipped + stats.errors
     print(stats.report())
 
 
@@ -61,6 +63,8 @@ def _run_open_facts(args, key: str) -> None:
     )
     stats.invalid_barcodes += adapter.invalid_barcodes
     stats.skipped += adapter.skipped
+    stats.errors += adapter.errors
+    stats.source_records_read = stats.processed + stats.invalid_barcodes + stats.skipped + stats.errors
     print(stats.report())
 
 

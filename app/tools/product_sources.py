@@ -11,6 +11,15 @@ from app.models import Product, ProductSourceRecord
 from app.tools.db_check import database_size_bytes, format_size
 
 
+SUPPORTED_PRODUCT_SOURCES = (
+    "OPEN_FOOD_FACTS",
+    "USDA_FDC",
+    "OPEN_BEAUTY_FACTS",
+    "OPEN_PET_FOOD_FACTS",
+    "OPEN_PRODUCTS_FACTS",
+)
+
+
 def source_coverage(session: Session) -> dict:
     total_products = session.scalar(select(func.count()).select_from(Product)) or 0
     total_gtins = session.scalar(select(func.count(distinct(Product.barcode)))) or 0
@@ -26,8 +35,14 @@ def source_coverage(session: Session) -> dict:
         .group_by(ProductSourceRecord.product_barcode).subquery()
     )
     overlap = session.scalar(select(func.count()).select_from(product_source_counts).where(product_source_counts.c.source_count > 1)) or 0
+    row_by_source = {source: (records, gtins) for source, records, gtins in rows}
+    ordered_sources = [*SUPPORTED_PRODUCT_SOURCES]
+    ordered_sources.extend(
+        source for source in sorted(row_by_source) if source not in SUPPORTED_PRODUCT_SOURCES
+    )
     by_source = []
-    for source, records, gtins in rows:
+    for source in ordered_sources:
+        records, gtins = row_by_source.get(source, (0, 0))
         unique = session.scalar(
             select(func.count(distinct(ProductSourceRecord.product_barcode))).select_from(product_source_counts.join(
                 ProductSourceRecord,

@@ -364,10 +364,10 @@ def test_downloader_streams_and_keeps_valid_existing_file(
     destination = tmp_path / "dataset.jsonl.gz"
     calls = 0
 
-    def fake_urlopen(_):
+    def fake_urlopen(_, **__):
         nonlocal calls
         calls += 1
-        return FakeDownloadResponse(b"\x1f\x8bfixture-content")
+        return FakeDownloadResponse(gzip.compress(b'{"code":"012345678905"}\n'))
 
     monkeypatch.setattr("urllib.request.urlopen", fake_urlopen)
     download_dataset("https://example.test/data.gz", destination, progress_bytes=0)
@@ -390,7 +390,7 @@ def test_downloader_preserves_partial_file_on_failure(
 
     monkeypatch.setattr(
         "urllib.request.urlopen",
-        lambda _: BrokenResponse(b"\x1f\x8bremaining"),
+        lambda _, **__: BrokenResponse(gzip.compress(b"remaining")),
     )
     with pytest.raises(OSError):
         download_dataset("https://example.test/data.gz", destination, progress_bytes=0)

@@ -24,6 +24,7 @@ from app.tools.db_check import database_size_bytes, format_size
 SOURCE_NAME = "Open Food Facts"
 IMAGE_BASE_URL = "https://images.openfoodfacts.org/images/products"
 logger = logging.getLogger(__name__)
+DATASET_USER_AGENT = "BarcodeNest/1.0 (support@barcodenest.com)"
 
 
 def clean_text(value: Any) -> str | None:
@@ -627,8 +628,11 @@ def is_plausible_dataset(path: Path) -> bool:
     if not path.is_file() or path.stat().st_size == 0:
         return False
     if path.suffix.lower() == ".gz":
-        with path.open("rb") as source:
-            return source.read(2) == b"\x1f\x8b"
+        try:
+            with gzip.open(path, mode="rb") as source:
+                return bool(source.read(1))
+        except (OSError, EOFError):
+            return False
     return True
 
 
@@ -655,14 +659,26 @@ def download_dataset(
     if force:
         partial.unlink(missing_ok=True)
     offset = partial.stat().st_size if partial.exists() else 0
-    headers = {"User-Agent": "GroceryBarcodeAPI/0.1 (dataset importer)"}
+    headers = {"User-Agent": DATASET_USER_AGENT}
     if offset:
         headers["Range"] = f"bytes={offset}-"
     request = urllib.request.Request(
         url, headers=headers
     )
+    last_error: Exception | None = None
+    for attempt in range(4):
+        try:
+            response_context = urllib.request.urlopen(request, timeout=60)
+            break
+        except Exception as exc:
+            last_error = exc
+            if attempt == 3:
+                raise
+            time.sleep(2**attempt)
+    else:  # pragma: no cover - loop either breaks or raises
+        raise last_error or RuntimeError("Dataset download failed")
     try:
-        with urllib.request.urlopen(request) as response:
+        with response_context as response:
             resumed = offset > 0 and getattr(response, "status", None) == 206
             mode = "ab" if resumed else "wb"
             if offset and not resumed:
@@ -678,6 +694,7 @@ def download_dataset(
                         next_progress = downloaded + progress_bytes
         partial.replace(destination)
     except Exception:
+        # Keep the partial file so a later run can resume via HTTP Range.
         raise
     if not is_plausible_dataset(destination):
         raise ValueError(f"Downloaded dataset looks invalid: {destination}")
