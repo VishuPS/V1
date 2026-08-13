@@ -25,9 +25,9 @@ def current_subscription(session: Session, user_id: str) -> Subscription:
 def checkout(payload: CheckoutCreate, request: Request, context: CurrentUser, session: DbSession, settings: SettingsDep) -> BillingRedirect:
     ensure_allowed_origin(request, settings)
     subscription = current_subscription(session, context.user.id)
-    url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan)
+    url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan, payload.billing_interval)
     if not url:
-        url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, subscription.provider_customer_id if subscription else None)
+        url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, payload.billing_interval, subscription.provider_customer_id if subscription else None)
     return BillingRedirect(url=url)
 
 

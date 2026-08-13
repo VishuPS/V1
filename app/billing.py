@@ -3,6 +3,7 @@ import hmac
 import json
 import time
 from urllib.parse import urlencode
+from calendar import monthrange
 from datetime import datetime, timezone
 
 import httpx
@@ -15,8 +16,14 @@ from app.config import Settings
 from app.models import ApiClient, StripeWebhookEvent, Subscription, current_month_end
 
 
-def payment_link_checkout(settings: Settings, user_id: str, email: str, plan: str) -> str | None:
-    link = settings.stripe_starter_payment_link if plan == "STARTER" else settings.stripe_growth_payment_link
+def payment_link_checkout(settings: Settings, user_id: str, email: str, plan: str, billing_interval: str = "month") -> str | None:
+    links = {
+        ("STARTER", "month"): settings.stripe_starter_payment_link,
+        ("GROWTH", "month"): settings.stripe_growth_payment_link,
+        ("STARTER", "year"): settings.stripe_starter_annual_payment_link,
+        ("GROWTH", "year"): settings.stripe_growth_annual_payment_link,
+    }
+    link = links.get((plan, billing_interval))
     if not link:
         return None
     signature = hmac.new(settings.api_key_hash_secret.encode(), user_id.encode(), hashlib.sha256).hexdigest()
@@ -53,11 +60,17 @@ class StripeClient:
             raise HTTPException(502, detail={"code":"billing_provider_error","message":"Stripe could not complete the request"})
         return response.json()
 
-    def checkout(self, user_id: str, email: str, plan: str, customer_id: str | None) -> str:
-        price = self.settings.stripe_starter_price_id if plan == "STARTER" else self.settings.stripe_growth_price_id
+    def checkout(self, user_id: str, email: str, plan: str, billing_interval: str, customer_id: str | None) -> str:
+        prices = {
+            ("STARTER", "month"): self.settings.stripe_starter_price_id,
+            ("GROWTH", "month"): self.settings.stripe_growth_price_id,
+            ("STARTER", "year"): self.settings.stripe_starter_annual_price_id,
+            ("GROWTH", "year"): self.settings.stripe_growth_annual_price_id,
+        }
+        price = prices.get((plan, billing_interval))
         if not price:
             raise HTTPException(503, detail={"code":"billing_unavailable","message":"The selected Stripe price is not configured"})
-        data = [("mode","subscription"),("line_items[0][price]",price),("line_items[0][quantity]","1"),("success_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=success"),("cancel_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=cancelled"),("client_reference_id",user_id),("metadata[user_id]",user_id),("metadata[plan]",plan),("subscription_data[metadata][user_id]",user_id),("subscription_data[metadata][plan]",plan)]
+        data = [("mode","subscription"),("line_items[0][price]",price),("line_items[0][quantity]","1"),("success_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=success"),("cancel_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=cancelled"),("client_reference_id",user_id),("metadata[user_id]",user_id),("metadata[plan]",plan),("metadata[billing_interval]",billing_interval),("subscription_data[metadata][user_id]",user_id),("subscription_data[metadata][plan]",plan),("subscription_data[metadata][billing_interval]",billing_interval)]
         data.append(("customer", customer_id) if customer_id else ("customer_email", email))
         return self._post("/checkout/sessions", data)["url"]
 
@@ -70,8 +83,8 @@ class StripeClient:
     def create_product(self, name: str, plan: str) -> str:
         return self._post("/products", [("name", name), ("metadata[service]", "barcodenest"), ("metadata[plan]", plan)])["id"]
 
-    def create_monthly_price(self, product_id: str, amount_cents: int, plan: str) -> str:
-        return self._post("/prices", [("product", product_id), ("unit_amount", str(amount_cents)), ("currency", "usd"), ("recurring[interval]", "month"), ("metadata[plan]", plan)])["id"]
+    def create_recurring_price(self, product_id: str, amount_cents: int, plan: str, interval: str) -> str:
+        return self._post("/prices", [("product", product_id), ("unit_amount", str(amount_cents)), ("currency", "usd"), ("recurring[interval]", interval), ("metadata[plan]", plan), ("metadata[billing_interval]", interval)])["id"]
 
 
 def verify_stripe_event(payload: bytes, signature: str | None, secret: str | None, tolerance: int = 300) -> dict:
@@ -98,6 +111,28 @@ def _subscription_id(obj: dict) -> str | None:
     return (obj.get("parent") or {}).get("subscription_details", {}).get("subscription")
 
 
+def _next_month(value: datetime) -> datetime:
+    year = value.year + (1 if value.month == 12 else 0)
+    month = 1 if value.month == 12 else value.month + 1
+    return value.replace(year=year, month=month, day=min(value.day, monthrange(year, month)[1]))
+
+
+def _price_details(settings: Settings, price_id: str | None, price: dict, metadata: dict) -> tuple[str | None, str]:
+    configured = {
+        settings.stripe_starter_price_id: ("STARTER", "month"),
+        settings.stripe_growth_price_id: ("GROWTH", "month"),
+        settings.stripe_starter_annual_price_id: ("STARTER", "year"),
+        settings.stripe_growth_annual_price_id: ("GROWTH", "year"),
+    }
+    if price_id and price_id in configured:
+        return configured[price_id]
+    interval = metadata.get("billing_interval") or (price.get("recurring") or {}).get("interval") or "month"
+    plan = metadata.get("plan")
+    if not plan and price.get("currency") == "usd":
+        plan = {999: "STARTER", 1999: "GROWTH", 9590: "STARTER", 19190: "GROWTH"}.get(price.get("unit_amount"))
+    return plan, interval
+
+
 def _apply_subscription(session: Session, settings: Settings, obj: dict, fallback_user_id: str | None = None) -> None:
     metadata = obj.get("metadata") or {}
     user_id = metadata.get("user_id") or fallback_user_id
@@ -105,29 +140,34 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     first_item = ((obj.get("items") or {}).get("data") or [{}])[0]
     price_id = (first_item.get("price") or {}).get("id") or obj.get("price_id")
     price = (first_item.get("price") or {})
-    plan = metadata.get("plan") or ("STARTER" if price_id == settings.stripe_starter_price_id else "GROWTH" if price_id == settings.stripe_growth_price_id else None)
-    if not plan and price.get("currency") == "usd":
-        plan = "STARTER" if price.get("unit_amount") == 999 else "GROWTH" if price.get("unit_amount") == 1999 else None
+    plan, billing_interval = _price_details(settings, price_id, price, metadata)
     if not plan: return
     period_start = _timestamp(obj.get("current_period_start")) or _timestamp(first_item.get("current_period_start")) or datetime.now(timezone.utc)
     period_end = _timestamp(obj.get("current_period_end")) or _timestamp((((obj.get("items") or {}).get("data") or [{}])[0]).get("current_period_end"))
     if not period_end: return
     record = session.scalar(select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc()).with_for_update())
     if not record: return
-    changed_period = record.usage_period_start != period_start
+    now = datetime.now(timezone.utc)
+    reset_usage = (
+        record.plan_code != plan
+        or record.billing_interval != billing_interval
+        or record.usage_period_end <= now
+    )
     record.plan_code = plan
     record.status = obj.get("status") or "active"
     record.provider = "stripe"
     record.provider_customer_id = obj.get("customer") or record.provider_customer_id
     record.provider_subscription_id = obj.get("id") or record.provider_subscription_id
     record.provider_price_id = price_id
+    record.billing_interval = billing_interval
     record.current_period_start = period_start
     record.current_period_end = period_end
-    record.usage_period_start = period_start
-    record.usage_period_end = period_end
     record.monthly_call_limit = 2_000 if plan == "STARTER" else 5_000
     record.cancel_at_period_end = bool(obj.get("cancel_at_period_end"))
-    if changed_period:
+    if reset_usage:
+        usage_start = max(period_start, now)
+        record.usage_period_start = usage_start
+        record.usage_period_end = period_end if billing_interval == "month" else _next_month(usage_start)
         record.monthly_calls_used = 0
         record.usage_warning_sent_at = None
     session.execute(update(ApiClient).where(ApiClient.owner_user_id == user_id).values(plan=plan))
@@ -154,12 +194,6 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == subscription_id)) if subscription_id else None
         if record:
             record.status = "active" if event_type != "invoice.payment_failed" else "past_due"
-            if event_type != "invoice.payment_failed":
-                end = _timestamp(((obj.get("lines") or {}).get("data") or [{}])[0].get("period", {}).get("end"))
-                start = _timestamp(((obj.get("lines") or {}).get("data") or [{}])[0].get("period", {}).get("start"))
-                if start and end and record.usage_period_start != start:
-                    record.usage_period_start, record.usage_period_end = start, end
-                    record.monthly_calls_used, record.usage_warning_sent_at = 0, None
     elif event_type == "customer.subscription.deleted":
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == obj.get("id")))
         if record:

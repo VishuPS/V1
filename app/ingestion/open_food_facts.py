@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.barcodes import BarcodeError, parse_barcode
 from app.ingestion.base import ProductSource
-from app.models import Product
+from app.models import Product, ProductSourceRecord, new_uuid
 from app.tools.db_check import database_size_bytes, format_size
 
 
@@ -388,6 +388,34 @@ def _apply_batch_once(
         if existing.barcode != canonical and session.get(Product, canonical) is None:
             existing.barcode = canonical
         updated += 1
+    session.flush()
+    source_ids = {product.source_id for product in incoming.values()}
+    existing_sources = {
+        row.source_product_id: row
+        for row in session.scalars(
+            select(ProductSourceRecord).where(
+                ProductSourceRecord.source == "OPEN_FOOD_FACTS",
+                ProductSourceRecord.source_product_id.in_(source_ids),
+            )
+        )
+    }
+    now = datetime.now(timezone.utc)
+    for product in incoming.values():
+        provenance = existing_sources.get(product.source_id)
+        if provenance is None:
+            session.add(ProductSourceRecord(
+                id=new_uuid(), product_barcode=product.barcode,
+                source="OPEN_FOOD_FACTS", source_product_id=product.source_id,
+                source_gtin=product.source_id,
+                source_url=f"https://world.openfoodfacts.org/product/{product.source_id}",
+                license="ODbL-1.0", priority=200, imported_at=now,
+                source_updated_at=product.source_updated_at, last_seen_at=now,
+                source_metadata={},
+            ))
+        else:
+            provenance.product_barcode = product.barcode
+            provenance.source_updated_at = product.source_updated_at
+            provenance.last_seen_at = now
     session.commit()
     return inserted, updated
 

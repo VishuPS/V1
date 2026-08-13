@@ -177,10 +177,12 @@ class SubscriptionSummary(BaseModel):
     usage_period_start: datetime
     usage_period_end: datetime
     provider_customer_id: str | None
+    billing_interval: str
 
 
 class CheckoutCreate(BaseModel):
     plan: str
+    billing_interval: str = "month"
 
     @field_validator("plan")
     @classmethod
@@ -188,6 +190,14 @@ class CheckoutCreate(BaseModel):
         normalized = value.strip().upper()
         if normalized not in {"STARTER", "GROWTH"}:
             raise ValueError("Plan must be starter or growth")
+        return normalized
+
+    @field_validator("billing_interval")
+    @classmethod
+    def validate_billing_interval(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"month", "year"}:
+            raise ValueError("Billing interval must be month or year")
         return normalized
 
 

@@ -231,13 +231,15 @@ def consume_usage(
     warning = None
     if subscription:
         period_end = _aware_utc(subscription.usage_period_end)
-        if subscription.plan_code == "FREE" and period_end <= timestamp:
+        if period_end <= timestamp:
             subscription.monthly_calls_used = 0
             subscription.usage_warning_sent_at = None
             subscription.usage_period_start = timestamp
+            next_year = timestamp.year + (1 if timestamp.month == 12 else 0)
+            next_month = 1 if timestamp.month == 12 else timestamp.month + 1
             subscription.usage_period_end = timestamp.replace(
-                day=monthrange(timestamp.year, timestamp.month)[1],
-                hour=23, minute=59, second=59, microsecond=999999,
+                year=next_year, month=next_month,
+                day=min(timestamp.day, monthrange(next_year, next_month)[1]),
             )
             period_end = subscription.usage_period_end
             session.flush()

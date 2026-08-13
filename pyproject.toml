@@ -27,6 +27,8 @@ dev = [
 [project.scripts]
 import-sample-data = "app.ingestion.cli:main"
 import-open-food-facts = "app.ingestion.openfoodfacts:main"
+sync-product-sources = "app.ingestion.sources:main"
+product-source-coverage = "app.tools.product_sources:main"
 barcode-coverage = "app.tools.coverage:main"
 lookup-benchmark = "app.tools.performance:main"
 database-quality = "app.tools.data_quality:main"

@@ -3,10 +3,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout title="Barcode API Pricing | BarcodeNest" description="Compare BarcodeNest barcode lookup API plans. Start free with 250 monthly calls, or choose Starter or Growth for larger usage allowances." current="pricing">
   <header class="page-hero"><div class="container"><div class="eyebrow">Developer pricing</div><h1>Start free. Use the same API as you grow.</h1><p class="lede">Create an account now, receive an API key immediately, and manage usage from your dashboard.</p></div></header>
-  <section class="section"><div class="container"><div class="pricing-grid">
+  <section class="section"><div class="container">
+    <div class="pricing-switcher billing-toggle" role="group" aria-label="Pricing cadence"><button class="is-active" type="button" data-pricing-toggle="month" aria-pressed="true">Monthly</button><button type="button" data-pricing-toggle="year" aria-pressed="false">Yearly <span>Save 20%</span></button></div>
+    <div class="pricing-grid">
     <article class="plan featured"><span class="plan-tag">Start here</span><h3>Free</h3><div class="price">$0</div><ul><li>250 API calls / month</li><li>30 requests / minute</li><li>Single and batch barcode lookups</li><li>Dashboard and key management</li></ul><a class="button button-signal" href="/register">Get API Key</a></article>
-    <article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="price">$9.99 <small>/ month</small></div><ul><li>300 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
-    <article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="price">$19.99 <small>/ month</small></div><ul><li>1,200 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
-  </div><div class="callout"><strong>Usage accounting:</strong> each successful barcode lookup API request consumes one call. Authentication failures, health checks, account pages, and failed barcode lookups do not consume allowance.</div></div></section>
+    <article class="plan"><span class="plan-tag">Starter</span><h3>2,000 API calls</h3><div class="price" data-monthly="$9.99|/ month" data-yearly="$7.99|/ month">$9.99 <small>/ month</small></div><p class="annual-total" hidden>Billed $95.90 yearly</p><ul><li>300 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
+    <article class="plan"><span class="plan-tag">Growth</span><h3>5,000 API calls</h3><div class="price" data-monthly="$19.99|/ month" data-yearly="$15.99|/ month">$19.99 <small>/ month</small></div><p class="annual-total" hidden>Billed $191.90 yearly</p><ul><li>1,200 requests / minute</li><li>Monthly usage tracking</li><li>API key management</li><li>Email support</li></ul><a class="button" href="/register">Get API Key</a></article>
+  </div><div class="callout"><strong>Usage accounting:</strong> each successful barcode lookup API request consumes one call. Authentication failures, health checks, account pages, and failed barcode lookups do not consume allowance. Annual subscriptions are billed yearly; API allowances reset monthly.</div></div></section>
   <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Free developer tier</div><h2>Create your account and make the first request.</h2></div><div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button" href="/docs">Documentation</a></div></div></section>
 </BaseLayout>
+<script>
+  type Interval = "month" | "year";
+  function selectPricing(interval: Interval) {
+    document.querySelectorAll<HTMLButtonElement>("[data-pricing-toggle]").forEach((button) => { const active = button.dataset.pricingToggle === interval; button.classList.toggle("is-active", active); button.setAttribute("aria-pressed", String(active)); });
+    document.querySelectorAll<HTMLElement>(".price[data-monthly]").forEach((price) => { const [amount, cadence] = (interval === "year" ? price.dataset.yearly : price.dataset.monthly)!.split("|"); price.innerHTML = `${amount} <small>${cadence}</small>`; });
+    document.querySelectorAll<HTMLElement>(".annual-total").forEach((note) => note.hidden = interval !== "year");
+  }
+  document.querySelectorAll<HTMLButtonElement>("[data-pricing-toggle]").forEach((button) => button.addEventListener("click", () => selectPricing(button.dataset.pricingToggle as Interval)));
+</script>

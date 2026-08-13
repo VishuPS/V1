@@ -10,6 +10,7 @@ from app.db import get_db
 from app.schemas import BatchRequest, BatchResponse, ErrorResponse, LookupResult
 from app.services import lookup_product
 from app.email_service import send_usage_warning_safely
+from app.lookup_analytics import LookupOutcome, record_lookup_outcomes_safely
 
 router = APIRouter()
 DbSession = Annotated[Session, Depends(get_db)]
@@ -49,16 +50,32 @@ def get_product(
     settings: Annotated[Settings, Depends(get_settings)],
 ) -> LookupResult:
     try:
-        parse_barcode(barcode)
+        parsed = parse_barcode(barcode)
     except BarcodeError as exc:
         raise api_error(status.HTTP_400_BAD_REQUEST, "invalid_barcode", str(exc)) from exc
     result = lookup_product(session, barcode)
     if not result.found:
+        session.rollback()
+        record_lookup_outcomes_safely(
+            session,
+            auth,
+            [LookupOutcome(parsed.gtin14, parsed.barcode_type, False)],
+            endpoint_type="single",
+            retention_days=settings.lookup_analytics_retention_days,
+        )
         raise api_error(
             status.HTTP_404_NOT_FOUND,
             "product_not_found",
             "The barcode is valid, but no product was found",
         )
+    session.rollback()
+    record_lookup_outcomes_safely(
+        session,
+        auth,
+        [LookupOutcome(parsed.gtin14, parsed.barcode_type, True)],
+        endpoint_type="single",
+        retention_days=settings.lookup_analytics_retention_days,
+    )
     usage = consume_usage(session, auth, 1)
     for header, value in usage_headers(auth, usage).items():
         response.headers[header] = value
@@ -94,6 +111,19 @@ def batch_products(
             f"A maximum of {settings.batch_limit} barcodes is allowed",
         )
     results = [lookup_product(session, barcode) for barcode in payload.barcodes]
+    outcomes = [
+        LookupOutcome(result.canonical_gtin, result.barcode_type, result.found)
+        for result in results
+        if result.valid and result.canonical_gtin and result.barcode_type
+    ]
+    session.rollback()
+    record_lookup_outcomes_safely(
+        session,
+        auth,
+        outcomes,
+        endpoint_type="batch",
+        retention_days=settings.lookup_analytics_retention_days,
+    )
     usage = consume_usage(session, auth, 1)
     for header, value in usage_headers(auth, usage).items():
         response.headers[header] = value

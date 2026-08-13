@@ -6,6 +6,7 @@ from app.barcodes import (
     detect_barcode_type,
     equivalent_barcodes,
     normalize_barcode,
+    normalize_gtin,
     parse_barcode,
 )
 
@@ -47,6 +48,8 @@ def test_upc_and_ean_equivalence() -> None:
     )
     assert "012345678905" in equivalent_barcodes("0012345678905")
     assert "012345678905" in equivalent_barcodes("00012345678905")
+    assert normalize_gtin("012345678905") == "00012345678905"
+    assert normalize_gtin("0012345678905") == "00012345678905"
 
 
 def test_calculate_check_digit() -> None:

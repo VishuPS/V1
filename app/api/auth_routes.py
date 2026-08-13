@@ -360,4 +360,5 @@ def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummar
         usage_period_start=record.usage_period_start,
         usage_period_end=record.usage_period_end,
         provider_customer_id=record.provider_customer_id,
+        billing_interval=record.billing_interval,
     )

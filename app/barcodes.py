@@ -59,6 +59,11 @@ def normalize_barcode(raw: str) -> str:
     return parse_barcode(raw).value
 
 
+def normalize_gtin(raw: str) -> str:
+    """Validate any supported UPC/EAN/GTIN representation and return GTIN-14."""
+    return parse_barcode(raw).gtin14
+
+
 def detect_barcode_type(raw: str) -> str:
     return parse_barcode(raw).barcode_type
 

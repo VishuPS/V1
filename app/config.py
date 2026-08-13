@@ -38,6 +38,7 @@ class Settings(BaseSettings):
         "https://static.openfoodfacts.org/data/openfoodfacts-products.jsonl.gz"
     )
     ingestion_batch_size: int = 1_000
+    lookup_analytics_retention_days: int = Field(default=180, ge=30, le=730)
     api_key_hash_secret: str = "development-only-change-me"
     jwt_secret: str = "development-only-jwt-secret-change-me"
     jwt_issuer: str = "https://api.barcodenest.com"
@@ -58,8 +59,12 @@ class Settings(BaseSettings):
     stripe_webhook_secret: str | None = None
     stripe_starter_price_id: str | None = None
     stripe_growth_price_id: str | None = None
+    stripe_starter_annual_price_id: str | None = None
+    stripe_growth_annual_price_id: str | None = None
     stripe_starter_payment_link: str | None = "https://buy.stripe.com/8x25kw3UB0DH81kbtF0Ny01"
     stripe_growth_payment_link: str | None = "https://buy.stripe.com/3cI8wIezffyB81k1T50Ny00"
+    stripe_starter_annual_payment_link: str | None = "https://buy.stripe.com/aFa4gs8aR5Y1a9sfJV0Ny03"
+    stripe_growth_annual_payment_link: str | None = "https://buy.stripe.com/eVqaEQ9eV5Y16Xg0P10Ny02"
     plan_limits: dict[str, PlanLimit] = Field(default_factory=default_plan_limits)
 
     model_config = SettingsConfigDict(

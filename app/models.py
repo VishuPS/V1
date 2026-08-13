@@ -60,6 +60,10 @@ class Product(Base):
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
     )
 
+    source_records: Mapped[list["ProductSourceRecord"]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+
 
 class ApiClient(Base):
     __tablename__ = "api_clients"
@@ -148,6 +152,84 @@ class DailyUsage(Base):
     lookup_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False
+    )
+
+class ProductSourceRecord(Base):
+    """Traceable source contribution for one canonical GTIN product."""
+
+    __tablename__ = "product_sources"
+    __table_args__ = (
+        UniqueConstraint("source", "source_product_id", name="uq_product_sources_identity"),
+        Index("ix_product_sources_product_source", "product_barcode", "source"),
+        Index("ix_product_sources_source_gtin", "source", "source_gtin"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    product_barcode: Mapped[str] = mapped_column(
+        ForeignKey("products.barcode", ondelete="CASCADE"), nullable=False
+    )
+    source: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_product_id: Mapped[str] = mapped_column(String(256), nullable=False)
+    source_gtin: Mapped[str] = mapped_column(String(14), nullable=False)
+    source_url: Mapped[str | None] = mapped_column(Text)
+    license: Mapped[str] = mapped_column(String(128), nullable=False)
+    priority: Mapped[int] = mapped_column(nullable=False, default=100)
+    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    source_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    source_metadata: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict, nullable=False)
+
+    product: Mapped[Product] = relationship(back_populates="source_records")
+
+
+class ProductSourceSync(Base):
+    """Dataset synchronization state and resumable record checkpoint."""
+
+    __tablename__ = "product_source_syncs"
+    __table_args__ = (
+        UniqueConstraint("source", "dataset_fingerprint", name="uq_product_source_sync_fingerprint"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    source: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
+    dataset_url: Mapped[str | None] = mapped_column(Text)
+    dataset_fingerprint: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="running")
+    checkpoint_record: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    processed: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    inserted: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    enriched: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    skipped: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class LookupAnalytics(Base):
+    """Minimal product-coverage telemetry; never stores credentials or network identity."""
+
+    __tablename__ = "lookup_analytics"
+    __table_args__ = (
+        Index("ix_lookup_analytics_occurred_found", "occurred_at", "found"),
+        Index("ix_lookup_analytics_gtin_found", "canonical_gtin", "found"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    request_id: Mapped[str] = mapped_column(String(36), nullable=False, index=True)
+    api_key_id: Mapped[str | None] = mapped_column(
+        ForeignKey("api_keys.id", ondelete="SET NULL"), index=True
+    )
+    owner_user_id: Mapped[str | None] = mapped_column(
+        ForeignKey("users.id", ondelete="SET NULL"), index=True
+    )
+    canonical_gtin: Mapped[str] = mapped_column(String(14), nullable=False)
+    barcode_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    endpoint_type: Mapped[str] = mapped_column(String(16), nullable=False)
+    found: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    plan_code: Mapped[str] = mapped_column(String(32), nullable=False)
+    occurred_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow, nullable=False, index=True
     )
 
 
@@ -259,6 +341,7 @@ class Subscription(Base):
     provider_customer_id: Mapped[str | None] = mapped_column(String(255), index=True)
     provider_subscription_id: Mapped[str | None] = mapped_column(String(255), unique=True)
     provider_price_id: Mapped[str | None] = mapped_column(String(255), index=True)
+    billing_interval: Mapped[str] = mapped_column(String(16), nullable=False, default="month")
     monthly_call_limit: Mapped[int] = mapped_column(BigInteger, nullable=False, default=250)
     monthly_calls_used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
     usage_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

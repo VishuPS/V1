@@ -73,12 +73,14 @@ def test_free_usage_resets_after_period_end(unauthenticated_client, session_fact
         assert record.usage_warning_sent_at is None
 
 
-def stripe_subscription(user_id, plan, status="active", cancel=False):
+def stripe_subscription(user_id, plan, status="active", cancel=False, interval="month"):
     now = int(time.time())
+    duration = 31_536_000 if interval == "year" else 2_592_000
+    suffix = "_annual" if interval == "year" else ""
     return {"id": "sub_123", "customer": "cus_123", "status": status, "cancel_at_period_end": cancel,
-            "current_period_start": now, "current_period_end": now + 2_592_000,
-            "metadata": {"user_id": user_id, "plan": plan},
-            "items": {"data": [{"price": {"id": f"price_{plan.lower()}"}}]}}
+            "current_period_start": now, "current_period_end": now + duration,
+            "metadata": {"user_id": user_id, "plan": plan, "billing_interval": interval},
+            "items": {"data": [{"price": {"id": f"price_{plan.lower()}{suffix}", "recurring": {"interval": interval}}}]}}
 
 
 def test_stripe_upgrade_cancellation_and_duplicate_event(session_factory):
@@ -116,6 +118,29 @@ def test_payment_link_contains_verified_account_reference():
     reference = url.split("client_reference_id=", 1)[1].split("&", 1)[0]
     assert verified_reference(reference, settings) == "user-123"
     assert verified_reference(reference.replace("user-123", "user-456"), settings) is None
+
+
+def test_annual_checkout_does_not_fall_back_to_monthly_payment_link():
+    settings = get_settings().model_copy(update={
+        "stripe_starter_payment_link": "https://buy.stripe.com/starter-monthly",
+        "stripe_starter_annual_payment_link": "https://buy.stripe.com/starter-annual",
+    })
+    monthly = payment_link_checkout(settings, "user-123", "owner@example.com", "STARTER", "month")
+    annual = payment_link_checkout(settings, "user-123", "owner@example.com", "STARTER", "year")
+    assert monthly.startswith("https://buy.stripe.com/starter-monthly?")
+    assert annual.startswith("https://buy.stripe.com/starter-annual?")
+
+
+def test_annual_subscription_keeps_monthly_usage_window(session_factory):
+    user_id, _ = account(session_factory)
+    settings = get_settings().model_copy(update={"stripe_starter_annual_price_id": "price_starter_annual"})
+    with session_factory() as session:
+        event = {"id": "evt_annual", "type": "customer.subscription.updated", "data": {"object": stripe_subscription(user_id, "STARTER", interval="year")}}
+        assert process_stripe_event(session, settings, event) is True
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        assert record.billing_interval == "year"
+        assert record.current_period_end - record.current_period_start > timedelta(days=360)
+        assert timedelta(days=27) < record.usage_period_end - record.usage_period_start < timedelta(days=32)
 
 
 def test_payment_link_webhook_maps_price_to_account(session_factory):

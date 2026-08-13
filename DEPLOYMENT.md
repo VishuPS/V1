@@ -49,13 +49,20 @@ STRIPE_SECRET_KEY=sk_live_your_key
 STRIPE_WEBHOOK_SECRET=whsec_your_secret
 STRIPE_STARTER_PRICE_ID=price_your_starter_price
 STRIPE_GROWTH_PRICE_ID=price_your_growth_price
+STRIPE_STARTER_ANNUAL_PRICE_ID=price_your_starter_annual_price
+STRIPE_GROWTH_ANNUAL_PRICE_ID=price_your_growth_annual_price
 STRIPE_STARTER_PAYMENT_LINK=https://buy.stripe.com/8x25kw3UB0DH81kbtF0Ny01
 STRIPE_GROWTH_PAYMENT_LINK=https://buy.stripe.com/3cI8wIezffyB81k1T50Ny00
+STRIPE_STARTER_ANNUAL_PAYMENT_LINK=https://buy.stripe.com/aFa4gs8aR5Y1a9sfJV0Ny03
+STRIPE_GROWTH_ANNUAL_PAYMENT_LINK=https://buy.stripe.com/eVqaEQ9eV5Y16Xg0P10Ny02
 ```
 
-Create the two recurring Stripe catalog entries once with
+Create the four recurring Stripe catalog entries once with
 `stripe-catalog-sync` (or `python -m app.tools.stripe_catalog`), then copy the
-printed price IDs into Render. Configure Stripe to send subscription events to
+printed monthly and annual price IDs into Render. The annual prices are
+$95.90/year for Starter and $191.90/year for Growth. If Payment Links are used
+instead of API-created Checkout Sessions, create separate annual links and set
+the two annual payment-link variables. Configure Stripe to send subscription events to
 `https://api.barcodenest.com/v1/billing/webhooks/stripe`; copy that endpoint's
 signing secret into `STRIPE_WEBHOOK_SECRET`. Upgrades are activated only by a
 verified webhook, never by the browser checkout redirect.
@@ -87,6 +94,20 @@ proxy address or network; do not broaden it blindly.
 
 Optional settings are documented in `.env.example`, including `BATCH_LIMIT`
 and the JSON `PLAN_LIMITS` override.
+
+Product dataset synchronization is deliberately separate from application
+deployment. A deploy applies `alembic upgrade head` and starts the API; it must
+not run `app.ingestion.sources`. Run the source CLI as an explicit Render job,
+Railway job, cron task, or other one-off worker with persistent temporary disk:
+
+```bash
+python -m app.ingestion.sources --source usda --resume --stats
+```
+
+The command exits without downloading when a valid cached release is already
+present and its source fingerprint/checkpoint makes reruns idempotent. Start
+with `--dry-run --limit 1000` against the production configuration before the
+first write-enabled job.
 
 Registration accepts a name, email address and password. It creates the Free
 account, signs the user in, and displays the first API key once during onboarding.

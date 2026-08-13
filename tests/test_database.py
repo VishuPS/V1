@@ -35,7 +35,7 @@ def test_initial_migration_builds_current_schema(
     command.upgrade(config, "head")
     inspector = inspect(create_engine(f"sqlite:///{database.as_posix()}"))
     assert "products" in inspector.get_table_names()
-    assert {"api_clients", "api_keys", "monthly_usage"} <= set(
+    assert {"api_clients", "api_keys", "monthly_usage", "product_sources", "product_source_syncs"} <= set(
         inspector.get_table_names()
     )
     columns = {column["name"] for column in inspector.get_columns("products")}
@@ -43,6 +43,8 @@ def test_initial_migration_builds_current_schema(
     indexes = {index["name"] for index in inspector.get_indexes("products")}
     assert "ix_products_barcode_type" in indexes
     assert "ix_products_source_identity" in indexes
+    source_indexes = {index["name"] for index in inspector.get_indexes("product_sources")}
+    assert {"ix_product_sources_product_source", "ix_product_sources_source_gtin"} <= source_indexes
     types = {column["name"]: column["type"] for column in inspector.get_columns("products")}
     for column_name in ("name", "brand", "quantity", "image_url", "ingredients"):
         assert isinstance(types[column_name], Text)

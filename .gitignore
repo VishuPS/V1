@@ -7,6 +7,8 @@ data/*.jsonl
 data/*.jsonl.gz
 data/*.jsonl.bz2
 data/*.jsonl.xz
+data/source-cache/
+*.support.sqlite
 .env
 .env.*
 !.env.example

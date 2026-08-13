@@ -15,6 +15,32 @@ class AdminDashboardSummary(BaseModel):
     subscriptions_connected: bool = False
 
 
+class LookupAnalyticsSummary(BaseModel):
+    period_days: int
+    valid_lookups: int
+    found_lookups: int
+    missed_lookups: int
+    hit_rate: float | None
+    unique_gtins: int
+    unique_missed_gtins: int
+    single_lookups: int
+    batch_lookups: int
+
+
+class LookupMissItem(BaseModel):
+    canonical_gtin: str
+    barcode_type: str
+    request_count: int
+    unique_accounts: int
+    first_seen_at: datetime
+    last_seen_at: datetime
+
+
+class LookupMissList(BaseModel):
+    items: list[LookupMissItem]
+    period_days: int
+
+
 class AdminUserListItem(BaseModel):
     id: str
     display_name: str

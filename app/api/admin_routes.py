@@ -12,10 +12,14 @@ from app.admin_schemas import (
     AdminRoleUpdate,
     AdminUserDetails,
     AdminUserList,
+    LookupAnalyticsSummary,
+    LookupMissList,
 )
 from app.admin_service import (
     dashboard_summary,
     list_users,
+    lookup_analytics_summary,
+    lookup_misses,
     regenerate_user_key,
     set_account_active,
     set_admin_role,
@@ -34,6 +38,25 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 @router.get("/dashboard", response_model=AdminDashboardSummary)
 def dashboard(_: AdminContext, session: DbSession) -> AdminDashboardSummary:
     return dashboard_summary(session)
+
+
+@router.get("/analytics/lookups", response_model=LookupAnalyticsSummary)
+def lookup_summary(
+    _: AdminContext,
+    session: DbSession,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
+) -> LookupAnalyticsSummary:
+    return lookup_analytics_summary(session, days=days)
+
+
+@router.get("/analytics/misses", response_model=LookupMissList)
+def misses(
+    _: AdminContext,
+    session: DbSession,
+    days: Annotated[int, Query(ge=1, le=365)] = 30,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+) -> LookupMissList:
+    return lookup_misses(session, days=days, limit=limit)
 
 
 @router.get("/users", response_model=AdminUserList)

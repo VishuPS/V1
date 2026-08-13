@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, func, or_, select, update
@@ -8,6 +8,9 @@ from app.admin_schemas import (
     AdminActivity,
     AdminApiKey,
     AdminDashboardSummary,
+    LookupAnalyticsSummary,
+    LookupMissItem,
+    LookupMissList,
     AdminRegeneratedKey,
     AdminSubscription,
     AdminUserDetails,
@@ -22,9 +25,59 @@ from app.models import (
     AuthSession,
     DailyUsage,
     MonthlyUsage,
+    LookupAnalytics,
     Subscription,
     User,
 )
+
+
+def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsSummary:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    valid, found, unique_gtins, unique_misses, single, batch = session.execute(
+        select(
+            func.count(LookupAnalytics.id),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.found.is_(True)),
+            func.count(func.distinct(LookupAnalytics.canonical_gtin)),
+            func.count(func.distinct(LookupAnalytics.canonical_gtin)).filter(LookupAnalytics.found.is_(False)),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.endpoint_type == "single"),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.endpoint_type == "batch"),
+        ).where(LookupAnalytics.occurred_at >= since)
+    ).one()
+    valid = int(valid or 0)
+    found = int(found or 0)
+    return LookupAnalyticsSummary(
+        period_days=days,
+        valid_lookups=valid,
+        found_lookups=found,
+        missed_lookups=valid - found,
+        hit_rate=round(found / valid * 100, 1) if valid else None,
+        unique_gtins=int(unique_gtins or 0),
+        unique_missed_gtins=int(unique_misses or 0),
+        single_lookups=int(single or 0),
+        batch_lookups=int(batch or 0),
+    )
+
+
+def lookup_misses(session: Session, *, days: int, limit: int) -> LookupMissList:
+    since = datetime.now(timezone.utc) - timedelta(days=days)
+    rows = session.execute(
+        select(
+            LookupAnalytics.canonical_gtin,
+            LookupAnalytics.barcode_type,
+            func.count(LookupAnalytics.id).label("request_count"),
+            func.count(func.distinct(LookupAnalytics.owner_user_id)).label("unique_accounts"),
+            func.min(LookupAnalytics.occurred_at).label("first_seen_at"),
+            func.max(LookupAnalytics.occurred_at).label("last_seen_at"),
+        )
+        .where(LookupAnalytics.occurred_at >= since, LookupAnalytics.found.is_(False))
+        .group_by(LookupAnalytics.canonical_gtin, LookupAnalytics.barcode_type)
+        .order_by(func.count(LookupAnalytics.id).desc(), func.max(LookupAnalytics.occurred_at).desc())
+        .limit(limit)
+    ).all()
+    return LookupMissList(
+        period_days=days,
+        items=[LookupMissItem(**row._mapping) for row in rows],
+    )
 
 
 def _not_found() -> HTTPException:

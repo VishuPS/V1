@@ -1,4 +1,77 @@
 ---
 import AccountLayout from "../layouts/AccountLayout.astro";
 ---
-<AccountLayout title="Billing" current="billing"><header class="portal-header"><div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your current subscription and monthly API allowance.</p></div><a class="button button-secondary" href="/pricing/">Compare plans</a></header><section class="portal-panel"><dl class="detail-list"><div><dt>Current plan</dt><dd id="billing-plan">&mdash;</dd></div><div><dt>Subscription status</dt><dd id="billing-status">&mdash;</dd></div><div><dt>Monthly price</dt><dd id="billing-price">&mdash;</dd></div><div><dt>Allowance resets</dt><dd id="billing-period">&mdash;</dd></div></dl><div class="billing-actions"><button class="button" data-checkout="STARTER" type="button">Choose Starter · $9.99/month</button><button class="button" data-checkout="GROWTH" type="button">Choose Growth · $19.99/month</button><button id="billing-portal" class="button button-secondary" type="button" hidden>Manage billing</button></div></section><div id="billing-message" class="form-status" role="status" aria-live="polite"></div><script>import { authFetch,requireUser,responseMessage } from "../scripts/auth-context";const set=(id:string,value:string)=>{const node=document.getElementById(id);if(node)node.textContent=value};async function load(){const user=await requireUser();if(!user)return;set("billing-plan",user.current_plan);const response=await authFetch("/account/subscription");if(!response.ok){set("billing-status","Unavailable");set("billing-message","Subscription details are temporarily unavailable.");return;}const data=await response.json();set("billing-plan",data.plan);set("billing-status",data.status);set("billing-price",data.price_cents===0?"Free":new Intl.NumberFormat("en",{style:"currency",currency:data.currency}).format(data.price_cents/100));set("billing-period",new Intl.DateTimeFormat("en",{dateStyle:"long"}).format(new Date(data.usage_period_end)));const portal=document.querySelector<HTMLButtonElement>("#billing-portal");if(portal)portal.hidden=!data.provider_customer_id;}async function redirect(path:string,body?:object){set("billing-message","Opening secure billing…");const response=await authFetch(path,{method:"POST",headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});if(!response.ok){set("billing-message",await responseMessage(response));return;}location.assign((await response.json()).url);}document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach(button=>button.addEventListener("click",()=>redirect("/billing/checkout",{plan:button.dataset.checkout})));document.querySelector("#billing-portal")?.addEventListener("click",()=>redirect("/billing/portal"));load();</script></AccountLayout>
+<AccountLayout title="Billing" current="billing">
+  <header class="portal-header">
+    <div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your subscription and monthly API allowance.</p></div>
+    <a class="button button-secondary" href="/pricing/">Compare plans</a>
+  </header>
+  <section class="portal-panel">
+    <dl class="detail-list">
+      <div><dt>Current plan</dt><dd id="billing-plan">&mdash;</dd></div>
+      <div><dt>Subscription status</dt><dd id="billing-status">&mdash;</dd></div>
+      <div><dt>Billing cadence</dt><dd id="billing-cadence">&mdash;</dd></div>
+      <div><dt>Price</dt><dd id="billing-price">&mdash;</dd></div>
+      <div><dt>Allowance resets</dt><dd id="billing-period">&mdash;</dd></div>
+    </dl>
+    <div class="billing-toggle" role="group" aria-label="Billing cadence">
+      <button class="is-active" type="button" data-billing-toggle="month" aria-pressed="true">Monthly</button>
+      <button type="button" data-billing-toggle="year" aria-pressed="false">Yearly <span>Save 20%</span></button>
+    </div>
+    <div class="billing-actions">
+      <button class="button" data-checkout="STARTER" type="button">Choose Starter · $9.99/month</button>
+      <button class="button" data-checkout="GROWTH" type="button">Choose Growth · $19.99/month</button>
+      <button id="billing-portal" class="button button-secondary" type="button" hidden>Manage billing</button>
+    </div>
+    <p class="portal-note">Annual plans are billed once per year. API allowances still reset every month.</p>
+  </section>
+  <div id="billing-message" class="form-status" role="status" aria-live="polite"></div>
+  <script>
+    import { authFetch, requireUser, responseMessage } from "../scripts/auth-context";
+    type Interval = "month" | "year";
+    const prices = {
+      month: { STARTER: "$9.99/month", GROWTH: "$19.99/month" },
+      year: { STARTER: "$95.90/year", GROWTH: "$191.90/year" },
+    } as const;
+    let selectedInterval: Interval = "month";
+    const set = (id: string, value: string) => { const node = document.getElementById(id); if (node) node.textContent = value; };
+    function selectInterval(interval: Interval) {
+      selectedInterval = interval;
+      document.querySelectorAll<HTMLButtonElement>("[data-billing-toggle]").forEach((button) => {
+        const active = button.dataset.billingToggle === interval;
+        button.classList.toggle("is-active", active);
+        button.setAttribute("aria-pressed", String(active));
+      });
+      document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => {
+        const plan = button.dataset.checkout as "STARTER" | "GROWTH";
+        const name = plan === "STARTER" ? "Starter" : "Growth";
+        button.textContent = `Choose ${name} · ${prices[interval][plan]}`;
+      });
+    }
+    async function load() {
+      const user = await requireUser(); if (!user) return;
+      set("billing-plan", user.current_plan);
+      const response = await authFetch("/account/subscription");
+      if (!response.ok) { set("billing-status", "Unavailable"); set("billing-message", "Subscription details are temporarily unavailable."); return; }
+      const data = await response.json();
+      const interval: Interval = data.billing_interval === "year" ? "year" : "month";
+      set("billing-plan", data.plan); set("billing-status", data.status);
+      set("billing-cadence", data.plan === "FREE" ? "Free" : interval === "year" ? "Yearly" : "Monthly");
+      const paidPrices = data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
+      set("billing-price", data.plan === "FREE" ? "Free" : paidPrices);
+      set("billing-period", new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.usage_period_end)));
+      const portal = document.querySelector<HTMLButtonElement>("#billing-portal"); if (portal) portal.hidden = !data.provider_customer_id;
+      selectInterval(interval);
+    }
+    async function redirect(path: string, body?: object) {
+      set("billing-message", "Opening secure billing…");
+      const response = await authFetch(path, { method: "POST", headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
+      if (!response.ok) { set("billing-message", await responseMessage(response)); return; }
+      location.assign((await response.json()).url);
+    }
+    document.querySelectorAll<HTMLButtonElement>("[data-billing-toggle]").forEach((button) => button.addEventListener("click", () => selectInterval(button.dataset.billingToggle as Interval)));
+    document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => button.addEventListener("click", () => redirect("/billing/checkout", { plan: button.dataset.checkout, billing_interval: selectedInterval })));
+    document.querySelector("#billing-portal")?.addEventListener("click", () => redirect("/billing/portal"));
+    load();
+  </script>
+</AccountLayout>

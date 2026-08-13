@@ -513,3 +513,118 @@ corresponding verification meta tag; neither variable is required to build or
 serve the site. After deployment, verify the canonical domain and submit the
 sitemap URL in each webmaster service. No verification token is stored in the
 repository.
+
+## Lookup coverage analytics
+
+Valid product lookups are recorded in `lookup_analytics` so administrators can
+measure real-world database hit rate and review repeated missing GTINs before
+expanding the product index. Single and batch outcomes are stored per canonical
+GTIN; malformed identifiers are excluded. The analytics record contains the
+barcode type, found status, endpoint type, plan snapshot, timestamp, and
+nullable account/key ownership for aggregate segmentation. It does **not**
+store raw API keys, request headers, IP addresses, user agents, or product
+response bodies.
+
+The default retention period is 180 days and can be changed with
+`LOOKUP_ANALYTICS_RETENTION_DAYS` (30–730). Admin-only endpoints expose the
+summary and review queue:
+
+- `GET /v1/admin/analytics/lookups?days=30`
+- `GET /v1/admin/analytics/misses?days=30&limit=25`
+
+Misses are never ingested automatically. Review them for repeated real-world
+demand, noise, test values, source availability, provenance, and licensing
+before using the existing ingestion pipeline.
+
+## Multi-source product ingestion
+
+`products` remains the single canonical, indexed GTIN-14 product table used by
+the public API. `product_sources` stores every contributing source record with
+its source product ID, original GTIN, source URL, licence, timestamps, priority,
+and bounded source metadata. `product_source_syncs` records dataset fingerprints
+and batch checkpoints. Existing Open Food Facts rows are backfilled by Alembic.
+
+Canonical merge policy is intentionally conservative:
+
+- GTIN-14 is the deterministic product identity. UPC-A and its zero-padded
+  EAN/GTIN forms resolve to the same product.
+- A new source fills missing scalar fields but does not replace a useful
+  existing name, brand, ingredients, quantity, or image.
+- Categories, allergens, countries, and nutrition keys are added without
+  silently deleting existing values.
+- Every source record remains independently traceable even when it contributes
+  no canonical field changes.
+
+### Safe USDA test
+
+The command discovers the current official USDA FoodData Central Branded Foods
+CSV archive, downloads it with retry/resume support, validates the ZIP, streams
+records, validates GTINs, and performs no database writes:
+
+```bash
+python -m app.ingestion.sources --source usda --dry-run --limit 1000 --stats
+```
+
+The official archive is cached under `data/source-cache/` and is excluded from
+Git. Repeating the command reuses the validated archive. To validate a small
+local fixture without downloading the archive, add `--source-file path/to.zip`.
+
+### Production USDA import
+
+Apply migrations first, take a database backup, then run this as a separate job
+(never as a web-service startup command):
+
+```bash
+alembic upgrade head
+python -m app.ingestion.sources --source usda --resume --stats
+```
+
+The full job builds a disk-backed support index for USDA descriptions,
+categories, and selected nutrition fields so application RAM stays bounded.
+Use `--skip-nutrition` if only branded product identity and label fields are
+needed. USDA currently reports an approximately 428 MB compressed / 2.9 GB
+uncompressed branded CSV release; reserve at least 8 GB temporary disk for the
+archive and support index. Database growth depends on GTIN overlap and metadata
+length; plan for roughly 2â€“6 GB before measuring a representative 10,000-record
+import in the target PostgreSQL instance.
+
+### Other prepared source adapters
+
+Open Beauty Facts, Open Pet Food Facts, and Open Products Facts are explicit,
+opt-in jobs using the existing Open Facts JSONL parser:
+
+```bash
+python -m app.ingestion.sources --source beauty --dry-run --limit 1000
+python -m app.ingestion.sources --source pet --dry-run --limit 1000
+python -m app.ingestion.sources --source products --dry-run --limit 1000
+```
+
+Their database content is marked `ODbL-1.0`; image URLs retain separate image
+licensing considerations. Review the upstream reuse terms before each
+production import. `--source all` is available only for an intentional combined
+run and is never invoked by deployment.
+
+### Coverage and adding another source
+
+```bash
+python -m app.tools.product_sources
+python -m app.tools.product_sources --json
+```
+
+Coverage reports canonical products, GTINs per source, source-only GTINs,
+multi-source overlaps, source-record counts, and database size. To add a source,
+implement an iterator that yields `MappedSourceProduct`, declare a stable source
+name/licence/URL policy, register it in `app.ingestion.sources`, and add a small
+fixture covering mapping, invalid identifiers, provenance, idempotency, and
+merge behavior. Do not add per-record network calls.
+
+USDA FoodData Central data is public domain and published under CC0 1.0; USDA
+requests source attribution. BarcodeNest stores `USDA_FDC`, `CC0-1.0`, and the
+FDC product URL for each contribution. See the official
+[FoodData Central downloads](https://fdc.nal.usda.gov/download-datasets/) and
+[licensing statement](https://fdc.nal.usda.gov/).
+
+ISBN support is isolated in `app.identifiers`: ISBN-10 converts to ISBN-13, and
+valid 978/979 ISBN-13 values can use the existing GTIN-14 storage representation.
+Open Library bulk ingestion remains optional and is not part of deployment or
+the default source synchronization command.
