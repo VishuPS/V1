@@ -20,13 +20,17 @@ def test_valid_lookup_outcomes_and_admin_hit_rate(
 
     with session_factory() as session:
         events = session.scalars(
-            select(LookupAnalytics).order_by(LookupAnalytics.occurred_at)
+            select(LookupAnalytics)
         ).all()
         assert len(events) == 4
-        assert [event.found for event in events] == [True, False, True, False]
-        assert [event.endpoint_type for event in events] == [
-            "single", "single", "batch", "batch"
-        ]
+        assert {
+            (event.canonical_gtin, event.endpoint_type): event.found for event in events
+        } == {
+            ("03017620422003", "single"): True,
+            ("04006381333931", "single"): False,
+            ("03017620422003", "batch"): True,
+            ("05449000000996", "batch"): False,
+        }
         assert all(len(event.canonical_gtin) == 14 for event in events)
 
     create_user(
