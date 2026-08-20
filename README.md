@@ -5,6 +5,10 @@ normalized product JSON from a local database. It supports EAN-8, UPC-A,
 EAN-13, and GTIN-14, including check-digit validation and equivalent UPC/EAN
 representations.
 
+Optional local-miss recovery is documented in [FALLBACK_PROVIDERS.md](FALLBACK_PROVIDERS.md).
+It is disabled by default and must only be enabled after reviewing provider
+quotas, attribution, caching, and commercial-use constraints.
+
 The customer-facing API never calls Open Food Facts during a lookup:
 
 ```text

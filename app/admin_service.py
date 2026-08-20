@@ -24,6 +24,7 @@ from app.models import (
     ApiKey,
     AuthSession,
     DailyUsage,
+    FallbackProviderState,
     MonthlyUsage,
     LookupAnalytics,
     Subscription,
@@ -33,7 +34,7 @@ from app.models import (
 
 def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsSummary:
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    valid, found, unique_gtins, unique_misses, single, batch = session.execute(
+    valid, found, unique_gtins, unique_misses, single, batch, local_hits, attempts, fallback_hits = session.execute(
         select(
             func.count(LookupAnalytics.id),
             func.count(LookupAnalytics.id).filter(LookupAnalytics.found.is_(True)),
@@ -41,10 +42,16 @@ def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsS
             func.count(func.distinct(LookupAnalytics.canonical_gtin)).filter(LookupAnalytics.found.is_(False)),
             func.count(LookupAnalytics.id).filter(LookupAnalytics.endpoint_type == "single"),
             func.count(LookupAnalytics.id).filter(LookupAnalytics.endpoint_type == "batch"),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.local_found.is_(True)),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.fallback_attempted.is_(True)),
+            func.count(LookupAnalytics.id).filter(LookupAnalytics.provider_found.is_not(None)),
         ).where(LookupAnalytics.occurred_at >= since)
     ).one()
     valid = int(valid or 0)
     found = int(found or 0)
+    local_hits = int(local_hits or 0)
+    local_misses = valid - local_hits
+    fallback_hits = int(fallback_hits or 0)
     return LookupAnalyticsSummary(
         period_days=days,
         valid_lookups=valid,
@@ -55,6 +62,14 @@ def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsS
         unique_missed_gtins=int(unique_misses or 0),
         single_lookups=int(single or 0),
         batch_lookups=int(batch or 0),
+        local_hits=local_hits,
+        local_misses=local_misses,
+        fallback_attempts=int(attempts or 0),
+        fallback_hits=fallback_hits,
+        final_misses=valid - found,
+        local_hit_rate=round(local_hits / valid * 100, 1) if valid else None,
+        fallback_recovery_rate=round(fallback_hits / local_misses * 100, 1) if local_misses else None,
+        effective_hit_rate=round(found / valid * 100, 1) if valid else None,
     )
 
 
@@ -68,6 +83,8 @@ def lookup_misses(session: Session, *, days: int, limit: int) -> LookupMissList:
             func.count(func.distinct(LookupAnalytics.owner_user_id)).label("unique_accounts"),
             func.min(LookupAnalytics.occurred_at).label("first_seen_at"),
             func.max(LookupAnalytics.occurred_at).label("last_seen_at"),
+            func.max(LookupAnalytics.occurred_at).filter(LookupAnalytics.fallback_attempted.is_(True)).label("last_fallback_check"),
+            func.max(LookupAnalytics.provider_found).label("provider_found"),
         )
         .where(LookupAnalytics.occurred_at >= since, LookupAnalytics.found.is_(False))
         .group_by(LookupAnalytics.canonical_gtin, LookupAnalytics.barcode_type)
@@ -76,7 +93,30 @@ def lookup_misses(session: Session, *, days: int, limit: int) -> LookupMissList:
     ).all()
     return LookupMissList(
         period_days=days,
-        items=[LookupMissItem(**row._mapping) for row in rows],
+        items=[_lookup_miss_item(session, row) for row in rows],
+    )
+
+
+def _lookup_miss_item(session: Session, row) -> LookupMissItem:
+    states = session.scalars(
+        select(FallbackProviderState).where(
+            FallbackProviderState.canonical_gtin == row.canonical_gtin
+        ).order_by(FallbackProviderState.checked_at.desc())
+    ).all()
+    last_check = states[0].checked_at if states else row.last_fallback_check
+    if row.provider_found:
+        status_label = "Recovered"
+    elif states and states[0].status == "unavailable":
+        status_label = "Provider unavailable"
+    elif states or row.last_fallback_check:
+        status_label = "Still missing"
+    else:
+        status_label = "Not checked"
+    return LookupMissItem(
+        canonical_gtin=row.canonical_gtin, barcode_type=row.barcode_type,
+        request_count=row.request_count, unique_accounts=row.unique_accounts,
+        first_seen_at=row.first_seen_at, last_seen_at=row.last_seen_at,
+        fallback_status=status_label, last_fallback_check=last_check,
     )
 
 

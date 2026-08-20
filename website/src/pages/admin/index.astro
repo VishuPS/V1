@@ -13,28 +13,28 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   <section class="admin-section lookup-analytics-section">
     <div class="admin-section-heading"><div><span class="panel-label">Coverage observability · last 30 days</span><h2>Real lookup outcomes</h2><p>Valid GTIN lookups only. Malformed input, credentials, IP addresses and user agents are not recorded.</p></div></div>
     <div class="coverage-metrics" aria-live="polite">
-      <div><span>Hit rate</span><strong id="coverage-hit-rate">—</strong></div>
+      <div><span>Effective hit rate</span><strong id="coverage-hit-rate">—</strong></div>
       <div><span>Valid lookups</span><strong id="coverage-valid">—</strong></div>
-      <div><span>Found</span><strong id="coverage-found">—</strong></div>
-      <div><span>Unique misses</span><strong id="coverage-unique-misses">—</strong></div>
+      <div><span>Fallback recovered</span><strong id="coverage-found">—</strong></div>
+      <div><span>Final misses</span><strong id="coverage-unique-misses">—</strong></div>
     </div>
-    <div class="coverage-table-wrap"><table class="admin-table"><thead><tr><th>Missing GTIN</th><th>Format</th><th>Requests</th><th>Accounts</th><th>Last seen</th></tr></thead><tbody id="coverage-misses"><tr><td colspan="5">No valid misses recorded in this period.</td></tr></tbody></table></div>
-    <p class="portal-note">Missing identifiers form a review queue only. BarcodeNest does not ingest them automatically.</p>
+    <div class="coverage-table-wrap"><table class="admin-table"><thead><tr><th>Missing GTIN</th><th>Format</th><th>Requests</th><th>Accounts</th><th>Last seen</th><th>Fallback</th><th>Last check</th></tr></thead><tbody id="coverage-misses"><tr><td colspan="7">No unresolved GTINs recorded in this period.</td></tr></tbody></table></div>
+    <p class="portal-note">Open-data recoveries are cached locally with provenance. Restricted provider results are not permanently stored.</p>
   </section>
   <section class="admin-section admin-start"><div><span class="panel-label">Management</span><h2>Work with customer accounts</h2><p>Search registrations, inspect API usage, control account access and manage credentials.</p></div><a class="button" href="/admin/users/">Open users</a></section>
   <div id="admin-status" class="form-status" role="status" aria-live="polite"></div>
   <script>
     import { adminFetch, requireAdmin } from "../../scripts/admin-api";
     const set = (id: string, value: number) => { const node = document.getElementById(id); if (node) node.textContent = new Intl.NumberFormat().format(value); };
-    type Miss = { canonical_gtin:string; barcode_type:string; request_count:number; unique_accounts:number; last_seen_at:string };
+    type Miss = { canonical_gtin:string; barcode_type:string; request_count:number; unique_accounts:number; last_seen_at:string; fallback_status:string; last_fallback_check:string|null };
     async function loadCoverage() {
       const [summaryResponse, missesResponse] = await Promise.all([adminFetch("/analytics/lookups?days=30"), adminFetch("/analytics/misses?days=30&limit=10")]);
       if (!summaryResponse.ok || !missesResponse.ok) { const hitRate = document.getElementById("coverage-hit-rate"); if (hitRate) hitRate.textContent = "Unavailable"; return; }
       const summary = await summaryResponse.json(); const misses = await missesResponse.json(); const hitRate = document.getElementById("coverage-hit-rate");
-      if (hitRate) hitRate.textContent = summary.hit_rate === null ? "Not enough data" : `${summary.hit_rate}%`;
-      set("coverage-valid", summary.valid_lookups); set("coverage-found", summary.found_lookups); set("coverage-unique-misses", summary.unique_missed_gtins);
+      if (hitRate) hitRate.textContent = summary.effective_hit_rate === null ? "Not enough data" : `${summary.effective_hit_rate}%`;
+      set("coverage-valid", summary.valid_lookups); set("coverage-found", summary.fallback_hits); set("coverage-unique-misses", summary.final_misses);
       const tbody = document.getElementById("coverage-misses");
-      if (tbody && misses.items.length) tbody.replaceChildren(...misses.items.map((item: Miss) => { const row=document.createElement("tr"); [item.canonical_gtin,item.barcode_type,new Intl.NumberFormat().format(item.request_count),new Intl.NumberFormat().format(item.unique_accounts),new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.last_seen_at))].forEach(value=>{const cell=document.createElement("td");cell.textContent=value;row.appendChild(cell);}); return row; }));
+      if (tbody && misses.items.length) tbody.replaceChildren(...misses.items.map((item: Miss) => { const row=document.createElement("tr"); [item.canonical_gtin,item.barcode_type,new Intl.NumberFormat().format(item.request_count),new Intl.NumberFormat().format(item.unique_accounts),new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.last_seen_at)),item.fallback_status,item.last_fallback_check ? new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.last_fallback_check)) : "Never"].forEach(value=>{const cell=document.createElement("td");cell.textContent=value;row.appendChild(cell);}); return row; }));
     }
     async function loadDashboard() { const response = await requireAdmin(); if (!response) return; const data = await response.json(); set("metric-users", data.total_users); set("metric-users-today", data.new_users_today); set("metric-users-month", data.new_users_this_month); set("metric-keys", data.total_api_keys); set("metric-active-keys", data.active_api_keys); set("metric-requests-today", data.total_requests_today); set("metric-requests-month", data.total_requests_this_month); await loadCoverage(); const updated = document.getElementById("dashboard-updated"); if (updated) updated.textContent = `Updated ${new Intl.DateTimeFormat("en", { timeStyle: "short" }).format(new Date())}`; }
     loadDashboard().catch((error) => { const status = document.getElementById("admin-status"); if (status) { status.className = "form-status error"; status.textContent = error instanceof Error ? error.message : "Dashboard unavailable."; } });

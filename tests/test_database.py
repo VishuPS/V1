@@ -35,7 +35,7 @@ def test_initial_migration_builds_current_schema(
     command.upgrade(config, "head")
     inspector = inspect(create_engine(f"sqlite:///{database.as_posix()}"))
     assert "products" in inspector.get_table_names()
-    assert {"api_clients", "api_keys", "monthly_usage", "product_sources", "product_source_syncs"} <= set(
+    assert {"api_clients", "api_keys", "monthly_usage", "product_sources", "product_source_syncs", "fallback_provider_states"} <= set(
         inspector.get_table_names()
     )
     columns = {column["name"] for column in inspector.get_columns("products")}

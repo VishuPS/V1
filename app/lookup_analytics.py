@@ -18,6 +18,10 @@ class LookupOutcome:
     canonical_gtin: str
     barcode_type: str
     found: bool
+    local_found: bool = False
+    fallback_attempted: bool = False
+    providers_attempted: tuple[str, ...] = ()
+    provider_found: str | None = None
 
 
 def record_lookup_outcomes_safely(
@@ -51,6 +55,12 @@ def record_lookup_outcomes_safely(
                     barcode_type=outcome.barcode_type,
                     endpoint_type=endpoint_type,
                     found=outcome.found,
+                    local_found=outcome.local_found,
+                    fallback_attempted=outcome.fallback_attempted,
+                    providers_attempted=list(outcome.providers_attempted),
+                    provider_found=outcome.provider_found,
+                    resolution_source=outcome.provider_found,
+                    resolution_timestamp=timestamp if outcome.provider_found else None,
                     plan_code=context.client.plan,
                     occurred_at=timestamp,
                 )

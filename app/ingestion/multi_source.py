@@ -171,6 +171,17 @@ def _apply_batch(session: Session, records: list[MappedSourceProduct], stats: So
             stats.provenance_updated += 1
 
 
+def apply_mapped_record(session: Session, record: MappedSourceProduct) -> Product:
+    """Apply one validated source record using the normal conservative merge path."""
+    stats = SourceImportStats(source=record.source)
+    _apply_batch(session, [record], stats)
+    session.flush()
+    product = session.get(Product, record.canonical_gtin)
+    if product is None:  # pragma: no cover - defensive invariant
+        raise RuntimeError("Mapped product was not created")
+    return product
+
+
 def import_mapped_records(
     records: Iterable[MappedSourceProduct], session_factory: sessionmaker[Session], *,
     source: str, dataset_url: str | None, dataset_fingerprint: str,

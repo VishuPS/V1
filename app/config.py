@@ -39,6 +39,26 @@ class Settings(BaseSettings):
     )
     ingestion_batch_size: int = 1_000
     lookup_analytics_retention_days: int = Field(default=180, ge=30, le=730)
+    fallback_lookups_enabled: bool = False
+    fallback_user_agent: str = "BarcodeNest/1.0 (support@barcodenest.com)"
+    open_facts_fallback_enabled: bool = True
+    open_facts_timeout_seconds: float = Field(default=2.5, gt=0, le=10)
+    open_facts_negative_ttl_seconds: int = Field(default=86400, ge=60)
+    upcitemdb_enabled: bool = True
+    upcitemdb_api_key: str | None = None
+    upcitemdb_persistence_enabled: bool = True
+    upcitemdb_timeout_seconds: float = Field(default=2.5, gt=0, le=10)
+    upcitemdb_negative_ttl_seconds: int = Field(default=86400, ge=60)
+    upcitemdb_min_interval_seconds: float = Field(default=10.0, ge=0)
+    # Disabled by default until the product surface implements Google's
+    # required attribution/linking treatment.
+    google_books_enabled: bool = False
+    google_books_api_key: str | None = None
+    google_books_timeout_seconds: float = Field(default=2.5, gt=0, le=10)
+    google_books_negative_ttl_seconds: int = Field(default=86400, ge=60)
+    open_library_enabled: bool = True
+    open_library_timeout_seconds: float = Field(default=2.5, gt=0, le=10)
+    open_library_negative_ttl_seconds: int = Field(default=86400, ge=60)
     api_key_hash_secret: str = "development-only-change-me"
     jwt_secret: str = "development-only-jwt-secret-change-me"
     jwt_issuer: str = "https://api.barcodenest.com"

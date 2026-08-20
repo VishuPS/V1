@@ -25,6 +25,14 @@ class LookupAnalyticsSummary(BaseModel):
     unique_missed_gtins: int
     single_lookups: int
     batch_lookups: int
+    local_hits: int = 0
+    local_misses: int = 0
+    fallback_attempts: int = 0
+    fallback_hits: int = 0
+    final_misses: int = 0
+    local_hit_rate: float | None = None
+    fallback_recovery_rate: float | None = None
+    effective_hit_rate: float | None = None
 
 
 class LookupMissItem(BaseModel):
@@ -34,6 +42,8 @@ class LookupMissItem(BaseModel):
     unique_accounts: int
     first_seen_at: datetime
     last_seen_at: datetime
+    fallback_status: str = "Not checked"
+    last_fallback_check: datetime | None = None
 
 
 class LookupMissList(BaseModel):

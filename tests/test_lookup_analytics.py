@@ -50,8 +50,16 @@ def test_valid_lookup_outcomes_and_admin_hit_rate(
         "unique_gtins": 3,
         "unique_missed_gtins": 2,
         "single_lookups": 2,
-        "batch_lookups": 2,
-    }
+            "batch_lookups": 2,
+            "local_hits": 2,
+            "local_misses": 2,
+            "fallback_attempts": 0,
+            "fallback_hits": 0,
+            "final_misses": 2,
+            "local_hit_rate": 50.0,
+            "fallback_recovery_rate": 0.0,
+            "effective_hit_rate": 50.0,
+        }
     misses = unauthenticated_client.get(
         "/v1/admin/analytics/misses?days=30", headers=headers
     )

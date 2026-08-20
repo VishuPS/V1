@@ -227,10 +227,35 @@ class LookupAnalytics(Base):
     barcode_type: Mapped[str] = mapped_column(String(16), nullable=False)
     endpoint_type: Mapped[str] = mapped_column(String(16), nullable=False)
     found: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    local_found: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    fallback_attempted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    providers_attempted: Mapped[list[str]] = mapped_column(JSON, default=list, nullable=False)
+    provider_found: Mapped[str | None] = mapped_column(String(64))
+    resolution_source: Mapped[str | None] = mapped_column(String(64))
+    resolution_timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     plan_code: Mapped[str] = mapped_column(String(32), nullable=False)
     occurred_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, nullable=False, index=True
     )
+
+
+class FallbackProviderState(Base):
+    """Provider-specific negative/check state; never stores API credentials."""
+
+    __tablename__ = "fallback_provider_states"
+    __table_args__ = (
+        UniqueConstraint("canonical_gtin", "provider", name="uq_fallback_state_gtin_provider"),
+        Index("ix_fallback_state_expires", "provider", "expires_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    canonical_gtin: Mapped[str] = mapped_column(String(14), nullable=False, index=True)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    checked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    retry_after_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    detail: Mapped[str | None] = mapped_column(String(128))
 
 
 class RegistrationRequest(Base):

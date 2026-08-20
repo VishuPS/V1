@@ -8,7 +8,7 @@ from app.auth import AuthContext, authenticate_api_key, consume_usage, usage_hea
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.schemas import BatchRequest, BatchResponse, ErrorResponse, LookupResult
-from app.services import lookup_product
+from app.services import resolve_product
 from app.email_service import send_usage_warning_safely
 from app.lookup_analytics import LookupOutcome, record_lookup_outcomes_safely
 
@@ -53,13 +53,16 @@ def get_product(
         parsed = parse_barcode(barcode)
     except BarcodeError as exc:
         raise api_error(status.HTTP_400_BAD_REQUEST, "invalid_barcode", str(exc)) from exc
-    result = lookup_product(session, barcode)
+    resolution = resolve_product(session, barcode, settings=settings)
+    result = resolution.result
     if not result.found:
         session.rollback()
         record_lookup_outcomes_safely(
             session,
             auth,
-            [LookupOutcome(parsed.gtin14, parsed.barcode_type, False)],
+            [LookupOutcome(parsed.gtin14, parsed.barcode_type, False,
+                           resolution.local_found, resolution.fallback_attempted,
+                           tuple(resolution.providers_attempted), resolution.provider_found)],
             endpoint_type="single",
             retention_days=settings.lookup_analytics_retention_days,
         )
@@ -72,7 +75,9 @@ def get_product(
     record_lookup_outcomes_safely(
         session,
         auth,
-        [LookupOutcome(parsed.gtin14, parsed.barcode_type, True)],
+        [LookupOutcome(parsed.gtin14, parsed.barcode_type, True,
+                       resolution.local_found, resolution.fallback_attempted,
+                       tuple(resolution.providers_attempted), resolution.provider_found)],
         endpoint_type="single",
         retention_days=settings.lookup_analytics_retention_days,
     )
@@ -110,10 +115,13 @@ def batch_products(
             "batch_limit_exceeded",
             f"A maximum of {settings.batch_limit} barcodes is allowed",
         )
-    results = [lookup_product(session, barcode) for barcode in payload.barcodes]
+    resolutions = [resolve_product(session, barcode, settings=settings) for barcode in payload.barcodes]
+    results = [resolution.result for resolution in resolutions]
     outcomes = [
-        LookupOutcome(result.canonical_gtin, result.barcode_type, result.found)
-        for result in results
+        LookupOutcome(result.canonical_gtin, result.barcode_type, result.found,
+                      resolution.local_found, resolution.fallback_attempted,
+                      tuple(resolution.providers_attempted), resolution.provider_found)
+        for result, resolution in zip(results, resolutions)
         if result.valid and result.canonical_gtin and result.barcode_type
     ]
     session.rollback()
