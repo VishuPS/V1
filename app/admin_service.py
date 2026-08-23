@@ -27,6 +27,7 @@ from app.models import (
     FallbackProviderState,
     MonthlyUsage,
     LookupAnalytics,
+    Product,
     Subscription,
     User,
 )
@@ -52,6 +53,33 @@ def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsS
     local_hits = int(local_hits or 0)
     local_misses = valid - local_hits
     fallback_hits = int(fallback_hits or 0)
+    missed_gtins = (
+        select(LookupAnalytics.canonical_gtin)
+        .where(
+            LookupAnalytics.occurred_at >= since,
+            LookupAnalytics.found.is_(False),
+        )
+        .distinct()
+        .subquery()
+    )
+    currently_unresolved = session.scalar(
+        select(func.count())
+        .select_from(missed_gtins)
+        .where(
+            ~select(Product.barcode)
+            .where(Product.barcode == missed_gtins.c.canonical_gtin)
+            .exists()
+        )
+    ) or 0
+    resolved_after_miss = session.scalar(
+        select(func.count())
+        .select_from(missed_gtins)
+        .where(
+            select(Product.barcode)
+            .where(Product.barcode == missed_gtins.c.canonical_gtin)
+            .exists()
+        )
+    ) or 0
     return LookupAnalyticsSummary(
         period_days=days,
         valid_lookups=valid,
@@ -67,6 +95,8 @@ def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsS
         fallback_attempts=int(attempts or 0),
         fallback_hits=fallback_hits,
         final_misses=valid - found,
+        currently_unresolved_gtins=currently_unresolved,
+        resolved_after_miss_gtins=resolved_after_miss,
         local_hit_rate=round(local_hits / valid * 100, 1) if valid else None,
         fallback_recovery_rate=round(fallback_hits / local_misses * 100, 1) if local_misses else None,
         effective_hit_rate=round(found / valid * 100, 1) if valid else None,
@@ -75,7 +105,10 @@ def lookup_analytics_summary(session: Session, *, days: int) -> LookupAnalyticsS
 
 def lookup_misses(session: Session, *, days: int, limit: int) -> LookupMissList:
     since = datetime.now(timezone.utc) - timedelta(days=days)
-    rows = session.execute(
+    unresolved_filter = ~select(Product.barcode).where(
+        Product.barcode == LookupAnalytics.canonical_gtin
+    ).exists()
+    base = (
         select(
             LookupAnalytics.canonical_gtin,
             LookupAnalytics.barcode_type,
@@ -86,14 +119,23 @@ def lookup_misses(session: Session, *, days: int, limit: int) -> LookupMissList:
             func.max(LookupAnalytics.occurred_at).filter(LookupAnalytics.fallback_attempted.is_(True)).label("last_fallback_check"),
             func.max(LookupAnalytics.provider_found).label("provider_found"),
         )
-        .where(LookupAnalytics.occurred_at >= since, LookupAnalytics.found.is_(False))
+        .where(
+            LookupAnalytics.occurred_at >= since,
+            LookupAnalytics.found.is_(False),
+            unresolved_filter,
+        )
         .group_by(LookupAnalytics.canonical_gtin, LookupAnalytics.barcode_type)
+    )
+    total = session.scalar(select(func.count()).select_from(base.subquery())) or 0
+    rows = session.execute(
+        base
         .order_by(func.count(LookupAnalytics.id).desc(), func.max(LookupAnalytics.occurred_at).desc())
         .limit(limit)
     ).all()
     return LookupMissList(
         period_days=days,
         items=[_lookup_miss_item(session, row) for row in rows],
+        total=total,
     )
 
 

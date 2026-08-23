@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import inspect, select
 
-from app.models import ApiKey, LookupAnalytics
+from app.models import ApiKey, LookupAnalytics, Product
 from tests.test_admin import auth_headers, create_user
 
 
@@ -56,6 +56,8 @@ def test_valid_lookup_outcomes_and_admin_hit_rate(
             "fallback_attempts": 0,
             "fallback_hits": 0,
             "final_misses": 2,
+            "currently_unresolved_gtins": 2,
+            "resolved_after_miss_gtins": 0,
             "local_hit_rate": 50.0,
             "fallback_recovery_rate": 0.0,
             "effective_hit_rate": 50.0,
@@ -64,9 +66,41 @@ def test_valid_lookup_outcomes_and_admin_hit_rate(
         "/v1/admin/analytics/misses?days=30", headers=headers
     )
     assert misses.status_code == 200
+    assert misses.json()["total"] == 2
     assert {item["canonical_gtin"] for item in misses.json()["items"]} == {
         "04006381333931", "05449000000996"
     }
+
+
+def test_current_unresolved_count_drops_when_a_missed_product_is_added(
+    client, unauthenticated_client, session_factory
+):
+    assert client.get("/v1/products/4006381333931").status_code == 404
+    with session_factory() as session:
+        session.add(Product(
+            barcode="04006381333931", barcode_type="EAN-13",
+            name="Manually recovered product", categories=[], allergens=[],
+            nutrition={}, countries=[], source="MANUAL_VERIFIED", source_id="manual-1",
+        ))
+        session.commit()
+
+    create_user(
+        session_factory, email="recovery-admin@example.com", name="Admin",
+        is_admin=True,
+    )
+    headers = auth_headers(unauthenticated_client, "recovery-admin@example.com")
+    summary = unauthenticated_client.get(
+        "/v1/admin/analytics/lookups?days=30", headers=headers
+    ).json()
+    misses = unauthenticated_client.get(
+        "/v1/admin/analytics/misses?days=30", headers=headers
+    ).json()
+
+    assert summary["final_misses"] == 1
+    assert summary["resolved_after_miss_gtins"] == 1
+    assert summary["currently_unresolved_gtins"] == 0
+    assert misses["total"] == 0
+    assert misses["items"] == []
 
 
 def test_analytics_routes_are_admin_only(unauthenticated_client, session_factory):

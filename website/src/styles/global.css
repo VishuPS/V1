@@ -324,6 +324,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .admin-section-heading h2 { margin:8px 0; }
 .admin-section-heading p { max-width:680px; margin:0; color:var(--muted); }
 .coverage-metrics { display:grid; grid-template-columns:repeat(4,1fr); border:1px solid var(--line); }
+.coverage-metrics-secondary { grid-template-columns:repeat(2,1fr); border-top:0; }
 .coverage-metrics div { padding:20px; border-right:1px solid var(--line); }
 .coverage-metrics div:last-child { border-right:0; }
 .coverage-metrics span,.coverage-metrics strong { display:block; }

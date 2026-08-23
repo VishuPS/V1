@@ -1,7 +1,11 @@
 from sqlalchemy import select
 
-from app.config import get_settings
+from app.config import Settings, get_settings
 from app.models import ApiClient, ApiKey, AuthSession, Subscription, User
+from app.registration import create_registration, registration_network_hash
+from app.schemas import RegistrationCreate
+from fastapi import HTTPException
+import pytest
 
 
 PAYLOAD = {
@@ -72,3 +76,64 @@ def test_registration_can_be_disabled(unauthenticated_client, monkeypatch):
     monkeypatch.setattr(get_settings(), "registration_enabled", False)
     response = unauthenticated_client.post("/v1/auth/register", json=PAYLOAD)
     assert response.status_code == 503
+
+
+def test_free_tier_network_claim_blocks_a_second_email(session_factory):
+    configured = Settings(
+        _env_file=None,
+        free_tier_ip_limit_enabled=True,
+        api_key_hash_secret="test-secret-at-least-thirty-two-characters",
+    )
+    first = RegistrationCreate(**PAYLOAD)
+    second = RegistrationCreate(
+        name="Second Account", email="second@example.com",
+        password="correct horse battery staple",
+    )
+    with session_factory() as session:
+        create_registration(
+            session, first, configured, registration_ip="203.0.113.10"
+        )
+        with pytest.raises(HTTPException) as exc:
+            create_registration(
+                session, second, configured, registration_ip="203.0.113.10"
+            )
+        assert exc.value.status_code == 409
+        assert exc.value.detail["code"] == "free_tier_network_limit_reached"
+        assert len(session.scalars(select(User)).all()) == 1
+
+
+def test_free_tier_network_claim_allows_a_different_network(session_factory):
+    configured = Settings(
+        _env_file=None,
+        free_tier_ip_limit_enabled=True,
+        api_key_hash_secret="test-secret-at-least-thirty-two-characters",
+    )
+    with session_factory() as session:
+        create_registration(
+            session, RegistrationCreate(**PAYLOAD), configured,
+            registration_ip="203.0.113.10",
+        )
+        create_registration(
+            session,
+            RegistrationCreate(
+                name="Second Account", email="second@example.com",
+                password="correct horse battery staple",
+            ),
+            configured,
+            registration_ip="203.0.113.11",
+        )
+        assert len(session.scalars(select(User)).all()) == 2
+        assert all(user.free_tier_registration_ip_hash for user in session.scalars(select(User)))
+
+
+def test_registration_network_hash_uses_ipv6_64_and_never_raw_address():
+    configured = Settings(
+        _env_file=None,
+        free_tier_ip_limit_enabled=True,
+        api_key_hash_secret="test-secret-at-least-thirty-two-characters",
+    )
+    first = registration_network_hash("2001:db8:1:2::1", configured)
+    rotated = registration_network_hash("2001:db8:1:2:abcd::5", configured)
+    assert first == rotated
+    assert first != "2001:db8:1:2::1"
+    assert len(first) == 64

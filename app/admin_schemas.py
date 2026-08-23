@@ -30,6 +30,8 @@ class LookupAnalyticsSummary(BaseModel):
     fallback_attempts: int = 0
     fallback_hits: int = 0
     final_misses: int = 0
+    currently_unresolved_gtins: int = 0
+    resolved_after_miss_gtins: int = 0
     local_hit_rate: float | None = None
     fallback_recovery_rate: float | None = None
     effective_hit_rate: float | None = None
@@ -49,6 +51,7 @@ class LookupMissItem(BaseModel):
 class LookupMissList(BaseModel):
     items: list[LookupMissItem]
     period_days: int
+    total: int = 0
 
 
 class AdminUserListItem(BaseModel):

@@ -86,6 +86,7 @@ def oauth_start(provider: str, settings: SettingsDep) -> RedirectResponse:
 @router.get("/auth/oauth/{provider}/callback", include_in_schema=False)
 async def oauth_callback(
     provider: str,
+    request: Request,
     session: DbSession,
     settings: SettingsDep,
     code: Annotated[str | None, Query()] = None,
@@ -99,7 +100,10 @@ async def oauth_callback(
         return RedirectResponse(f"{login_url}?oauth_error=cancelled", status_code=302)
     validate_oauth_state(state_value, state_cookie, provider, settings)
     identity = await fetch_provider_identity(provider, code, verifier, settings)
-    user, registration = authenticate_oauth_identity(session, identity, settings)
+    user, registration = authenticate_oauth_identity(
+        session, identity, settings,
+        registration_ip=request.client.host if request.client else None,
+    )
     tokens = issue_session_tokens(session, user, settings)
     if registration is None:
         destination = f"{settings.website_url.rstrip('/')}/{'admin/' if user.is_admin else 'dashboard/'}"
@@ -118,7 +122,10 @@ def register_account(
     session: DbSession, settings: SettingsDep,
 ) -> RegistrationVerified:
     ensure_allowed_origin(request, settings)
-    user, registration = create_registration(session, payload, settings)
+    user, registration = create_registration(
+        session, payload, settings,
+        registration_ip=request.client.host if request.client else None,
+    )
     tokens = issue_session_tokens(session, user, settings)
     set_auth_cookies(response, tokens, settings)
     return registration

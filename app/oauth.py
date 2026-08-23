@@ -117,7 +117,10 @@ async def fetch_provider_identity(provider: str, code: str, verifier: str, setti
         return ProviderIdentity("github", str(profile["id"]), email, profile.get("name") or profile.get("login") or email.split("@", 1)[0])
 
 
-def authenticate_oauth_identity(session: Session, identity: ProviderIdentity, settings: Settings) -> tuple[User, RegistrationVerified | None]:
+def authenticate_oauth_identity(
+    session: Session, identity: ProviderIdentity, settings: Settings,
+    *, registration_ip: str | None = None,
+) -> tuple[User, RegistrationVerified | None]:
     linked = session.scalar(select(OAuthIdentity).where(OAuthIdentity.provider == identity.provider, OAuthIdentity.provider_subject == identity.subject))
     if linked is not None:
         linked.provider_email = identity.email
@@ -128,7 +131,11 @@ def authenticate_oauth_identity(session: Session, identity: ProviderIdentity, se
     user = session.scalar(select(User).where(User.email == identity.email))
     registration = None
     if user is None:
-        user, registration = provision_free_account(session, email=identity.email, display_name=identity.display_name, password_hash=None, organization=None, settings=settings)
+        user, registration = provision_free_account(
+            session, email=identity.email, display_name=identity.display_name,
+            password_hash=None, organization=None, settings=settings,
+            registration_ip=registration_ip,
+        )
     if not user.active:
         raise HTTPException(status_code=403, detail={"code": "inactive_user", "message": "This BarcodeNest account is inactive"})
     user.email_verified_at = user.email_verified_at or datetime.now(timezone.utc)

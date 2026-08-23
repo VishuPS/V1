@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     refresh_token_days: int = 30
     auth_cookie_secure: bool = False
     registration_enabled: bool = True
+    free_tier_ip_limit_enabled: bool = False
     website_url: str = "http://localhost:3000"
     google_oauth_client_id: str | None = None
     google_oauth_client_secret: str | None = None
