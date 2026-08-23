@@ -1,0 +1,37 @@
+---
+const { kind, title, intro, fields } = Astro.props;
+---
+<section class="page-hero contribution-hero"><div class="narrow"><div class="eyebrow">Contributor ecosystem</div><h1>{title}</h1><p class="lede">{intro}</p></div></section>
+<section class="section contribution-section"><div class="narrow contribution-layout">
+  <form class="contribution-form" id="contribution-form" data-kind={kind} novalidate>
+    <div class="contribution-fields">
+      {fields.map((field: any) => <div class={`field ${field.wide ? "field-wide" : ""}`}>
+        <label for={field.name}>{field.label}{field.required ? " *" : ""} {field.help && <span>{field.help}</span>}</label>
+        {field.type === "textarea" ? <textarea id={field.name} name={field.name} maxlength={field.max || 3000} rows="4"></textarea> : <input id={field.name} name={field.name} type={field.type || "text"} required={field.required} maxlength={field.max || 500} autocomplete={field.autocomplete || "off"} />}
+      </div>)}
+    </div>
+    <label class="consent"><input name="accepted_terms" type="checkbox" value="true" required/><span>I confirm I may submit this information and agree to the <a href="/terms/#contributor-data">contributor data terms</a>.</span></label>
+    <p class="contribution-auth-note">You can fill this form publicly. Sign-in is required only when you submit.</p>
+    <button class="button button-signal" type="submit">Submit for review</button>
+    <div class="form-status" id="contribution-status" role="status" aria-live="polite"></div>
+  </form>
+  <aside class="contribution-note"><span class="panel-label">Review process</span><h2>Nothing publishes automatically.</h2><p>BarcodeNest validates every submission and an administrator reviews it before approved information can enter the database.</p></aside>
+</div></section>
+<script>
+  import { authFetch, getAuthState, responseMessage } from "../scripts/auth-context";
+  const form = document.querySelector<HTMLFormElement>("#contribution-form");
+  const status = document.querySelector<HTMLElement>("#contribution-status");
+  const storageKey = `barcodenest:contribution:${form?.dataset.kind || "unknown"}`;
+  const saved = sessionStorage.getItem(storageKey);
+  if (saved && form) { try { const values=JSON.parse(saved); for (const [key,value] of Object.entries(values)) { const input=form.elements.namedItem(key) as HTMLInputElement|null; if(input) input.value=String(value ?? ""); } } catch {} }
+  form?.addEventListener("submit", async (event) => {
+    event.preventDefault(); if (!form.reportValidity()) return;
+    const data={...Object.fromEntries(new FormData(form).entries()),accepted_terms:true}; sessionStorage.setItem(storageKey,JSON.stringify(data));
+    const auth=await getAuthState(); if(auth.status!=="authenticated"){ location.assign(`/login/?next=${encodeURIComponent(location.pathname+location.search)}`); return; }
+    const button=form.querySelector<HTMLButtonElement>("button[type=submit]"); if(button){button.disabled=true;button.textContent="Submitting…";} if(status){status.className="form-status";status.textContent="Validating submission…";}
+    const response=await authFetch(`/contributions/${form.dataset.kind}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+    if(response.ok){sessionStorage.removeItem(storageKey);form.reset();if(status){status.className="form-status success";status.textContent="Submitted for administrator review.";}}
+    else if(status){status.className="form-status error";status.textContent=await responseMessage(response);}
+    if(button){button.disabled=false;button.textContent="Submit for review";}
+  });
+</script>

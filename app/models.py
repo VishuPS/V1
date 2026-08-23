@@ -7,6 +7,7 @@ from sqlalchemy import (
     JSON,
     BigInteger,
     Boolean,
+    CheckConstraint,
     Date,
     DateTime,
     ForeignKey,
@@ -304,6 +305,175 @@ class User(Base):
     oauth_identities: Mapped[list["OAuthIdentity"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+
+
+class ProductSubmission(Base):
+    __tablename__ = "product_submissions"
+    __table_args__ = (
+        UniqueConstraint("submitted_by_user_id", "canonical_gtin", name="uq_product_submission_user_gtin"),
+        CheckConstraint("status IN ('PENDING','APPROVED','REJECTED','NEEDS_CHANGES')", name="ck_product_submission_status"),
+        Index("ix_product_submissions_status_created", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    brand_profile_id: Mapped[str | None] = mapped_column(ForeignKey("brands.id", ondelete="SET NULL"), index=True)
+    store_profile_id: Mapped[str | None] = mapped_column(ForeignKey("stores.id", ondelete="SET NULL"), index=True)
+    submitted_gtin: Mapped[str] = mapped_column(String(32), nullable=False)
+    canonical_gtin: Mapped[str] = mapped_column(String(14), nullable=False, index=True)
+    product_name: Mapped[str] = mapped_column(Text, nullable=False)
+    brand: Mapped[str] = mapped_column(Text, nullable=False)
+    manufacturer: Mapped[str | None] = mapped_column(Text)
+    category: Mapped[str | None] = mapped_column(Text)
+    net_content: Mapped[str | None] = mapped_column(Text)
+    quantity: Mapped[str | None] = mapped_column(Text)
+    model: Mapped[str | None] = mapped_column(Text)
+    mpn: Mapped[str | None] = mapped_column(Text)
+    description: Mapped[str | None] = mapped_column(Text)
+    country_of_sale: Mapped[str | None] = mapped_column(String(120))
+    product_url: Mapped[str | None] = mapped_column(Text)
+    image_url: Mapped[str | None] = mapped_column(Text)
+    contribution_source: Mapped[str] = mapped_column(String(32), nullable=False, default="USER_CONTRIBUTED")
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False, default="2026-08")
+    terms_accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="PENDING", index=True)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    contributor_message: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class StoreSubmission(Base):
+    __tablename__ = "store_submissions"
+    __table_args__ = (
+        UniqueConstraint("normalized_name", "normalized_website", name="uq_store_submission_identity"),
+        CheckConstraint("status IN ('PENDING','APPROVED','REJECTED','NEEDS_CHANGES')", name="ck_store_submission_status"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    website: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_website: Mapped[str] = mapped_column(Text, nullable=False)
+    country: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    contact_name: Mapped[str | None] = mapped_column(String(160))
+    contact_email: Mapped[str | None] = mapped_column(String(320))
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False, default="2026-08")
+    terms_accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="PENDING", index=True)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    contributor_message: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class Store(Base):
+    __tablename__ = "stores"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    source_submission_id: Mapped[str] = mapped_column(ForeignKey("store_submissions.id", ondelete="RESTRICT"), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(180), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    website: Mapped[str] = mapped_column(Text, nullable=False)
+    country: Mapped[str] = mapped_column(String(120), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text)
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class BrandSubmission(Base):
+    __tablename__ = "brand_submissions"
+    __table_args__ = (
+        UniqueConstraint("normalized_name", "normalized_website", name="uq_brand_submission_identity"),
+        CheckConstraint("status IN ('PENDING','APPROVED','REJECTED','NEEDS_CHANGES')", name="ck_brand_submission_status"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    normalized_name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
+    company: Mapped[str | None] = mapped_column(String(240))
+    website: Mapped[str] = mapped_column(Text, nullable=False)
+    normalized_website: Mapped[str] = mapped_column(Text, nullable=False)
+    country: Mapped[str | None] = mapped_column(String(120))
+    contact_name: Mapped[str | None] = mapped_column(String(160))
+    business_email: Mapped[str | None] = mapped_column(String(320))
+    description: Mapped[str | None] = mapped_column(Text)
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False, default="2026-08")
+    terms_accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="PENDING", index=True)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    contributor_message: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class Brand(Base):
+    __tablename__ = "brands"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    owner_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    source_submission_id: Mapped[str] = mapped_column(ForeignKey("brand_submissions.id", ondelete="RESTRICT"), unique=True, nullable=False)
+    slug: Mapped[str] = mapped_column(String(180), unique=True, nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    company: Mapped[str | None] = mapped_column(String(240))
+    website: Mapped[str] = mapped_column(Text, nullable=False)
+    country: Mapped[str | None] = mapped_column(String(120))
+    description: Mapped[str | None] = mapped_column(Text)
+    logo_url: Mapped[str | None] = mapped_column(Text)
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class ProductOffer(Base):
+    __tablename__ = "product_offers"
+    __table_args__ = (
+        UniqueConstraint("store_id", "product_barcode", "product_url", name="uq_product_offer_identity"),
+        CheckConstraint("status IN ('PENDING','APPROVED','REJECTED')", name="ck_product_offer_status"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    store_id: Mapped[str] = mapped_column(ForeignKey("stores.id", ondelete="CASCADE"), nullable=False, index=True)
+    product_barcode: Mapped[str] = mapped_column(ForeignKey("products.barcode", ondelete="CASCADE"), nullable=False, index=True)
+    product_url: Mapped[str] = mapped_column(Text, nullable=False)
+    price_minor: Mapped[int | None] = mapped_column(BigInteger)
+    currency: Mapped[str | None] = mapped_column(String(3))
+    availability: Mapped[str | None] = mapped_column(String(32))
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="PENDING", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+
+class BulkSubmission(Base):
+    __tablename__ = "bulk_submissions"
+    __table_args__ = (CheckConstraint("status IN ('PENDING','APPROVED','REJECTED','NEEDS_CHANGES')", name="ck_bulk_submission_status"),)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    submitted_by_user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    row_count: Mapped[int] = mapped_column(nullable=False)
+    valid_row_count: Mapped[int] = mapped_column(nullable=False)
+    rows: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False)
+    validation_errors: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    terms_version: Mapped[str] = mapped_column(String(32), nullable=False, default="2026-08")
+    terms_accepted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="PENDING", index=True)
+    review_notes: Mapped[str | None] = mapped_column(Text)
+    contributor_message: Mapped[str | None] = mapped_column(Text)
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    reviewed_by_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
 
 class OAuthIdentity(Base):

@@ -4,6 +4,7 @@ const { title, current = "dashboard" } = Astro.props;
 const links = [
   ["Overview", "/admin/", "dashboard"],
   ["Users", "/admin/users/", "users"],
+  ["Contributions", "/admin/contributions/", "contributions"],
 ];
 ---
 <BaseLayout title={`${title} - BarcodeNest Admin`} description="BarcodeNest administration." noindex={true}>

@@ -1,0 +1,13 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+const cards=[
+  ["Add a product","Submit a missing barcode and its product information.","/contribute/product/","Add Product"],
+  ["List your store","Add your store and connect products you sell to BarcodeNest.","/contribute/store/","List Your Store"],
+  ["List your brand","Register a brand and contribute authoritative product information.","/contribute/brand/","List Your Brand"],
+];
+---
+<BaseLayout title="Contribute Product Data | BarcodeNest" description="Contribute missing products, stores, brands, and catalogue data to the BarcodeNest product database." current="contribute">
+  <section class="page-hero"><div class="container"><div class="eyebrow">Contributor ecosystem</div><h1>Help build the BarcodeNest database.</h1><p class="lede">Missing product? Own a store? Represent a brand? Help improve product data for everyone.</p></div></section>
+  <section class="section"><div class="container"><div class="contribution-card-grid">{cards.map(([title,copy,href,cta])=><article class="contribution-card"><h2>{title}</h2><p>{copy}</p><a class="button button-secondary" href={href}>{cta}</a></article>)}</div></div></section>
+  <section class="contribute-band"><div class="container contribute-band-grid"><div><div class="eyebrow">Have thousands of products?</div><h2>Submit a catalogue safely.</h2><p>Validate up to 1,000 CSV rows, preview issues, and send the valid catalogue for administrator review.</p></div><a class="button button-signal" href="/contribute/bulk/">Bulk Product Submission</a></div></section>
+</BaseLayout>

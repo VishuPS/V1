@@ -18,7 +18,7 @@ walk(dist);
 const failures = [];
 const titles = new Map();
 const descriptions = new Map();
-const privatePrefixes = ["admin/", "account/", "api-keys/", "billing/", "dashboard/", "login/", "oauth-complete/", "onboarding/", "profile/", "register/", "settings/"];
+const privatePrefixes = ["admin/", "account/", "api-keys/", "billing/", "contributions/", "dashboard/", "login/", "oauth-complete/", "onboarding/", "profile/", "register/", "settings/"];
 const value = (html, pattern) => html.match(pattern)?.[1]?.trim();
 
 for (const file of htmlFiles) {
@@ -64,7 +64,7 @@ for (const asset of ["robots.txt", "sitemap.xml", "favicon.svg", "barcode-lookup
   if (!existsSync(join(dist, asset))) failures.push(`dist/${asset}: missing`);
 }
 const sitemap = readFileSync(join(dist, "sitemap.xml"), "utf8");
-for (const route of ["barcode-api/", "upc-api/", "ean-api/", "gtin-api/", "barcode-database/", "docs/barcode-lookup/", "docs/authentication/", "docs/rate-limits/", "docs/errors/"]) {
+for (const route of ["barcode-api/", "upc-api/", "ean-api/", "gtin-api/", "barcode-database/", "contribute/", "contribute/product/", "contribute/store/", "contribute/brand/", "contribute/bulk/", "docs/barcode-lookup/", "docs/authentication/", "docs/rate-limits/", "docs/errors/"]) {
   if (!sitemap.includes(`https://barcodenest.com/${route}`)) failures.push(`sitemap: missing ${route}`);
 }
 

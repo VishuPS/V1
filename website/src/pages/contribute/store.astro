@@ -1,0 +1,11 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ContributionForm from "../../components/ContributionForm.astro";
+const fields=[
+  {name:"name",label:"Store name",required:true,autocomplete:"organization"},{name:"website",label:"Website",type:"url",required:true,autocomplete:"url"},
+  {name:"country",label:"Country",required:true,autocomplete:"country-name"},{name:"logo_url",label:"Logo URL",type:"url"},
+  {name:"contact_name",label:"Contact name",autocomplete:"name"},{name:"contact_email",label:"Contact email",type:"email",autocomplete:"email"},
+  {name:"description",label:"Description",type:"textarea",wide:true,max:3000},
+];
+---
+<BaseLayout title="List Your Store | BarcodeNest" description="Submit a retail store for review and future product catalogue connections." current="contribute"><ContributionForm kind="stores" title="List your store." intro="Create a reviewed public store profile and prepare to associate products you sell with canonical GTINs." fields={fields}/></BaseLayout>
