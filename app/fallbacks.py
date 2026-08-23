@@ -210,6 +210,118 @@ class UPCItemDBFallback:
         return ProviderResult("found", FallbackCandidate(mapped, self.persistence_enabled))
 
 
+def _localized_text(value: object) -> str | None:
+    if not isinstance(value, dict):
+        return None
+    preferred = clean_text(value.get("en"))
+    if preferred:
+        return preferred
+    return next((text for item in value.values() if (text := clean_text(item))), None)
+
+
+class EANDBFallback:
+    """Final authenticated fallback using EAN-DB's Product API v2."""
+
+    name = "EANDB"
+
+    def __init__(self, settings: Settings, transport: HttpTransport) -> None:
+        self.transport = transport
+        self.timeout = settings.eandb_timeout_seconds
+        self.negative_ttl = settings.eandb_negative_ttl_seconds
+        self.api_key = settings.eandb_api_key
+        self.persistence_enabled = settings.eandb_persistence_enabled
+        self.user_agent = settings.fallback_user_agent
+
+    def lookup(self, canonical_gtin: str) -> ProviderResult:
+        if not self.api_key:
+            return ProviderResult("unavailable", detail="missing_api_key")
+        code = canonical_gtin.lstrip("0") or canonical_gtin
+        response = self.transport.get(
+            f"https://ean-db.com/api/v2/product/{code}",
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Accept": "application/json",
+                "User-Agent": self.user_agent,
+            },
+            timeout=self.timeout,
+        )
+        if response.status == 404:
+            return ProviderResult("miss")
+        if response.status == 400:
+            return ProviderResult("invalid", detail="provider_rejected_gtin")
+        if response.status in {401, 403}:
+            return ProviderResult(
+                "unavailable", retry_after_seconds=300, detail="access_denied"
+            )
+        if response.status == 429 or response.status >= 500:
+            return ProviderResult(
+                "unavailable", retry_after_seconds=_retry_after(response.headers)
+            )
+        if response.status != 200:
+            return ProviderResult("error", detail=f"http_{response.status}")
+
+        data = _json(response)
+        product = data.get("product") if isinstance(data, dict) else None
+        if not isinstance(product, dict):
+            return ProviderResult("invalid", detail="missing_product")
+        returned = clean_text(product.get("barcode"))
+        if not _valid_candidate(canonical_gtin, returned):
+            return ProviderResult("invalid", detail="gtin_mismatch")
+        name = _localized_text(product.get("titles"))
+        if not name:
+            return ProviderResult("invalid", detail="missing_title")
+
+        manufacturer = product.get("manufacturer")
+        brand = (
+            _localized_text(manufacturer.get("titles"))
+            if isinstance(manufacturer, dict) else None
+        )
+        categories = [
+            title
+            for category in product.get("categories", [])
+            if isinstance(category, dict)
+            and (title := _localized_text(category.get("titles")))
+        ]
+        images = product.get("images")
+        image_url = (
+            next(
+                (
+                    url
+                    for image in images
+                    if isinstance(image, dict)
+                    and (url := clean_text(image.get("url")))
+                    and url.startswith(("https://", "http://"))
+                ),
+                None,
+            )
+            if isinstance(images, list)
+            else None
+        )
+        details = product.get("barcodeDetails")
+        mapped = _mapped(
+            returned,
+            source=self.name,
+            source_id=returned,
+            name=name,
+            license_name="EANDB-PROPRIETARY-API",
+            source_url="https://ean-db.com/",
+            brand=brand,
+            categories=categories,
+            image_url=image_url,
+            metadata={
+                "barcode_details": details if isinstance(details, dict) else {},
+                "persistence": (
+                    "operator-confirmed-separate-permission"
+                    if self.persistence_enabled else "disabled_provider_terms"
+                ),
+            },
+            priority=350,
+        )
+        return ProviderResult(
+            "found", FallbackCandidate(mapped, self.persistence_enabled)
+        )
+
+
 class GoogleBooksFallback:
     name = "GOOGLE_BOOKS"
 
@@ -301,6 +413,8 @@ class FallbackResolver:
             general.append(OpenFactsFallback(self.settings, transport))
         if self.settings.upcitemdb_enabled:
             general.append(UPCItemDBFallback(self.settings, transport))
+        if self.settings.eandb_enabled and self.settings.eandb_api_key:
+            general.append(EANDBFallback(self.settings, transport))
         return general
 
     def _route(self, gtin: str) -> list[ProviderAdapter]:
@@ -313,7 +427,9 @@ class FallbackResolver:
             books.append(GoogleBooksFallback(self.settings, transport))
         if self.settings.open_library_enabled:
             books.append(OpenLibraryFallback(self.settings, transport))
-        return books + [p for p in self.providers if p.name == "UPCITEMDB"]
+        return books + [
+            p for p in self.providers if p.name in {"UPCITEMDB", "EANDB"}
+        ]
 
     @staticmethod
     def _aware(value: datetime) -> datetime:

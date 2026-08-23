@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from app.config import Settings
 from app.fallbacks import (
     FallbackCandidate,
+    EANDBFallback,
     FallbackResolver,
     GoogleBooksFallback,
     HttpResponse,
@@ -175,6 +176,80 @@ def test_upcitemdb_wrong_gtin_and_malformed_json():
         pass
     else:
         raise AssertionError("malformed JSON should be isolated by resolver")
+
+
+def test_eandb_maps_localized_product_and_is_transient_by_default():
+    payload = {"balance": 247, "product": {
+        "barcode": "0893594002037",
+        "titles": {"en": "PopCorners Cheesy Jalapeño"},
+        "manufacturer": {"titles": {"en": "POPCORNERS"}},
+        "categories": [{"id": "422", "titles": {"en": "Food Items"}}],
+        "images": [{"url": "https://ean-db.com/example.jpg"}],
+        "barcodeDetails": {"type": "EAN-13", "country": "us"},
+    }}
+    transport = Transport(response(payload))
+    adapter = EANDBFallback(settings(eandb_api_key="secret"), transport)
+
+    result = adapter.lookup("00893594002037")
+
+    assert result.status == "found"
+    assert result.candidate.persist_allowed is False
+    assert result.candidate.mapped.name == "PopCorners Cheesy Jalapeño"
+    assert result.candidate.mapped.brand == "POPCORNERS"
+    assert result.candidate.mapped.categories == ["Food Items"]
+    assert result.candidate.mapped.image_url == "https://ean-db.com/example.jpg"
+    assert transport.calls[0][1]["Authorization"] == "Bearer secret"
+
+
+def test_eandb_rejects_wrong_gtin_and_handles_provider_statuses():
+    transport = Transport(
+        response({"product": {"barcode": "5449000000996", "titles": {"en": "Wrong"}}}),
+        HttpResponse(404, b"{}"),
+        HttpResponse(403, b"{}"),
+        HttpResponse(429, b"{}", {"Retry-After": "45"}),
+    )
+    adapter = EANDBFallback(settings(eandb_api_key="secret"), transport)
+
+    assert adapter.lookup("04006381333931").status == "invalid"
+    assert adapter.lookup("04006381333931").status == "miss"
+    denied = adapter.lookup("04006381333931")
+    assert denied.status == "unavailable" and denied.retry_after_seconds == 300
+    limited = adapter.lookup("04006381333931")
+    assert limited.status == "unavailable" and limited.retry_after_seconds == 45
+
+
+def test_eandb_is_final_general_fallback_and_can_persist_with_permission(session_factory):
+    transport = Transport(response({"product": {
+        "barcode": "5010775181694",
+        "titles": {"en": "Kinnerton Tango chocolate bar"},
+        "manufacturer": {"titles": {"en": "Kinnerton"}},
+        "categories": [], "images": [],
+    }}))
+    configured = settings(
+        open_facts_fallback_enabled=False,
+        upcitemdb_enabled=False,
+        eandb_enabled=True,
+        eandb_api_key="secret",
+        eandb_persistence_enabled=True,
+    )
+    with session_factory() as session:
+        resolver = FallbackResolver(session, configured, transport=transport)
+        assert [provider.name for provider in resolver.providers] == ["EANDB"]
+        result = resolve_product(
+            session, "5010775181694", settings=configured,
+            fallback_resolver=resolver,
+        )
+        assert result.provider_found == "EANDB"
+        assert session.get(Product, "05010775181694").name == "Kinnerton Tango chocolate bar"
+
+
+def test_eandb_is_ordered_after_upcitemdb(session_factory):
+    configured = settings(eandb_enabled=True, eandb_api_key="secret")
+    with session_factory() as session:
+        resolver = FallbackResolver(session, configured, transport=Transport())
+    assert [provider.name for provider in resolver.providers] == [
+        "OPEN_FACTS_API", "UPCITEMDB", "EANDB"
+    ]
 
 
 def test_google_books_isbn_hit_is_transient():
