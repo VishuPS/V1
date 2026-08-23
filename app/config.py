@@ -52,6 +52,7 @@ class Settings(BaseSettings):
     upcitemdb_min_interval_seconds: float = Field(default=10.0, ge=0)
     eandb_enabled: bool = False
     eandb_api_key: str | None = None
+    eandb_user_agent: str | None = None
     eandb_persistence_enabled: bool = False
     eandb_timeout_seconds: float = Field(default=2.5, gt=0, le=10)
     eandb_negative_ttl_seconds: int = Field(default=86400, ge=60)

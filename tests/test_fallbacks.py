@@ -188,7 +188,10 @@ def test_eandb_maps_localized_product_and_is_transient_by_default():
         "barcodeDetails": {"type": "EAN-13", "country": "us"},
     }}
     transport = Transport(response(payload))
-    adapter = EANDBFallback(settings(eandb_api_key="secret"), transport)
+    adapter = EANDBFallback(
+        settings(eandb_api_key="secret", eandb_user_agent="Account Owner"),
+        transport,
+    )
 
     result = adapter.lookup("00893594002037")
 
@@ -199,6 +202,7 @@ def test_eandb_maps_localized_product_and_is_transient_by_default():
     assert result.candidate.mapped.categories == ["Food Items"]
     assert result.candidate.mapped.image_url == "https://ean-db.com/example.jpg"
     assert transport.calls[0][1]["Authorization"] == "Bearer secret"
+    assert transport.calls[0][1]["User-Agent"] == "Account Owner"
 
 
 def test_eandb_rejects_wrong_gtin_and_handles_provider_statuses():

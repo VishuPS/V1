@@ -230,7 +230,7 @@ class EANDBFallback:
         self.negative_ttl = settings.eandb_negative_ttl_seconds
         self.api_key = settings.eandb_api_key
         self.persistence_enabled = settings.eandb_persistence_enabled
-        self.user_agent = settings.fallback_user_agent
+        self.user_agent = settings.eandb_user_agent or settings.fallback_user_agent
 
     def lookup(self, canonical_gtin: str) -> ProviderResult:
         if not self.api_key:
