@@ -17,6 +17,7 @@ RUN python -m pip install --no-cache-dir -r requirements-prod.lock
 COPY pyproject.toml README.md alembic.ini ./
 COPY app ./app
 COPY migrations ./migrations
+COPY scripts/import_verified_beauty_products.py ./scripts/import_verified_beauty_products.py
 RUN python -m pip install --no-cache-dir --no-deps .
 
 USER app
