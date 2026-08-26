@@ -7,6 +7,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
@@ -322,6 +323,85 @@ class EANDBFallback:
         )
 
 
+class OpenIcecatFallback:
+    """Final exact-GTIN fallback using Open Icecat's compact MetaXML API."""
+
+    name = "OPEN_ICECAT"
+    _lock = threading.Lock()
+    _last_call = 0.0
+
+    def __init__(self, settings: Settings, transport: HttpTransport) -> None:
+        self.transport = transport
+        self.api_token = settings.open_icecat_api_token
+        self.timeout = settings.open_icecat_timeout_seconds
+        self.negative_ttl = settings.open_icecat_negative_ttl_seconds
+        self.min_interval = settings.open_icecat_min_interval_seconds
+        self.user_agent = settings.fallback_user_agent
+
+    def lookup(self, canonical_gtin: str) -> ProviderResult:
+        if not self.api_token:
+            return ProviderResult("unavailable", detail="missing_api_token")
+        with self._lock:
+            elapsed = time.monotonic() - self._last_call
+            if elapsed < self.min_interval:
+                return ProviderResult("unavailable", retry_after_seconds=max(1, int(self.min_interval - elapsed + 1)), detail="local_rate_limit")
+            type(self)._last_call = time.monotonic()
+        code = canonical_gtin.lstrip("0") or canonical_gtin
+        url = "https://data.icecat.biz/xml_s3/xml_server3.cgi?" + urllib.parse.urlencode(
+            {"lang": "EN", "ean_upc": code, "output": "metaxml"}
+        )
+        response = self.transport.get(
+            url,
+            headers={"api-token": self.api_token, "Accept": "application/xml", "User-Agent": self.user_agent},
+            timeout=self.timeout,
+        )
+        if response.status == 404:
+            return ProviderResult("miss")
+        if response.status in {401, 403}:
+            return ProviderResult("unavailable", retry_after_seconds=300, detail="access_denied")
+        if response.status == 429 or response.status >= 500:
+            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers))
+        if response.status != 200:
+            return ProviderResult("error", detail=f"http_{response.status}")
+        try:
+            root = ET.fromstring(response.body)
+        except ET.ParseError:
+            return ProviderResult("invalid", detail="invalid_xml")
+        file_node = root.find(".//file")
+        if file_node is None:
+            return ProviderResult("miss")
+        returned_values = [node.attrib["Value"] for node in root.findall(".//EAN_UPC") if node.attrib.get("Value")]
+        returned = next((value for value in returned_values if _valid_candidate(canonical_gtin, value)), None)
+        if not returned:
+            return ProviderResult("invalid", detail="gtin_mismatch")
+        name = clean_text(file_node.attrib.get("Model_Name"))
+        if not name:
+            return ProviderResult("invalid", detail="missing_title")
+        mapped_id = root.find(".//M_Prod_ID")
+        brand = clean_text(mapped_id.attrib.get("Supplier_name")) if mapped_id is not None else None
+        icecat_id = clean_text(file_node.attrib.get("Product_ID")) or returned
+        mapped = _mapped(
+            returned,
+            source=self.name,
+            source_id=icecat_id,
+            name=name,
+            license_name="OPEN-ICECAT-OCL-1.4",
+            source_url=f"https://icecat.biz/p/{icecat_id}",
+            brand=brand,
+            categories=[],
+            metadata={
+                "brand_product_code": clean_text(file_node.attrib.get("Prod_ID")),
+                "icecat_category_id": clean_text(file_node.attrib.get("Catid")),
+                "returned_gtins": returned_values,
+                "attribution_required": "Specs Icecat",
+                "disclaimer_required": "Open Icecat AS IS disclaimer",
+                "persistence": "disabled_pending_attribution_surface",
+            },
+            priority=400,
+        )
+        return ProviderResult("found", FallbackCandidate(mapped, False))
+
+
 class GoogleBooksFallback:
     name = "GOOGLE_BOOKS"
 
@@ -415,6 +495,8 @@ class FallbackResolver:
             general.append(UPCItemDBFallback(self.settings, transport))
         if self.settings.eandb_enabled and self.settings.eandb_api_key:
             general.append(EANDBFallback(self.settings, transport))
+        if self.settings.open_icecat_enabled and self.settings.open_icecat_api_token:
+            general.append(OpenIcecatFallback(self.settings, transport))
         return general
 
     def _route(self, gtin: str) -> list[ProviderAdapter]:
@@ -428,7 +510,7 @@ class FallbackResolver:
         if self.settings.open_library_enabled:
             books.append(OpenLibraryFallback(self.settings, transport))
         return books + [
-            p for p in self.providers if p.name in {"UPCITEMDB", "EANDB"}
+            p for p in self.providers if p.name in {"UPCITEMDB", "EANDB", "OPEN_ICECAT"}
         ]
 
     @staticmethod

@@ -11,6 +11,7 @@ from app.fallbacks import (
     GoogleBooksFallback,
     HttpResponse,
     OpenFactsFallback,
+    OpenIcecatFallback,
     OpenLibraryFallback,
     ProviderResult,
     UPCItemDBFallback,
@@ -54,7 +55,7 @@ def response(payload, status=200, headers=None):
 
 def settings(**overrides):
     values = dict(_env_file=None, fallback_lookups_enabled=True,
-                  upcitemdb_min_interval_seconds=0)
+                  upcitemdb_min_interval_seconds=0, open_icecat_min_interval_seconds=0)
     values.update(overrides)
     return Settings(**values)
 
@@ -254,6 +255,40 @@ def test_eandb_is_ordered_after_upcitemdb(session_factory):
     assert [provider.name for provider in resolver.providers] == [
         "OPEN_FACTS_API", "UPCITEMDB", "EANDB"
     ]
+
+
+def test_open_icecat_is_final_and_exact_gtin_only(session_factory):
+    xml = b'''<ICECAT-interface><files.index><file Product_ID="832848" Prod_ID="1447B006" Catid="575" Model_Name="EOS 400D"><M_Prod_ID Supplier_name="Canon"/><EAN_UPCS><EAN_UPC Value="4960999358246"/></EAN_UPCS></file></files.index></ICECAT-interface>'''
+    configured = settings(open_icecat_enabled=True, open_icecat_api_token="token")
+    adapter = OpenIcecatFallback(configured, Transport(HttpResponse(200, xml)))
+    result = adapter.lookup("04960999358246")
+    assert result.status == "found"
+    assert result.candidate.persist_allowed is False
+    assert result.candidate.mapped.name == "EOS 400D"
+    assert result.candidate.mapped.brand == "Canon"
+    assert result.candidate.mapped.source_metadata["icecat_category_id"] == "575"
+
+    wrong = xml.replace(b"4960999358246", b"4006381333931")
+    assert OpenIcecatFallback(configured, Transport(HttpResponse(200, wrong))).lookup("04960999358246").status == "invalid"
+
+    with session_factory() as session:
+        resolver = FallbackResolver(session, configured, transport=Transport())
+    assert [provider.name for provider in resolver.providers][-1] == "OPEN_ICECAT"
+
+
+def test_open_icecat_handles_miss_auth_rate_limit_and_invalid_xml():
+    configured = settings(open_icecat_api_token="token")
+    transport = Transport(
+        HttpResponse(200, b"<ICECAT-interface><files.index/></ICECAT-interface>"),
+        HttpResponse(403, b""), HttpResponse(429, b"", {"Retry-After": "45"}),
+        HttpResponse(200, b"not xml"),
+    )
+    adapter = OpenIcecatFallback(configured, transport)
+    assert adapter.lookup("04960999358246").status == "miss"
+    assert adapter.lookup("04960999358246").status == "unavailable"
+    limited = adapter.lookup("04960999358246")
+    assert limited.status == "unavailable" and limited.retry_after_seconds == 45
+    assert adapter.lookup("04960999358246").status == "invalid"
 
 
 def test_google_books_isbn_hit_is_transient():
