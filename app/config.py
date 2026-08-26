@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     eandb_negative_ttl_seconds: int = Field(default=86400, ge=60)
     open_icecat_enabled: bool = False
     open_icecat_api_token: str | None = None
+    open_icecat_persistence_enabled: bool = False
     open_icecat_timeout_seconds: float = Field(default=3.0, gt=0, le=10)
     open_icecat_negative_ttl_seconds: int = Field(default=86400, ge=60)
     open_icecat_min_interval_seconds: float = Field(default=1.0, ge=0)

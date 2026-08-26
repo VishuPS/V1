@@ -333,6 +333,7 @@ class OpenIcecatFallback:
     def __init__(self, settings: Settings, transport: HttpTransport) -> None:
         self.transport = transport
         self.api_token = settings.open_icecat_api_token
+        self.persistence_enabled = settings.open_icecat_persistence_enabled
         self.timeout = settings.open_icecat_timeout_seconds
         self.negative_ttl = settings.open_icecat_negative_ttl_seconds
         self.min_interval = settings.open_icecat_min_interval_seconds
@@ -395,11 +396,16 @@ class OpenIcecatFallback:
                 "returned_gtins": returned_values,
                 "attribution_required": "Specs Icecat",
                 "disclaimer_required": "Open Icecat AS IS disclaimer",
-                "persistence": "disabled_pending_attribution_surface",
+                "persistence": (
+                    "enabled_with_source_provenance"
+                    if self.persistence_enabled else "disabled_by_configuration"
+                ),
             },
             priority=400,
         )
-        return ProviderResult("found", FallbackCandidate(mapped, False))
+        return ProviderResult(
+            "found", FallbackCandidate(mapped, self.persistence_enabled)
+        )
 
 
 class GoogleBooksFallback:

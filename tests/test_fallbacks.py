@@ -276,6 +276,46 @@ def test_open_icecat_is_final_and_exact_gtin_only(session_factory):
     assert [provider.name for provider in resolver.providers][-1] == "OPEN_ICECAT"
 
 
+def test_open_icecat_verified_hit_persists_and_next_lookup_stays_local(session_factory):
+    xml = b'''<ICECAT-interface><files.index><file Product_ID="832848" Prod_ID="1447B006" Catid="575" Model_Name="EOS 400D"><M_Prod_ID Supplier_name="Canon"/><EAN_UPCS><EAN_UPC Value="4960999358246"/></EAN_UPCS></file></files.index></ICECAT-interface>'''
+    configured = settings(
+        open_icecat_enabled=True,
+        open_icecat_api_token="token",
+        open_icecat_persistence_enabled=True,
+    )
+    transport = Transport(HttpResponse(200, xml))
+
+    with session_factory() as session:
+        resolver = FallbackResolver(
+            session,
+            configured,
+            providers=[OpenIcecatFallback(configured, transport)],
+        )
+        first = resolve_product(
+            session, "4960999358246", settings=configured,
+            fallback_resolver=resolver,
+        )
+        second = resolve_product(
+            session, "4960999358246", settings=configured,
+            fallback_resolver=resolver,
+        )
+
+        assert first.provider_found == "OPEN_ICECAT"
+        assert second.local_found is True
+        product = session.get(Product, "04960999358246")
+        assert product is not None
+        assert product.name == "EOS 400D"
+        assert product.brand == "Canon"
+        provenance = session.scalar(select(ProductSourceRecord).where(
+            ProductSourceRecord.source == "OPEN_ICECAT"
+        ))
+        assert provenance is not None
+        assert provenance.license == "OPEN-ICECAT-OCL-1.4"
+        assert provenance.source_metadata["attribution_required"] == "Specs Icecat"
+
+    assert len(transport.calls) == 1
+
+
 def test_open_icecat_handles_miss_auth_rate_limit_and_invalid_xml():
     configured = settings(open_icecat_api_token="token")
     transport = Transport(
