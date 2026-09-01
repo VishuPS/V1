@@ -9,6 +9,9 @@ const {
   noindex = false,
   structuredData = null,
   image = "/barcode-lookup-api-social.svg",
+  imageAlt = "BarcodeNest barcode lookup API",
+  keywords = "",
+  pageType = "website",
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const socialImage = new URL(image, Astro.site);
@@ -34,10 +37,11 @@ const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structu
     <meta name="viewport" content="width=device-width" />
     <meta name="theme-color" content="#f5f4ed" />
     <meta name="description" content={description} />
+    {keywords && <meta name="keywords" content={keywords} />}
     {googleSiteVerification && <meta name="google-site-verification" content={googleSiteVerification} />}
     {bingSiteVerification && <meta name="msvalidate.01" content={bingSiteVerification} />}
     <meta name="robots" content={noindex ? "noindex,nofollow" : "index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={pageType} />
     <meta property="og:site_name" content="BarcodeNest" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -45,13 +49,13 @@ const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structu
     <meta property="og:image" content={socialImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="BarcodeNest barcode lookup API" />
+    <meta property="og:image:alt" content={imageAlt} />
     <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={socialImage} />
-    <meta name="twitter:image:alt" content="BarcodeNest barcode lookup API" />
+    <meta name="twitter:image:alt" content={imageAlt} />
     {!noindex && <link rel="canonical" href={canonical} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaGraph)} />

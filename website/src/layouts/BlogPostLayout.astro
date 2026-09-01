@@ -1,13 +1,24 @@
 ---
 import BaseLayout from "./BaseLayout.astro";
-const { title, description, heading, author, published, updated = published, image = "/barcode-lookup-api-social.svg" } = Astro.props;
+const {
+  title,
+  description,
+  heading,
+  author,
+  published,
+  updated = published,
+  image = "/barcode-lookup-api-social.svg",
+  imageAlt = "BarcodeNest article",
+  keywords = "",
+  readingTime = "",
+} = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site).toString();
 const articleSchema = {
   "@context": "https://schema.org",
   "@type": "Article",
   headline: heading,
   description,
-  author: { "@type": "Person", name: author },
+  author: { "@type": "Organization", name: author, url: "https://barcodenest.com/" },
   datePublished: published,
   dateModified: updated,
   mainEntityOfPage: canonical,
@@ -15,9 +26,15 @@ const articleSchema = {
   publisher: { "@id": "https://barcodenest.com/#organization" },
 };
 ---
-<BaseLayout title={title} description={description} image={image} structuredData={articleSchema}>
-  <article class="narrow legal blog-article">
-    <header><div class="eyebrow">BarcodeNest resources</div><h1>{heading}</h1><p class="article-meta">By {author} · Published <time datetime={published}>{published}</time>{updated !== published && <> · Updated <time datetime={updated}>{updated}</time></>}</p></header>
+<BaseLayout title={title} description={description} image={image} imageAlt={imageAlt} keywords={keywords} pageType="article" structuredData={articleSchema} current="blog">
+  <article class="blog-article">
+    <header class="blog-article-header container">
+      <a class="blog-back" href="/blog/">← All articles</a>
+      <div class="eyebrow">BarcodeNest field notes</div>
+      <h1>{heading}</h1>
+      <p class="article-deck">{description}</p>
+      <p class="article-meta">By {author} <span aria-hidden="true">·</span> <time datetime={published}>{new Date(`${published}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{readingTime && <><span aria-hidden="true">·</span> {readingTime}</>}{updated !== published && <><span aria-hidden="true">·</span> Updated <time datetime={updated}>{updated}</time></>}</p>
+    </header>
     <slot />
   </article>
 </BaseLayout>

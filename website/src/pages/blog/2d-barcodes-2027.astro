@@ -1,0 +1,118 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+
+const title = "2D Barcodes in 2027: Are QR Codes Replacing Barcodes?";
+const description = "Are traditional UPC and EAN barcodes disappearing in 2027? Learn about GS1's 2D barcode transition, QR Codes, GTINs and what changes for product lookup.";
+---
+<BlogPostLayout
+  title={title}
+  heading="2D barcodes are replacing traditional barcodes: what changes in 2027?"
+  description={description}
+  author="BarcodeNest Editorial Team"
+  published="2026-09-01"
+  readingTime="8 min read"
+  keywords="2D barcodes 2027, barcodes 2027, QR codes replacing barcodes, GS1 2027, Sunrise 2027"
+  image="/blog/2d-barcodes-2027-social.svg"
+  imageAlt="Linear barcode changing into a 2D barcode for the 2027 transition"
+>
+  <div class="article-hero-visual container" role="img" aria-label="A linear barcode and a 2D barcode connected by the 2027 transition">
+    <div class="article-linear" aria-hidden="true"><span></span></div>
+    <div class="article-transition"><small>GS1 ambition</small><strong>2027</strong><span>1D + 2D coexist</span></div>
+    <div class="article-matrix" aria-hidden="true">
+      {Array.from({ length: 81 }).map((_, index) => <i class:list={{ on: [0,1,2,3,4,5,6,7,8,9,17,18,20,21,23,24,26,27,29,31,33,35,36,38,39,40,42,44,45,47,49,51,52,53,54,55,56,57,58,60,62,64,66,68,70,71,72,73,74,75,76,77,78,79,80].includes(index) }}></i>)}
+    </div>
+  </div>
+
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>In this article</strong>
+      <a href="#what-is-changing">What is changing?</a>
+      <a href="#why-2d">Why move to 2D?</a>
+      <a href="#databases">Do databases become obsolete?</a>
+      <a href="#barcodenest">What it means for BarcodeNest</a>
+      <a href="#developers">What developers should prepare for</a>
+    </aside>
+
+    <div class="article-body">
+      <p class="article-opening">You’ve probably seen the claim: <strong>“Barcodes are being replaced in 2027.”</strong></p>
+      <p>It’s a great headline. It’s also an oversimplification.</p>
+      <p>Traditional UPC and EAN barcodes aren’t scheduled to suddenly stop working on January 1, 2027. What is actually happening is much more interesting.</p>
+
+      <h2 id="what-is-changing">What is changing?</h2>
+      <p>The retail industry has set a goal that, by the end of 2027, retail point-of-sale systems should be capable of reading and processing GTINs from defined 2D barcodes based on GS1 standards <em>in addition to</em> existing linear barcodes.</p>
+      <p>GS1 describes the transition as gradual and expects 1D and 2D barcodes to coexist during the migration.</p>
+
+      <div class="article-callout">
+        <span>The short version</span>
+        <p><strong>UPC isn’t “dying.” EAN isn’t becoming invalid.</strong> Retailers are preparing for scanners that understand both traditional and next-generation barcode carriers.</p>
+      </div>
+
+      <h2 id="why-2d">Why move beyond traditional barcodes?</h2>
+      <p>Traditional retail barcodes are excellent at performing one job: carrying a product identifier efficiently. That simple functionality helped create modern automated retail.</p>
+      <p>But businesses and consumers now want considerably more product information. A 2D barcode can support richer use cases involving:</p>
+
+      <ul class="data-chip-list">
+        <li>GTIN</li><li>Expiry date</li><li>Batch or lot</li><li>Serial number</li><li>Online product information</li><li>Ingredients</li><li>Allergens</li><li>Recycling information</li>
+      </ul>
+
+      <p>GS1’s implementation guidance identifies these kinds of applications for next-generation 2D barcodes.</p>
+
+      <h2 id="databases">Does this make barcode databases obsolete?</h2>
+      <p>Quite the opposite.</p>
+      <p>Regardless of whether an identifier is obtained from a UPC-A barcode, EAN-13 barcode, GS1 DataMatrix or QR Code, software still needs to understand which product that identifier represents.</p>
+
+      <div class="lookup-flow" aria-label="Barcode lookup flow">
+        <span>Scan</span><b aria-hidden="true">→</b><span>Extract GTIN</span><b aria-hidden="true">→</b><span>Identify product</span><b aria-hidden="true">→</b><span>Retrieve data</span>
+      </div>
+
+      <p>The scanning technology may change. The need for product identity doesn’t disappear.</p>
+
+      <h2 id="barcodenest">What does this mean for BarcodeNest?</h2>
+      <p>This evolution aligns closely with the underlying purpose of BarcodeNest. BarcodeNest isn’t simply about visually reading black lines from an image. Its more fundamental role is product lookup using identifiers such as UPC, EAN and GTIN.</p>
+      <p>That’s an important distinction. Whether a GTIN comes from a UPC/EAN barcode or a 2D code, the application may ultimately arrive at the same fundamental question:</p>
+
+      <blockquote>What product does this GTIN identify?</blockquote>
+
+      <p>That’s where product lookup infrastructure matters.</p>
+
+      <h2>Should developers stop supporting UPC and EAN?</h2>
+      <p>Absolutely not. GS1 explicitly expects a period of coexistence between traditional and next-generation barcodes.</p>
+      <p>Applications dealing with physical products should therefore become more flexible, not less. A good product application should increasingly be designed around:</p>
+
+      <p class="principle-line"><span>Multiple barcode formats</span><b>→</b><span>Standardized identifiers</span><b>→</b><span>Normalized product lookup</span></p>
+
+      <p>That is more resilient than assuming every scan will always be an EAN-13 barcode.</p>
+
+      <h2 id="developers">What developers should prepare for</h2>
+      <p>If you’re building a barcode scanner, inventory system, ecommerce platform or product application, 2027 should be treated as an interoperability milestone.</p>
+      <p>Your system should separate three concepts:</p>
+
+      <ol class="concept-list">
+        <li><span>01</span><div><strong>The carrier</strong><p>UPC/EAN barcode, QR Code, Data Matrix or another machine-readable format.</p></div></li>
+        <li><span>02</span><div><strong>The identifier</strong><p>GTIN and potentially other GS1 identifiers extracted from that carrier.</p></div></li>
+        <li><span>03</span><div><strong>The product data</strong><p>Brand, name, category and other information retrieved from databases or linked services.</p></div></li>
+      </ol>
+
+      <p>This separation makes applications considerably easier to adapt as barcode technology evolves.</p>
+
+      <h2>The future isn’t “barcode vs QR code”</h2>
+      <p class="future-line">It’s <strong>physical product → machine-readable identity → digital information.</strong></p>
+      <p>Traditional barcodes started that transformation decades ago. 2D barcodes, GS1 Digital Link and Digital Product Passports are expanding what can happen after the scan.</p>
+      <p>Whether you’re building an inventory application, shopping assistant, AI agent or ecommerce tool, one fundamental capability remains essential: identifying the product behind the code.</p>
+      <p>That’s the problem BarcodeNest is built around.</p>
+
+      <div class="article-cta">
+        <div><span>Build the lookup layer</span><h2>Connect scans to structured product data.</h2></div>
+        <a class="button button-signal" href="/register/">Start building free</a>
+      </div>
+
+      <section class="article-sources" aria-labelledby="sources-heading">
+        <h2 id="sources-heading">Sources and further reading</h2>
+        <ul>
+          <li><a href="https://ref.gs1.org/guidelines/2d-in-retail" rel="external">GS1: 2D Barcodes at Retail Point-of-Sale Implementation Guideline</a></li>
+          <li><a href="https://www.gs1.org/industries/retail/solution-provider-2d-readiness" rel="external">GS1: 2D barcode point-of-sale readiness</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>
