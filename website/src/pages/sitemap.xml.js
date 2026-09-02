@@ -14,6 +14,7 @@ const pages = [
   ["data/", "0.7", "monthly"],
   ["blog/", "0.8", "weekly"],
   ["blog/2d-barcodes-2027/", "0.8", "monthly"],
+  ["blog/gs1-digital-link-explained/", "0.8", "monthly"],
   ["contribute/", "0.8", "monthly"],
   ["contribute/product/", "0.7", "monthly"],
   ["contribute/store/", "0.7", "monthly"],

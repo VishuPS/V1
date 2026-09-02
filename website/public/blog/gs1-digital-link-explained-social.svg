@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">GS1 Digital Link explained</title><desc id="desc">A GTIN connects to web product information.</desc>
+  <rect width="1200" height="630" fill="#f5f4ed"/><path d="M0 0h16v630H0z" fill="#c8ff4d"/>
+  <g fill="#171a16" font-family="Arial,sans-serif"><text x="72" y="87" font-size="24" font-weight="700">BarcodeNest / Field notes</text><text x="72" y="190" font-size="64" font-weight="700">GS1 Digital Link</text><text x="72" y="255" font-size="32">The future of product barcodes</text></g>
+  <g transform="translate(72 344)"><rect width="390" height="148" rx="8" fill="#171a16"/><text x="28" y="43" fill="#9ca398" font-family="monospace" font-size="16">GTIN-14</text><text x="28" y="93" fill="#c8ff4d" font-family="monospace" font-size="27">09521101530001</text><text x="28" y="124" fill="#f5f4ed" font-family="monospace" font-size="14">01 / product identifier</text></g>
+  <g font-family="Arial,sans-serif"><text x="518" y="405" fill="#62665e" font-size="17">DIGITAL LINK</text><text x="537" y="463" fill="#171a16" font-size="52">→</text></g>
+  <g transform="translate(665 344)" font-family="Arial,sans-serif"><rect width="445" height="148" rx="8" fill="#ebeae2" stroke="#d5d4cb"/><text x="25" y="38" fill="#62665e" font-size="15">https://id.example.com/01/</text><text x="25" y="70" fill="#171a16" font-size="20" font-weight="700">09521101530001</text><text x="25" y="113" fill="#62665e" font-size="15">Product · Ingredients · Recycling · Support</text></g>
+  <text x="72" y="568" fill="#62665e" font-family="Arial,sans-serif" font-size="20">One product identity. Many digital destinations.</text>
+</svg>

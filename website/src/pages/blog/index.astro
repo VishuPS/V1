@@ -9,12 +9,20 @@ const collectionSchema = {
   name: "BarcodeNest Blog",
   description,
   url: "https://barcodenest.com/blog/",
-  hasPart: [{
-    "@type": "Article",
-    headline: "2D Barcodes Are Replacing Traditional Barcodes: What Changes in 2027?",
-    url: "https://barcodenest.com/blog/2d-barcodes-2027/",
-    datePublished: "2026-09-01",
-  }],
+  hasPart: [
+    {
+      "@type": "Article",
+      headline: "GS1 Digital Link Explained: The Future of Product Barcodes",
+      url: "https://barcodenest.com/blog/gs1-digital-link-explained/",
+      datePublished: "2026-09-02",
+    },
+    {
+      "@type": "Article",
+      headline: "2D Barcodes Are Replacing Traditional Barcodes: What Changes in 2027?",
+      url: "https://barcodenest.com/blog/2d-barcodes-2027/",
+      datePublished: "2026-09-01",
+    },
+  ],
 };
 ---
 <BaseLayout title={title} description={description} current="blog" structuredData={collectionSchema}>
@@ -29,25 +37,32 @@ const collectionSchema = {
   </section>
 
   <section class="container blog-featured" aria-labelledby="latest-article">
-    <a class="blog-card-visual" href="/blog/2d-barcodes-2027/" aria-label="Read 2D Barcodes Are Replacing Traditional Barcodes: What Changes in 2027?">
-      <div class="barcode-evolution" aria-hidden="true">
-        <div class="linear-code"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="evolution-arrow"><span>2027</span><b>→</b></div>
-        <div class="matrix-code">
-          {Array.from({ length: 49 }).map((_, index) => <i class:list={{ on: [0,1,2,3,4,5,6,7,13,14,16,18,20,21,27,28,29,30,31,32,34,35,37,39,40,41,42,43,45,47,48].includes(index) }}></i>)}
-        </div>
+    <a class="blog-card-visual" href="/blog/gs1-digital-link-explained/" aria-label="Read GS1 Digital Link Explained: The Future of Product Barcodes">
+      <div class="digital-link-card" aria-hidden="true">
+        <div class="digital-link-card-code">01 / 09521101530001</div>
+        <div class="digital-link-card-route"><span>GTIN</span><b>→</b><span>WEB</span></div>
+        <div class="digital-link-card-url">id.example.com/01/09521101530001</div>
       </div>
-      <span class="visual-caption">One identifier. More capable carriers.</span>
+      <span class="visual-caption">A product identifier becomes web addressable.</span>
     </a>
     <article class="blog-card-copy">
-      <div class="article-card-meta"><span>Standards</span><time datetime="2026-09-01">Sep 1, 2026</time><span>8 min read</span></div>
-      <h2 id="latest-article"><a href="/blog/2d-barcodes-2027/">2D barcodes are replacing traditional barcodes: what changes in 2027?</a></h2>
-      <p>The 2027 milestone is real—but UPC and EAN barcodes are not about to vanish. Here is what GS1’s transition means for retailers, developers and product lookup.</p>
-      <a class="text-link" href="/blog/2d-barcodes-2027/">Read the article <span aria-hidden="true">→</span></a>
+      <div class="article-card-meta"><span>Standards</span><time datetime="2026-09-02">Sep 2, 2026</time><span>6 min read</span></div>
+      <h2 id="latest-article"><a href="/blog/gs1-digital-link-explained/">GS1 Digital Link explained: the future of product barcodes</a></h2>
+      <p>How GTINs, QR codes, product databases and the web fit together—and why a barcode is becoming more than a checkout tool.</p>
+      <a class="text-link" href="/blog/gs1-digital-link-explained/">Read the article <span aria-hidden="true">→</span></a>
     </article>
   </section>
 
+  <section class="container blog-archive" aria-labelledby="all-articles">
+    <div class="blog-archive-head"><div><div class="eyebrow">Archive</div><h2 id="all-articles">All field notes</h2></div><span>02 articles</span></div>
+    <a class="blog-archive-row" href="/blog/2d-barcodes-2027/">
+      <div class="article-card-meta"><span>Standards</span><time datetime="2026-09-01">Sep 1, 2026</time><span>8 min read</span></div>
+      <h3>2D barcodes are replacing traditional barcodes: what changes in 2027?</h3>
+      <span class="archive-arrow" aria-hidden="true">→</span>
+    </a>
+  </section>
+
   <section class="blog-index-note">
-    <div class="container"><span>01 article</span><p>More field notes on product identity, coverage and barcode lookup are on the way.</p></div>
+    <div class="container"><span>02 articles</span><p>More field notes on product identity, coverage and barcode lookup are on the way.</p></div>
   </section>
 </BaseLayout>
