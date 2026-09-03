@@ -9,7 +9,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.schemas import BatchRequest, BatchResponse, ErrorResponse, LookupResult
 from app.services import resolve_product
-from app.email_service import send_usage_warning_safely
+from app.email_service import send_usage_limit_reached_safely, send_usage_warning_safely
 from app.lookup_analytics import LookupOutcome, record_lookup_outcomes_safely
 
 router = APIRouter()
@@ -85,6 +85,7 @@ def get_product(
     for header, value in usage_headers(auth, usage).items():
         response.headers[header] = value
     background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return result
 
 
@@ -136,4 +137,5 @@ def batch_products(
     for header, value in usage_headers(auth, usage).items():
         response.headers[header] = value
     background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return BatchResponse(results=results)

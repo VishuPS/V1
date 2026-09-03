@@ -170,6 +170,7 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
         record.usage_period_end = period_end if billing_interval == "month" else _next_month(usage_start)
         record.monthly_calls_used = 0
         record.usage_warning_sent_at = None
+        record.usage_limit_email_sent_at = None
     session.execute(update(ApiClient).where(ApiClient.owner_user_id == user_id).values(plan=plan))
 
 
@@ -203,6 +204,7 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
             record.usage_period_start = now
             record.usage_period_end = current_month_end()
             record.usage_warning_sent_at = None
+            record.usage_limit_email_sent_at = None
             session.execute(update(ApiClient).where(ApiClient.owner_user_id == record.user_id).values(plan="FREE"))
     session.commit()
     return True

@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.config import PlanLimit, Settings, get_settings
 from app.db import get_db
-from app.email_service import UsageWarning
+from app.email_service import UsageLimitReached, UsageWarning
 from app.models import ApiClient, ApiKey, DailyUsage, MonthlyUsage, Subscription, User, new_uuid
 
 
@@ -203,6 +203,7 @@ class UsageResult:
     lookup_count: int
     period_end: datetime | None = None
     warning: UsageWarning | None = None
+    limit_reached: UsageLimitReached | None = None
 
 
 def consume_usage(
@@ -229,11 +230,13 @@ def consume_usage(
         raise _quota_error(context.client.plan, quota, quota, subscription.usage_period_end if subscription else None)
 
     warning = None
+    limit_reached = None
     if subscription:
         period_end = _aware_utc(subscription.usage_period_end)
         if period_end <= timestamp:
             subscription.monthly_calls_used = 0
             subscription.usage_warning_sent_at = None
+            subscription.usage_limit_email_sent_at = None
             subscription.usage_period_start = timestamp
             next_year = timestamp.year + (1 if timestamp.month == 12 else 0)
             next_month = 1 if timestamp.month == 12 else timestamp.month + 1
@@ -257,7 +260,19 @@ def consume_usage(
             used = subscription.monthly_calls_used
             raise _quota_error(subscription.plan_code, used, quota, period_end)
         account_used, quota = updated
-        if account_used >= ceil(quota * 0.9) and subscription.usage_warning_sent_at is None:
+        email = None
+        if account_used == quota and subscription.usage_limit_email_sent_at is None:
+            subscription.usage_limit_email_sent_at = timestamp
+            email = session.scalar(select(User.email).where(User.id == subscription.user_id))
+            if email:
+                limit_reached = UsageLimitReached(
+                    email=email,
+                    plan=subscription.plan_code,
+                    used=account_used,
+                    limit=quota,
+                    period_end=period_end,
+                )
+        elif account_used >= ceil(quota * 0.9) and subscription.usage_warning_sent_at is None:
             subscription.usage_warning_sent_at = timestamp
             email = session.scalar(select(User.email).where(User.id == subscription.user_id))
             if email:
@@ -329,12 +344,13 @@ def consume_usage(
     session.commit()
     return UsageResult(
         quota_limit=quota,
-        quota_remaining=max(0, quota - row.lookup_count),
+        quota_remaining=max(0, quota - (account_used if subscription else row.lookup_count)),
         period_start=period,
         request_count=row.request_count,
         lookup_count=row.lookup_count,
         period_end=subscription.usage_period_end if subscription else None,
         warning=warning,
+        limit_reached=limit_reached,
     )
 
 

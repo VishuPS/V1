@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from app.billing import payment_link_checkout, process_stripe_event, verified_reference, verify_stripe_event
 from app.config import get_settings
-from app.email_service import UsageWarning
+from app.email_service import ResendEmailProvider, UsageLimitReached, UsageWarning
 from app.models import ApiClient, ApiKey, StripeWebhookEvent, Subscription
 from tests.test_user_auth import create_account, login
 
@@ -48,6 +48,71 @@ def test_warning_sent_once_at_ninety_percent(unauthenticated_client, session_fac
     assert (sent[0].used, sent[0].limit) == (225, 250)
 
 
+def test_limit_reached_email_sent_once_at_exact_boundary(
+    unauthenticated_client, session_factory, monkeypatch
+):
+    user_id, key = account(session_factory, "FREE", 250, 249)
+    sent: list[UsageLimitReached] = []
+    monkeypatch.setattr(
+        "app.api.routes.send_usage_limit_reached_safely",
+        lambda _settings, notice: sent.append(notice) if notice else None,
+    )
+
+    final_call = unauthenticated_client.get(
+        "/v1/products/3017620422003", headers={"X-API-Key": key}
+    )
+    blocked_call = unauthenticated_client.get(
+        "/v1/products/3017620422003", headers={"X-API-Key": key}
+    )
+
+    assert final_call.status_code == 200
+    assert final_call.headers["X-Monthly-Quota-Remaining"] == "0"
+    assert blocked_call.status_code == 429
+    assert len(sent) == 1
+    assert (sent[0].plan, sent[0].used, sent[0].limit) == ("FREE", 250, 250)
+    with session_factory() as session:
+        marker = session.scalar(
+            select(Subscription.usage_limit_email_sent_at).where(
+                Subscription.user_id == user_id
+            )
+        )
+        assert marker is not None
+
+
+def test_limit_reached_email_contains_upgrade_link(monkeypatch):
+    request: dict = {}
+
+    class Response:
+        def raise_for_status(self):
+            return None
+
+    def post(url, **kwargs):
+        request.update(url=url, **kwargs)
+        return Response()
+
+    monkeypatch.setattr("app.email_service.httpx.post", post)
+    settings = get_settings().model_copy(
+        update={
+            "resend_api_key": "re_test",
+            "website_url": "https://barcodenest.com",
+        }
+    )
+    notice = UsageLimitReached(
+        email="owner@example.com",
+        plan="FREE",
+        used=250,
+        limit=250,
+        period_end=datetime(2026, 10, 1, tzinfo=timezone.utc),
+    )
+
+    ResendEmailProvider(settings).send_usage_limit_reached(notice)
+
+    assert request["url"] == "https://api.resend.com/emails"
+    assert request["json"]["to"] == ["owner@example.com"]
+    assert request["json"]["subject"] == "You have reached your BarcodeNest API limit"
+    assert "https://barcodenest.com/pricing/" in request["json"]["html"]
+
+
 def test_failed_and_account_requests_do_not_consume_usage(unauthenticated_client, session_factory):
     user_id, key = account(session_factory)
     assert unauthenticated_client.get("/v1/products/4006381333931", headers={"X-API-Key": key}).status_code == 404
@@ -65,12 +130,14 @@ def test_free_usage_resets_after_period_end(unauthenticated_client, session_fact
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
         record.usage_period_end = datetime.now(timezone.utc) - timedelta(seconds=1)
         record.usage_warning_sent_at = datetime.now(timezone.utc)
+        record.usage_limit_email_sent_at = datetime.now(timezone.utc)
         session.commit()
     assert unauthenticated_client.get("/v1/products/3017620422003", headers={"X-API-Key": key}).status_code == 200
     with session_factory() as session:
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
         assert record.monthly_calls_used == 1
         assert record.usage_warning_sent_at is None
+        assert record.usage_limit_email_sent_at is None
 
 
 def stripe_subscription(user_id, plan, status="active", cancel=False, interval="month"):

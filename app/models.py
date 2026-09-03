@@ -545,6 +545,7 @@ class Subscription(Base):
     usage_period_start: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     usage_period_end: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=current_month_end, nullable=False)
     usage_warning_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    usage_limit_email_sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_period_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     current_period_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     cancel_at_period_end: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
