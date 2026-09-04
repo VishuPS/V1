@@ -1,0 +1,107 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+
+const title = "What Is a Digital Product Passport (DPP)? 2027 Guide";
+const description = "Learn what a Digital Product Passport is, how DPPs work, what changes in 2027, and how barcodes, QR codes and product identifiers such as GTIN connect physical products to digital data.";
+---
+<BlogPostLayout
+  title={title}
+  heading="What is a Digital Product Passport? Everything you need to know for 2027"
+  description={description}
+  author="BarcodeNest Editorial Team"
+  published="2026-09-04"
+  readingTime="7 min read"
+  keywords="digital product passport, DPP 2027, digital product passport EU, product passport, barcode product information"
+  image="/blog/digital-product-passport-guide-social.svg"
+  imageAlt="A physical product connected to a Digital Product Passport record"
+>
+  <div class="article-hero-visual passport-hero container" role="img" aria-label="A product identifier connects a physical product to lifecycle information in a Digital Product Passport">
+    <div class="passport-product" aria-hidden="true"><span>Physical product</span><strong>09521101530001</strong><small>GTIN-14</small></div>
+    <div class="passport-link" aria-hidden="true"><span>Scan</span><b>→</b><span>Access</span></div>
+    <div class="passport-record" aria-hidden="true"><strong>Digital Product Passport</strong><div><span>Materials</span><span>Origin</span><span>Repair</span><span>Recycle</span></div></div>
+  </div>
+
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>In this article</strong>
+      <a href="#how-dpp-works">How a DPP works</a>
+      <a href="#what-happens-2027">What happens in 2027</a>
+      <a href="#barcodes-and-dpp">Barcodes and DPPs</a>
+      <a href="#barcodenest">Where BarcodeNest fits</a>
+    </aside>
+
+    <div class="article-body">
+      <p class="article-opening">A barcode has traditionally answered a relatively simple question: <strong>which product is this?</strong></p>
+      <p>The next generation of product identification is being designed to answer much more. Where was the product made? What materials does it contain? Can it be repaired? How should it be recycled? What information should be available to regulators, retailers, repairers and consumers?</p>
+      <p>This is where the <strong>Digital Product Passport (DPP)</strong> enters the picture.</p>
+
+      <div class="article-callout">
+        <span>European Commission definition</span>
+        <p>A DPP is a digital container for information about products, components and materials. It is intended to improve access to reliable product information, support circularity and facilitate legal compliance.</p>
+      </div>
+
+      <p>For anyone working with barcodes, GTINs and product databases, DPPs represent an important evolution in how physical products connect to digital information.</p>
+
+      <h2 id="how-dpp-works">How does a Digital Product Passport work?</h2>
+      <p>A DPP creates a digital information record associated with a physical product. The exact content depends on the applicable legislation and product category, but it may cover:</p>
+
+      <ol class="concept-list passport-fields">
+        <li><span>01</span><div><strong>Identity and origin</strong><p>The product, its manufacturer and where it came from.</p></div></li>
+        <li><span>02</span><div><strong>Materials and components</strong><p>What the product contains and how its components relate.</p></div></li>
+        <li><span>03</span><div><strong>Performance and safety</strong><p>Relevant environmental, durability and safety information.</p></div></li>
+        <li><span>04</span><div><strong>Repair and end of life</strong><p>Repairability, reuse, recycling and disposal guidance.</p></div></li>
+      </ol>
+
+      <p>Consumers and other authorized users may access relevant information by scanning a data carrier, such as a QR code, with a smartphone or another reader. The physical label increasingly becomes an <strong>entry point into a much larger product-data ecosystem</strong>.</p>
+
+      <h2 id="what-happens-2027">What happens in 2027?</h2>
+      <p>There is a common misconception that every product sold in Europe suddenly requires a DPP on January 1, 2027. That is not the case: implementation is being introduced progressively by product category.</p>
+
+      <div class="dpp-timeline" aria-label="Digital Product Passport implementation timeline">
+        <div><time datetime="2026-07-20">20 Jul 2026</time><span>EU DPP Registry becomes operational</span></div>
+        <div><time datetime="2027-02-18">18 Feb 2027</time><span>Battery passports become mandatory for relevant battery categories</span></div>
+        <div><time datetime="2027">2027 onward</time><span>Product-specific requirements continue to develop in stages</span></div>
+      </div>
+
+      <p>The European Commission’s current roadmap identifies textiles, tyres and aluminium among the product groups expected to receive sector-specific DPP requirements during 2027. Businesses should monitor the rules for their individual product categories rather than treating 2027 as one universal deadline.</p>
+
+      <h2 id="barcodes-and-dpp">What do barcodes have to do with Digital Product Passports?</h2>
+      <p>A product needs to be reliably <strong>identified</strong> before information can be associated with it. GTINs—the identification numbers commonly encoded in UPC and EAN barcodes—already provide a standardized way to identify trade items.</p>
+
+      <div class="lookup-flow" aria-label="Barcode lookup flow">
+        <span>Barcode</span><b aria-hidden="true">→</b><span>GTIN</span><b aria-hidden="true">→</b><span>Product identity</span><b aria-hidden="true">→</b><span>Product data</span>
+      </div>
+
+      <p>DPP ecosystems extend the same underlying idea:</p>
+
+      <div class="lookup-flow" aria-label="Digital Product Passport flow">
+        <span>Physical product</span><b aria-hidden="true">→</b><span>Data carrier</span><b aria-hidden="true">→</b><span>Digital record</span><b aria-hidden="true">→</b><span>Lifecycle data</span>
+      </div>
+
+      <p>The barcode or QR code should not be thought of as the entire database. It acts as a machine-readable bridge between a physical object and information systems.</p>
+
+      <h2 id="barcodenest">Where BarcodeNest fits</h2>
+      <p>BarcodeNest focuses on the fundamental product-identification problem. Given a UPC, EAN or GTIN, an application can query the BarcodeNest API to attempt to retrieve structured information associated with that product.</p>
+      <p>This makes barcode lookup useful for inventory systems, shopping tools, product scanners, ecommerce platforms and AI applications that need to translate a number printed on a physical product into usable digital data.</p>
+
+      <blockquote>What product are we looking at?</blockquote>
+
+      <p>As product information becomes increasingly interconnected, reliable identifiers become even more important. DPPs may substantially expand the information associated with physical goods, but that fundamental identity question remains.</p>
+
+      <div class="article-cta">
+        <div><span>Try BarcodeNest</span><h2>Turn UPC, EAN and GTIN identifiers into structured product data.</h2></div>
+        <a class="button button-signal" href="/register/">Start building free</a>
+      </div>
+
+      <section class="article-sources" aria-labelledby="sources-heading">
+        <h2 id="sources-heading">Sources and further reading</h2>
+        <ul>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport_en" rel="external">European Commission: Digital Product Passport overview and roadmap</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/news/digital-product-passport-registry-now-live-2026-07-20_en" rel="external">European Commission: The Digital Product Passport Registry is now live</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport/batteries_en" rel="external">European Commission: Digital Product Passport for batteries</a></li>
+          <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1781" rel="external">EUR-Lex: Ecodesign for Sustainable Products Regulation (EU) 2024/1781</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>
