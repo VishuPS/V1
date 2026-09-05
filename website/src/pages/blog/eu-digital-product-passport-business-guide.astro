@@ -1,0 +1,114 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+
+const title = "EU Digital Product Passport: What Businesses Need to Know";
+const description = "Preparing for the EU Digital Product Passport? Learn about DPP requirements, the 2027 timeline, product identifiers, QR codes, GTINs and product-data preparation.";
+---
+<BlogPostLayout
+  title={title}
+  heading="EU Digital Product Passport: what businesses need to prepare for now"
+  description={description}
+  author="BarcodeNest Editorial Team"
+  published="2026-09-05"
+  readingTime="7 min read"
+  keywords="EU Digital Product Passport, DPP requirements, DPP compliance, EU product passport 2027"
+  image="/blog/eu-digital-product-passport-business-guide-social.svg"
+  imageAlt="A business product catalogue being prepared for EU Digital Product Passports"
+>
+  <div class="article-hero-visual readiness-hero container" role="img" aria-label="Product identifiers, catalogue data and lifecycle information flowing into a DPP-ready product record">
+    <div class="readiness-source" aria-hidden="true"><span>Catalogue inputs</span><strong>SKU</strong><strong>EAN-13</strong><strong>GTIN-14</strong></div>
+    <div class="passport-link" aria-hidden="true"><span>Normalize</span><b>→</b><span>Connect</span></div>
+    <div class="readiness-record" aria-hidden="true"><span>DPP-ready foundation</span><div><i>✓</i> Identity</div><div><i>✓</i> Product data</div><div><i>✓</i> Traceability</div></div>
+  </div>
+
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>In this article</strong>
+      <a href="#what-is-eu-dpp">What is the EU DPP?</a>
+      <a href="#affected-businesses">Who is affected?</a>
+      <a href="#identification">Start with identification</a>
+      <a href="#gtin">UPC, EAN and GTIN</a>
+      <a href="#beyond-compliance">Beyond compliance</a>
+      <a href="#barcodenest">Where BarcodeNest fits</a>
+    </aside>
+
+    <div class="article-body">
+      <p class="article-opening">The EU Digital Product Passport is moving from policy into infrastructure. <strong>For businesses selling physical products in Europe, that creates an important question: is your product data ready?</strong></p>
+      <p>The European Commission’s DPP Registry became operational on July 20, 2026. Requirements will apply progressively to selected product groups through product-specific EU rules rather than through one universal deadline.</p>
+
+      <h2 id="what-is-eu-dpp">What is the EU Digital Product Passport?</h2>
+      <p>The Digital Product Passport is part of the EU’s broader effort to make product information more transparent, interoperable and accessible throughout a product’s lifecycle.</p>
+      <p>Instead of important information being fragmented across packaging, manufacturer systems, PDFs and supply-chain databases, DPPs provide a framework through which relevant product information can be digitally accessed.</p>
+
+      <div class="article-callout">
+        <span>Product-specific by design</span>
+        <p>Depending on the covered product group and applicable legislation, a DPP may include information about safety, origin, materials, environmental performance, repairability, reuse and recycling.</p>
+      </div>
+
+      <h2 id="affected-businesses">Which businesses are affected?</h2>
+      <p>DPP requirements are being introduced progressively. The Commission’s first ESPR Working Plan identifies indicative rulemaking timelines for iron and steel; energy-related products; textiles, tyres and aluminium; furniture; mattresses; and ICT products. Certain batteries are among the first categories for which DPPs become mandatory, beginning February 18, 2027.</p>
+      <p>Obligations apply to economic operators placing covered products on the EU market, whether the products are manufactured domestically or imported. When covered products are placed on the market through distance selling, online marketplaces will need to make their DPPs accessible.</p>
+
+      <div class="dpp-timeline" aria-label="Indicative EU Digital Product Passport preparation timeline">
+        <div><time datetime="2026-07-20">20 Jul 2026</time><span>The EU DPP Registry becomes operational</span></div>
+        <div><time datetime="2027-02-18">18 Feb 2027</time><span>DPPs become mandatory for relevant battery categories</span></div>
+        <div><time datetime="2027">2027 onward</time><span>Additional product-specific rules continue in stages</span></div>
+      </div>
+
+      <p class="article-note"><strong>Important:</strong> Working Plan dates are indicative dates for the Commission’s evaluation and adoption of product-specific rules—not automatic compliance deadlines for every product in that category. Final obligations and transition periods come from the applicable legislation.</p>
+
+      <h2 id="identification">Start with clean product identification</h2>
+      <p>Businesses often focus immediately on QR codes when discussing DPPs. But there is a more fundamental data problem:</p>
+
+      <blockquote>Can every product in your system be identified consistently?</blockquote>
+
+      <p>A typical catalogue may contain:</p>
+      <ul class="data-chip-list" aria-label="Common product catalogue identifiers and data issues">
+        <li>Internal SKUs</li><li>UPCs</li><li>EAN-13 numbers</li><li>GTIN-14 identifiers</li><li>Part numbers</li><li>Duplicate records</li><li>Incomplete descriptions</li>
+      </ul>
+      <p>If those identifiers are inconsistent, connecting physical products to digital records becomes considerably harder. This is why GTIN normalization, duplicate resolution and product-data quality matter.</p>
+
+      <h2 id="gtin">UPC, EAN and GTIN</h2>
+      <p>UPC and EAN barcodes are familiar to virtually anyone who has purchased something from a retail store. The numbers represented by these barcodes are forms of <strong>GTIN—Global Trade Item Number</strong>.</p>
+      <p>Applications can use these standardized identifiers as keys for product lookup. A developer can scan an EAN-13 barcode, extract its GTIN and send that identifier to a product database such as BarcodeNest.</p>
+
+      <div class="lookup-flow" aria-label="Product identification workflow">
+        <span>Scan EAN-13</span><b aria-hidden="true">→</b><span>Normalize GTIN</span><b aria-hidden="true">→</b><span>Lookup product</span><b aria-hidden="true">→</b><span>Structured data</span>
+      </div>
+
+      <div class="identifier-example"><span>Example normalized record</span><code>Brand · Product · Category</code></div>
+
+      <h2 id="beyond-compliance">Why this matters beyond DPP compliance</h2>
+      <p>Clean product identification is not useful only for regulatory preparation. The same foundation can support:</p>
+
+      <ol class="concept-list">
+        <li><span>01</span><div><strong>Inventory management</strong><p>Identify products entering warehouses or stores.</p></div></li>
+        <li><span>02</span><div><strong>Ecommerce</strong><p>Match physical products with digital catalogue records.</p></div></li>
+        <li><span>03</span><div><strong>AI applications</strong><p>Provide structured product identity instead of asking systems to guess.</p></div></li>
+        <li><span>04</span><div><strong>Consumer applications</strong><p>Let people scan products and retrieve useful information.</p></div></li>
+        <li><span>05</span><div><strong>Product analytics</strong><p>Aggregate activity around standardized identifiers.</p></div></li>
+      </ol>
+
+      <h2 id="barcodenest">How BarcodeNest can help</h2>
+      <p>BarcodeNest provides developers with an API designed around UPC, EAN and GTIN product lookup. It helps an application answer: <strong>what product does this identifier represent?</strong></p>
+      <p>BarcodeNest is not an EU compliance authority or a replacement for a complete DPP infrastructure. It addresses one foundational technical problem underlying modern product-data systems: mapping standardized identifiers to structured product information.</p>
+      <p>As Digital Product Passports expand, businesses should begin treating product identifiers as infrastructure rather than simply numbers printed underneath barcodes.</p>
+
+      <div class="article-cta">
+        <div><span>Prepare the identity layer</span><h2>Connect UPC, EAN and GTIN identifiers to structured product data.</h2></div>
+        <a class="button button-signal" href="/register/">Start building free</a>
+      </div>
+
+      <section class="article-sources" aria-labelledby="sources-heading">
+        <h2 id="sources-heading">Sources and further reading</h2>
+        <ul>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport/economic-operators_en" rel="external">European Commission: DPP guidance for economic operators</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport_en" rel="external">European Commission: Digital Product Passport overview and roadmap</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/news/digital-product-passport-registry-now-live-2026-07-20_en" rel="external">European Commission: The DPP Registry is now live</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport/batteries_en" rel="external">European Commission: Digital Product Passport for batteries</a></li>
+          <li><a href="https://eur-lex.europa.eu/legal-content/EN/TXT/?uri=CELEX:32024R1781" rel="external">EUR-Lex: Ecodesign for Sustainable Products Regulation (EU) 2024/1781</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>

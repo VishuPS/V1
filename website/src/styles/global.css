@@ -404,6 +404,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .passport-card-code strong { color:var(--signal); font:18px "Geist Mono"; }
 .passport-card-data { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .passport-card-data span { padding:12px; border:1px solid #3b4238; color:var(--paper); font:10px "Geist Mono"; text-align:center; text-transform:uppercase; }
+.readiness-card { min-height:300px; display:grid; align-content:center; gap:9px; }.readiness-card > span { margin-bottom:10px; color:#9ca398; font:11px "Geist Mono"; text-transform:uppercase; }.readiness-card > div { padding:16px 18px; display:grid; grid-template-columns:34px 1fr 24px; align-items:center; border:1px solid #3b4238; }.readiness-card b { color:#9ca398; font:11px "Geist Mono"; }.readiness-card strong { font-size:18px; }.readiness-card i { color:var(--signal); font-style:normal; font-size:19px; }
 .digital-link-card-route { display:flex; align-items:center; justify-content:center; gap:20px; color:#9ca398; font:11px "Geist Mono"; }
 .digital-link-card-route b { color:var(--signal); font-size:30px; font-weight:400; }
 .article-card-meta { display:flex; flex-wrap:wrap; gap:9px 18px; color:var(--muted); font:11px "Geist Mono"; text-transform:uppercase; letter-spacing:.04em; }
@@ -452,6 +453,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .passport-link { display:grid; place-items:center; gap:8px; text-align:center; }.passport-link b { color:var(--signal); font-size:38px; font-weight:400; }
 .passport-record > strong { display:block; margin-bottom:20px; font-size:19px; }.passport-record > div { display:grid; grid-template-columns:1fr 1fr; gap:8px; }.passport-record span { padding:11px 6px; border:1px solid #3b4238; color:#aab0a5; font:9px "Geist Mono"; text-align:center; text-transform:uppercase; }
 .dpp-timeline { margin:38px 0; border-left:2px solid var(--signal-dark); }.dpp-timeline div { position:relative; padding:5px 0 28px 30px; display:grid; gap:5px; }.dpp-timeline div:last-child { padding-bottom:5px; }.dpp-timeline div::before { content:""; position:absolute; left:-7px; top:10px; width:12px; height:12px; border-radius:50%; background:var(--signal-dark); }.dpp-timeline time { color:var(--muted); font:11px "Geist Mono"; text-transform:uppercase; }.dpp-timeline span { font-size:18px; font-weight:650; line-height:1.4; }
+.readiness-hero { grid-template-columns:1fr 130px 1.1fr; }.readiness-source,.readiness-record { padding:26px; display:grid; gap:10px; border:1px solid #3b4238; border-radius:8px; }.readiness-source > span,.readiness-record > span { margin-bottom:7px; color:#9ca398; font:10px "Geist Mono"; text-transform:uppercase; }.readiness-source strong { color:var(--signal); font:18px "Geist Mono"; }.readiness-record div { padding:8px 0; border-top:1px solid #3b4238; }.readiness-record i { margin-right:10px; color:var(--signal); font-style:normal; }.article-note { padding:20px 22px; border:1px solid var(--line); color:var(--muted); font-size:15px; }
 .article-shell { display:grid; grid-template-columns:210px minmax(0,720px); gap:80px; justify-content:center; padding-top:80px; padding-bottom:110px; }
 .article-toc { position:sticky; top:28px; display:grid; align-self:start; border-top:1px solid var(--line); }
 .article-toc strong { padding:18px 0 12px; font:11px "Geist Mono"; text-transform:uppercase; letter-spacing:.05em; }
@@ -510,6 +512,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
   .article-hero-visual { grid-template-columns:1fr 130px 1fr; gap:30px; padding:44px; }
   .digital-link-hero { grid-template-columns:1fr 110px 1fr; }
   .passport-hero { grid-template-columns:1fr 100px 1fr; }
+  .readiness-hero { grid-template-columns:1fr 90px 1fr; }
   .blog-archive-row { grid-template-columns:180px minmax(0,1fr) 36px; gap:22px; }
   .hero-grid { grid-template-columns:1fr; gap:46px; }
   .hero-copy { max-width:680px; }
@@ -540,6 +543,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
   .article-hero-visual { min-height:300px; grid-template-columns:1fr 72px 1fr; gap:14px; padding:24px 20px; border-radius:0; }
   .digital-link-hero { grid-template-columns:1fr; padding:28px 20px; }.digital-link-connector { grid-template-columns:1fr auto 1fr; }.digital-link-connector b { transform:rotate(90deg); }.digital-link-destinations span { min-height:58px; }
   .passport-hero { grid-template-columns:1fr; padding:28px 20px; }.passport-link { grid-template-columns:1fr auto 1fr; }.passport-link b { transform:rotate(90deg); }
+  .readiness-hero { grid-template-columns:1fr; padding:28px 20px; }
   .article-linear { height:155px; }.article-transition strong { font-size:32px; }.article-transition small,.article-transition span { font-size:8px; }
   .article-shell { padding-top:50px; padding-bottom:75px; }
   .article-toc { display:block; }.article-toc a { display:block; }
