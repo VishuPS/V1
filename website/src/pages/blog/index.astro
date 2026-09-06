@@ -12,6 +12,12 @@ const collectionSchema = {
   hasPart: [
     {
       "@type": "Article",
+      headline: "Digital Product Passport API: How Developers Can Build DPP-Ready Applications",
+      url: "https://barcodenest.com/blog/digital-product-passport-api/",
+      datePublished: "2026-09-06",
+    },
+    {
+      "@type": "Article",
       headline: "EU Digital Product Passport: What Businesses Need to Prepare for Now",
       url: "https://barcodenest.com/blog/eu-digital-product-passport-business-guide/",
       datePublished: "2026-09-05",
@@ -49,23 +55,29 @@ const collectionSchema = {
   </section>
 
   <section class="container blog-featured" aria-labelledby="latest-article">
-    <a class="blog-card-visual" href="/blog/eu-digital-product-passport-business-guide/" aria-label="Read EU Digital Product Passport: What Businesses Need to Prepare for Now">
-      <div class="readiness-card" aria-hidden="true">
-        <span>Data readiness / 2027</span>
-        <div><b>01</b><strong>Identify</strong><i>✓</i></div><div><b>02</b><strong>Normalize</strong><i>✓</i></div><div><b>03</b><strong>Connect</strong><i>✓</i></div>
+    <a class="blog-card-visual" href="/blog/digital-product-passport-api/" aria-label="Read Digital Product Passport API: How Developers Can Build DPP-Ready Applications">
+      <div class="api-card" aria-hidden="true">
+        <span>GET /v1/products/5901234123457</span>
+        <div><b>GTIN</b><i>→</i><b>IDENTITY</b><i>→</i><b>DPP DATA</b></div>
+        <code>{`{ "found": true, "gtin": "5901234123457" }`}</code>
       </div>
-      <span class="visual-caption">DPP preparation begins with consistent product identity.</span>
+      <span class="visual-caption">A modular lookup layer connects scans to richer product data.</span>
     </a>
     <article class="blog-card-copy">
-      <div class="article-card-meta"><span>Business guide</span><time datetime="2026-09-05">Sep 5, 2026</time><span>7 min read</span></div>
-      <h2 id="latest-article"><a href="/blog/eu-digital-product-passport-business-guide/">EU Digital Product Passport: what businesses need to prepare for now</a></h2>
-      <p>Who may be affected, how the staged EU roadmap works, and why clean identifiers and product data should come before the QR code.</p>
-      <a class="text-link" href="/blog/eu-digital-product-passport-business-guide/">Read the article <span aria-hidden="true">→</span></a>
+      <div class="article-card-meta"><span>Developer guide</span><time datetime="2026-09-06">Sep 6, 2026</time><span>7 min read</span></div>
+      <h2 id="latest-article"><a href="/blog/digital-product-passport-api/">Digital Product Passport API: how developers can build DPP-ready applications</a></h2>
+      <p>Separate product identity from lifecycle attributes, connect standardized identifiers across data sources, and prepare applications for richer linked product data.</p>
+      <a class="text-link" href="/blog/digital-product-passport-api/">Read the article <span aria-hidden="true">→</span></a>
     </article>
   </section>
 
   <section class="container blog-archive" aria-labelledby="all-articles">
-    <div class="blog-archive-head"><div><div class="eyebrow">Archive</div><h2 id="all-articles">All field notes</h2></div><span>04 articles</span></div>
+    <div class="blog-archive-head"><div><div class="eyebrow">Archive</div><h2 id="all-articles">All field notes</h2></div><span>05 articles</span></div>
+    <a class="blog-archive-row" href="/blog/eu-digital-product-passport-business-guide/">
+      <div class="article-card-meta"><span>Business guide</span><time datetime="2026-09-05">Sep 5, 2026</time><span>7 min read</span></div>
+      <h3>EU Digital Product Passport: what businesses need to prepare for now</h3>
+      <span class="archive-arrow" aria-hidden="true">→</span>
+    </a>
     <a class="blog-archive-row" href="/blog/digital-product-passport-guide/">
       <div class="article-card-meta"><span>Product identity</span><time datetime="2026-09-04">Sep 4, 2026</time><span>7 min read</span></div>
       <h3>What is a Digital Product Passport? Everything you need to know for 2027</h3>
@@ -84,6 +96,6 @@ const collectionSchema = {
   </section>
 
   <section class="blog-index-note">
-    <div class="container"><span>04 articles</span><p>More field notes on product identity, coverage and barcode lookup are on the way.</p></div>
+    <div class="container"><span>05 articles</span><p>More field notes on product identity, coverage and barcode lookup are on the way.</p></div>
   </section>
 </BaseLayout>

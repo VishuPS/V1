@@ -1,0 +1,115 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+
+const title = "Digital Product Passport API: Developer Guide to DPP-Ready Apps";
+const description = "Learn how APIs, GTINs, barcodes and QR codes can be used to build DPP-ready product applications and how BarcodeNest can provide a product lookup layer.";
+---
+<BlogPostLayout
+  title={title}
+  heading="Digital Product Passport API: how developers can build DPP-ready applications"
+  description={description}
+  author="BarcodeNest Editorial Team"
+  published="2026-09-06"
+  readingTime="7 min read"
+  keywords="digital product passport API, DPP API, product API, barcode API, GTIN API"
+  image="/blog/digital-product-passport-api-social.svg"
+  imageAlt="A modular API architecture connecting a barcode scan with product identity and Digital Product Passport data"
+>
+  <div class="article-hero-visual api-hero container" role="img" aria-label="A barcode scan flows through a product identity API into linked DPP data">
+    <div class="api-hero-request" aria-hidden="true"><span>Input / GTIN-13</span><strong>5901234123457</strong><code>GET /v1/products/{'{gtin}'}</code></div>
+    <div class="passport-link" aria-hidden="true"><span>Resolve</span><b>→</b><span>Enrich</span></div>
+    <div class="api-hero-response" aria-hidden="true"><span>Application layers</span><div><i>01</i> Product identity</div><div><i>02</i> DPP data</div><div><i>03</i> User experience</div></div>
+  </div>
+
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>In this article</strong>
+      <a href="#identity">Start with identity</a>
+      <a href="#lookup-api">Barcode lookup API</a>
+      <a href="#dpp-data">Adding DPP data</a>
+      <a href="#interoperability">Design for interoperability</a>
+      <a href="#digital-link">GS1 Digital Link</a>
+      <a href="#barcodenest">BarcodeNest’s role</a>
+    </aside>
+
+    <div class="article-body">
+      <p class="article-opening">Developers building product applications increasingly need to solve two different problems: <strong>identifying a product</strong> and <strong>retrieving information about that product</strong>.</p>
+      <p>The emerging Digital Product Passport ecosystem makes this distinction increasingly important.</p>
+
+      <h2 id="identity">Start with product identity</h2>
+      <p>Imagine a consumer scans a product and your application receives:</p>
+      <div class="identifier-example"><span>Scanned identifier</span><code>5901234123457</code></div>
+      <p>The application first needs to understand what that identifier represents. A product lookup layer can normalize the identifier and resolve it to a structured identity before the application requests information from additional systems.</p>
+
+      <div class="vertical-data-flow" aria-label="Product identification data flow">
+        <span>Barcode</span><b aria-hidden="true">↓</b><span>GTIN normalization</span><b aria-hidden="true">↓</b><span>Product lookup</span><b aria-hidden="true">↓</b><span>Structured product identity</span><b aria-hidden="true">↓</b><span>Additional data sources</span><b aria-hidden="true">↓</b><span>Application</span>
+      </div>
+
+      <p>This is where a product lookup API such as BarcodeNest can become part of the architecture.</p>
+
+      <h2 id="lookup-api">Barcode lookup through an API</h2>
+      <p>Instead of maintaining a complete product catalogue locally, an application can submit a scanned UPC, EAN or GTIN to a product-data service.</p>
+      <div class="api-code-sample" aria-label="Example BarcodeNest product lookup request"><span>Product lookup request</span><code>GET /v1/products/5901234123457</code></div>
+      <p>The application can then work with any structured product information returned for that identifier. This architecture is useful for:</p>
+      <ul class="data-chip-list" aria-label="Product lookup API use cases"><li>Mobile scanners</li><li>Ecommerce tools</li><li>Inventory software</li><li>Consumer apps</li><li>Comparison platforms</li><li>AI agents</li><li>Sustainability apps</li></ul>
+
+      <h2 id="dpp-data">Adding Digital Product Passport information</h2>
+      <p>The next layer can contain richer product-specific information. A modular DPP-ready architecture might look like this:</p>
+
+      <div class="architecture-stack" aria-label="DPP-ready application architecture">
+        <div><span>01</span><strong>Physical product</strong><small>The item being scanned</small></div>
+        <b aria-hidden="true">↓</b><div><span>02</span><strong>Barcode or QR code</strong><small>The machine-readable carrier</small></div>
+        <b aria-hidden="true">↓</b><div><span>03</span><strong>Product identifier</strong><small>A GTIN or another standardized key</small></div>
+        <b aria-hidden="true">↓</b><div><span>04</span><strong>Identity layer</strong><small>BarcodeNest or another product database</small></div>
+        <b aria-hidden="true">↓</b><div><span>05</span><strong>Linked data layers</strong><small>DPP, manufacturer and regulatory information</small></div>
+        <b aria-hidden="true">↓</b><div><span>06</span><strong>Application</strong><small>The experience delivered to the user</small></div>
+      </div>
+
+      <p>This separation is useful because <strong>product identity and product attributes are not necessarily the same dataset</strong>. A GTIN can establish which trade item the application is dealing with, while other systems may provide sustainability, repairability, compliance or lifecycle information.</p>
+
+      <h2 id="interoperability">Designing for interoperability</h2>
+      <p>The European Commission describes interoperability as an essential DPP requirement. Its framework covers common technical standards for unique identifiers, data carriers, APIs, exchange protocols, data storage and access.</p>
+      <p>Developers should avoid architectures where product records depend entirely on proprietary internal IDs. Store standardized identifiers alongside internal keys whenever possible.</p>
+
+      <div class="api-code-sample code-json" aria-label="Example interoperable product record">
+        <span>Product record</span>
+        <pre><code>{`{
+  "gtin": "5901234123457",
+  "brand": "Example Brand",
+  "name": "Example Product",
+  "category": "Example Category",
+  "external_identifiers": {},
+  "digital_product_data": {}
+}`}</code></pre>
+      </div>
+      <p>The GTIN becomes a useful key for connecting multiple datasets without pretending that one source owns every attribute.</p>
+
+      <h2 id="digital-link">GS1 Digital Link changes the picture further</h2>
+      <p>GS1 Digital Link defines a web-friendly URI syntax for GS1 identifiers and a resolution model that can connect those identifiers to multiple sources of online information and services.</p>
+      <p>That creates a powerful architectural model:</p>
+      <p class="principle-line"><span>Physical object</span><b aria-hidden="true">→</b><span>Standardized identifier</span><b aria-hidden="true">→</b><span>Web-accessible information</span></p>
+      <p>Developers building barcode applications today should consider not only what information they can retrieve from a barcode now, but how their architecture could accommodate richer linked product information later.</p>
+
+      <h2 id="barcodenest">BarcodeNest as the identification layer</h2>
+      <p>BarcodeNest’s role in such an architecture is straightforward:</p>
+      <blockquote>Give us the barcode. Try to identify the product.</blockquote>
+      <p>Developers can combine the result with their own databases, manufacturer information, regulatory datasets or future DPP services.</p>
+      <p>The future of product applications is unlikely to rely on a single universal database. Instead, standardized identifiers such as GTINs can provide the connective tissue between many product-data systems.</p>
+
+      <div class="article-cta">
+        <div><span>Build the identity layer</span><h2>Resolve UPC, EAN and GTIN identifiers through one product API.</h2></div>
+        <a class="button button-signal" href="/register/">Start building free</a>
+      </div>
+
+      <section class="article-sources" aria-labelledby="sources-heading">
+        <h2 id="sources-heading">Sources and further reading</h2>
+        <ul>
+          <li><a href="https://single-market-economy.ec.europa.eu/single-market/digital-product-passport/explore-our-faqs_en" rel="external">European Commission: Digital Product Passport FAQs</a></li>
+          <li><a href="https://single-market-economy.ec.europa.eu/news/digital-product-passport-registry-now-live-2026-07-20_en" rel="external">European Commission: DPP Registry, APIs and interoperability standards</a></li>
+          <li><a href="https://ref.gs1.org/standards/digital-link" rel="external">GS1: Digital Link standards</a></li>
+          <li><a href="https://www.gs1.org/standards/gs1-system-architecture-document/current-standard" rel="external">GS1: System Architecture</a></li>
+        </ul>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>
