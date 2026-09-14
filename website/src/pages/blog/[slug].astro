@@ -1,0 +1,37 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import { entries } from '../../../campaign/schedule.mjs';
+import { getCollection, render } from 'astro:content';
+export async function getStaticPaths() {
+  const posts = await getCollection('campaign');
+  return entries.map(entry => {
+    const post = posts.find(post => post.id === entry.slug);
+    if (!post) throw new Error(`Missing campaign article: ${entry.slug}; loaded: ${posts.map(p=>p.id).join(', ')}`);
+    return { params: {slug: entry.slug}, props: {entry, post} };
+  });
+}
+const { entry, post } = Astro.props;
+const { Content, headings: allHeadings } = await render(post);
+const frontmatter = post.data;
+const headings = allHeadings.filter(h => h.depth === 2);
+---
+<BlogPostLayout title={entry.title} heading={entry.title} description={frontmatter.description}
+  author="BarcodeNest Editorial Team" published={entry.published} keywords={frontmatter.keywords || entry.keyword}>
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page"><strong>In this article</strong>
+      {headings.map((heading: {slug: string, text: string}) => <a href={`#${heading.slug}`}>{heading.text}</a>)}
+    </aside>
+    <div class="article-body campaign-body"><Content />
+      <div class="article-cta"><div><span>Build with real product data</span><h2>Make your first lookup.</h2><p>Test your own catalog with a free API key, then choose a plan based on measured usage.</p></div><a class="button button-signal" href="/register/">Create a free API key</a></div>
+      <p><a href="/docs/barcode-lookup/">Read the endpoint documentation</a> · <a href="/pricing/">See current pricing</a></p>
+    </div>
+  </div>
+</BlogPostLayout>
+<style is:global>
+  .campaign-body pre { overflow-x:auto; padding:24px; border-radius:4px; font-size:14px; line-height:1.65; }
+  .campaign-body table { display:block; max-width:100%; overflow-x:auto; border-collapse:collapse; font-size:15px; margin:28px 0; }
+  .campaign-body th,.campaign-body td { padding:14px; border-bottom:1px solid var(--line); text-align:left; min-width:130px; vertical-align:top; }
+  .campaign-body h3 { margin:32px 0 12px; font-size:24px; }
+  .campaign-body :not(pre)>code { overflow-wrap:anywhere; font-size:.88em; }
+  .campaign-body ul,.campaign-body ol { padding-left:24px; margin-bottom:24px; }
+</style>

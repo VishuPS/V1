@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/package-campaign.mjs",
+    "test:campaign": "node --test tests/campaign.test.mjs",
     "preview": "astro preview",
     "check": "astro check",
     "check:seo": "node scripts/check-seo.mjs"

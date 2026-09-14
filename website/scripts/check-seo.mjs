@@ -1,6 +1,8 @@
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import campaignHtml from '../generated/campaign.mjs';
+import { entries, entryForPath } from '../campaign/schedule.mjs';
 
 const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 if (!existsSync(dist)) throw new Error("dist is missing; run pnpm build before pnpm check:seo");
@@ -21,9 +23,9 @@ const descriptions = new Map();
 const privatePrefixes = ["admin/", "account/", "api-keys/", "billing/", "contributions/", "dashboard/", "login/", "oauth-complete/", "onboarding/", "profile/", "register/", "settings/"];
 const value = (html, pattern) => html.match(pattern)?.[1]?.trim();
 
-for (const file of htmlFiles) {
-  const route = relative(dist, file).split(sep).join("/").replace(/index\.html$/, "");
-  const html = readFileSync(file, "utf8");
+const documents = htmlFiles.map(file => ({route:relative(dist,file).split(sep).join('/').replace(/index\.html$/,''), html:readFileSync(file,'utf8')}));
+documents.push(...entries.map(entry=>({route:`blog/${entry.slug}/`,html:campaignHtml[entry.slug]})));
+for (const {route,html} of documents) {
   const isPrivate = privatePrefixes.some((prefix) => route.startsWith(prefix)) || route === "404.html";
   const title = value(html, /<title>([\s\S]*?)<\/title>/i);
   const description = value(html, /<meta\s+name="description"\s+content="([^"]*)"/i);
@@ -53,6 +55,7 @@ for (const file of htmlFiles) {
     const target = new URL(href, "https://barcodenest.com/");
     if (target.origin !== "https://barcodenest.com") continue;
     const pathname = decodeURIComponent(target.pathname);
+    if (pathname === '/blog/rss.xml' || entryForPath(pathname)) continue; // Worker routes verified by test:campaign.
     const candidates = pathname.endsWith("/")
       ? [join(dist, pathname, "index.html")]
       : [join(dist, pathname), join(dist, pathname, "index.html"), join(dist, `${pathname}.html`)];
@@ -72,4 +75,4 @@ if (failures.length) {
   console.error(failures.join("\n"));
   process.exit(1);
 }
-console.log(`SEO checks passed for ${htmlFiles.length} generated HTML pages.`);
+console.log(`SEO checks passed for ${documents.length} static and Worker-rendered HTML pages.`);

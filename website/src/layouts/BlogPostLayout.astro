@@ -33,7 +33,7 @@ const articleSchema = {
       <div class="eyebrow">BarcodeNest field notes</div>
       <h1>{heading}</h1>
       <p class="article-deck">{description}</p>
-      <p class="article-meta">By {author} <span aria-hidden="true">·</span> <time datetime={published}>{new Date(`${published}T00:00:00`).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}</time>{readingTime && <><span aria-hidden="true">·</span> {readingTime}</>}{updated !== published && <><span aria-hidden="true">·</span> Updated <time datetime={updated}>{updated}</time></>}</p>
+      <p class="article-meta">By {author} <span aria-hidden="true">·</span> <time datetime={published}>{new Date(published.length === 10 ? `${published}T00:00:00Z` : published).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}</time>{readingTime && <><span aria-hidden="true">·</span> {readingTime}</>}{updated !== published && <><span aria-hidden="true">·</span> Updated <time datetime={updated}>{updated}</time></>}</p>
     </header>
     <slot />
   </article>

@@ -1,5 +1,9 @@
+import html from './generated/campaign.mjs';
+import { campaignResponse } from './campaign/publishing.mjs';
 export default {
   async fetch(request, env) {
+    const campaign = await campaignResponse(request, env, html);
+    if (campaign) return campaign;
     const url = new URL(request.url);
     const parts = url.pathname.split("/").filter(Boolean);
 
