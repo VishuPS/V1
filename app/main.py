@@ -1,4 +1,7 @@
 import logging
+import asyncio
+import sys
+from contextlib import suppress
 from contextlib import asynccontextmanager
 from collections.abc import AsyncIterator
 
@@ -27,11 +30,46 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
+async def supervise_recovery():
+    while True:
+        process = None
+        try:
+            process = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "app.recovery", "--watch", "--limit", "20",
+            )
+            logger.info("Recovery worker started pid=%s", process.pid)
+            await process.wait()
+            logger.warning("Recovery worker exited code=%s; restarting", process.returncode)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Recovery worker could not start")
+        finally:
+            if process is not None and process.returncode is None:
+                process.terminate()
+                try:
+                    await asyncio.wait_for(process.wait(), timeout=10)
+                except asyncio.TimeoutError:
+                    process.kill()
+                    await process.wait()
+        await asyncio.sleep(30)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.auto_create_tables:
         init_db()
-    yield
+    recovery_task = (
+        asyncio.create_task(supervise_recovery())
+        if settings.recovery_enabled and settings.recovery_worker_enabled else None
+    )
+    try:
+        yield
+    finally:
+        if recovery_task is not None:
+            recovery_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await recovery_task
 
 
 app = FastAPI(

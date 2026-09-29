@@ -66,6 +66,10 @@ def record_lookup_outcomes_safely(
                 )
                 for outcome in outcomes
             )
+            from app.config import get_settings
+            if get_settings().recovery_enabled:
+                from app.recovery import enqueue
+                enqueue(analytics_session, [o.canonical_gtin for o in outcomes if not o.found], timestamp)
             analytics_session.commit()
     except Exception:
         logger.exception("Lookup analytics write failed")

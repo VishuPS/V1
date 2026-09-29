@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     )
     ingestion_batch_size: int = 1_000
     lookup_analytics_retention_days: int = Field(default=180, ge=30, le=730)
+    recovery_enabled: bool = False
+    recovery_worker_enabled: bool = False
     fallback_lookups_enabled: bool = False
     fallback_user_agent: str = "BarcodeNest/1.0 (support@barcodenest.com)"
     open_facts_fallback_enabled: bool = True

@@ -536,10 +536,12 @@ class FallbackResolver:
         state.status, state.checked_at, state.expires_at, state.detail = result.status, now, now + timedelta(seconds=ttl), result.detail
         state.retry_after_at = now + timedelta(seconds=result.retry_after_seconds) if result.retry_after_seconds else None
 
-    def resolve(self, canonical_gtin: str) -> Resolution:
+    def resolve(self, canonical_gtin: str, *, persistent_only: bool = False) -> Resolution:
         started, now = time.perf_counter(), datetime.now(timezone.utc)
         resolution = Resolution()
         for provider in self._route(canonical_gtin):
+            if persistent_only and provider.name == "GOOGLE_BOOKS":
+                continue
             if self._cached(canonical_gtin, provider.name, now):
                 continue
             resolution.providers_attempted.append(provider.name)
@@ -556,6 +558,10 @@ class FallbackResolver:
             candidate = result.candidate
             if candidate.mapped.canonical_gtin != canonical_gtin:
                 continue
+            if not candidate.mapped.name or not candidate.mapped.name.strip():
+                continue
+            if persistent_only and not candidate.persist_allowed:
+                continue
             resolution.provider_found = provider.name
             if candidate.persist_allowed:
                 resolution.product = apply_mapped_record(self.session, candidate.mapped)
@@ -564,5 +570,7 @@ class FallbackResolver:
                 resolution.transient = candidate.mapped
                 self.session.commit()  # provider state only
             break
+        if resolution.providers_attempted:
+            self.session.commit()
         resolution.fallback_ms = (time.perf_counter() - started) * 1000
         return resolution

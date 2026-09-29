@@ -556,6 +556,21 @@ class Subscription(Base):
     plan: Mapped[SubscriptionPlan] = relationship()
 
 
+class ProductRecovery(Base):
+    __tablename__ = "product_recovery"
+
+    canonical_gtin: Mapped[str] = mapped_column(String(14), primary_key=True)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
+    request_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=1)
+    attempts: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    next_attempt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    provider: Mapped[str | None] = mapped_column(String(128))
+    detail: Mapped[str | None] = mapped_column(String(256))
+
+
 class StripeWebhookEvent(Base):
     __tablename__ = "stripe_webhook_events"
 
