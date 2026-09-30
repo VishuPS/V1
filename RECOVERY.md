@@ -42,3 +42,25 @@ use the same conservative retry schedule as misses.
 Tests cover API capture, canonical deduplication, leases, retry exhaustion,
 existing local products and skipping transient candidates before durable import.
 Production PostgreSQL concurrency/load validation remains a deployment check.
+
+## Admin diagnostics
+
+Open `/admin/recovery/` for global queue counts, status filtering, paginated jobs,
+retry eligibility, and latest provider checks. The read-only API is
+`GET /v1/admin/recovery` and requires an authenticated administrator.
+Provider summaries cover outstanding queue products and use the latest shared
+provider state, not an immutable attempt history or uptime measurement.
+The worker indicator reports configuration, not a heartbeat.
+
+### Production investigation — September 30, 2026
+
+At inspection, all nine queued products were awaiting retry. Latest provider
+checks showed EAN-DB access denied for all nine (the adapter maps HTTP 401/403
+to this reason); the precise account/credential cause is not established.
+Open Facts had eight misses and one invalid record with `missing_title`.
+Open Icecat had nine misses. UPCItemDB had five misses and four unavailable
+results; the existing records do not distinguish throttling from server errors.
+These are latest shared checks, which may be newer than the recovery attempt.
+No evidence here establishes storage restrictions as the cause of these misses.
+Provider account access should be repaired before increasing recovery volume.
+No backfill or provider credential change was performed during this investigation.

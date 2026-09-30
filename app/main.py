@@ -90,6 +90,8 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization", "X-API-Key"],
 )
+from app.recovery_admin import router as recovery_admin_router
+app.include_router(recovery_admin_router)
 app.include_router(router)
 app.include_router(auth_router)
 app.include_router(admin_router)
