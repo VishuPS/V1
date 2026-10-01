@@ -38,7 +38,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       document.getElementById("recovery-config")!.textContent=`Capture ${data.capture_enabled?"enabled":"disabled"} · Worker ${data.worker_configured?"configured":"disabled"}. Configuration does not confirm worker health. Updated ${formatDate(data.generated_at,true)}.`;
       const providers=document.getElementById("recovery-providers")!;
       providers.replaceChildren(...(data.provider_summary.length ? data.provider_summary.map(p=>{
-        const card=element("article","","provider-card"); card.append(element("strong",p.provider),element("p",`${labels[p.status]||p.status} · ${number.format(p.products)} products`));
+        const card=element("article","","provider-card"); card.append(element("strong",p.provider),element("p",`${labels[p.status]||p.status} · ${number.format(p.products)} ${p.products===1?"product":"products"}`));
         if(p.detail) card.append(element("small",p.detail === "access_denied" ? "Access denied — check provider account or credentials" : p.detail)); return card;
       }) : [element("p","No source checks recorded for outstanding jobs.")]));
       itemsNode.replaceChildren(...data.items.map(item=>{
@@ -51,7 +51,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
         for(const check of item.checks) {const line=element("div","","recovery-check"); line.append(element("strong",check.provider),element("span",`${labels[check.status]||check.status}${check.detail?` · ${check.detail}`:""}`),element("small",`Checked ${formatDate(check.checked_at,true)} · Cache expires ${formatDate(check.expires_at,true)}`)); details.append(line);}
         card.append(details); return card;
       }));
-      statusNode.textContent=data.items.length ? `${number.format(total)} matching products. Newest requests first.` : "No recovery jobs match this status.";
+      statusNode.textContent=data.items.length ? `${number.format(total)} matching ${total===1?"product":"products"}. Newest requests first.` : "No recovery jobs match this status.";
       document.getElementById("recovery-page")!.textContent=total ? `${offset+1}–${Math.min(offset+25,total)} of ${number.format(total)}` : "0 products";
     }
     async function load() {
@@ -65,6 +65,19 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     refresh.addEventListener("click",()=>void load());filter.addEventListener("change",()=>{offset=0;void load();});prev.addEventListener("click",()=>{offset=Math.max(0,offset-25);void load();});next.addEventListener("click",()=>{offset+=25;void load();});void load();
   </script>
   <style>
-    .provider-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}.provider-card,.recovery-card{border:1px solid var(--line);border-radius:12px;padding:20px}.provider-card p{margin:8px 0}.provider-card small{overflow-wrap:anywhere}.recovery-card{margin:16px 0}.recovery-card-heading,.recovery-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}.recovery-card h3{margin:0;font-family:monospace;font-size:18px}.recovery-badge{font-size:14px;font-weight:600}.recovery-check{display:grid;gap:6px;padding:14px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}summary{cursor:pointer;min-height:44px;padding:12px 0}select{min-height:44px;margin-left:8px;max-width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:inherit}button:disabled{opacity:.55;cursor:default}.recovery-pagination{margin:20px 0}@media(max-width:600px){.provider-grid{grid-template-columns:1fr}.recovery-card{padding:16px}.admin-section-heading label{display:block;width:100%}select{margin:8px 0;display:block;width:100%}}
+    .provider-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px}
+    :global(.provider-card),:global(.recovery-card){border:1px solid var(--line);border-radius:12px;padding:20px}
+    :global(.provider-card p){margin:8px 0}
+    :global(.provider-card small){overflow-wrap:anywhere}
+    :global(.recovery-card){margin:16px 0}
+    :global(.recovery-card-heading),.recovery-pagination{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    :global(.recovery-card h3){margin:0;font-family:monospace;font-size:18px}
+    :global(.recovery-badge){font-size:14px;font-weight:600}
+    :global(.recovery-check){display:grid;gap:6px;padding:14px 0;border-top:1px solid var(--line);overflow-wrap:anywhere}
+    :global(.recovery-card summary){cursor:pointer;min-height:44px;padding:12px 0}
+    select{min-height:44px;margin-left:8px;max-width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:inherit}
+    button:disabled{opacity:.55;cursor:default}.recovery-pagination{margin:20px 0}
+    @media(min-width:1100px){.admin-metrics{grid-template-columns:repeat(5,minmax(0,1fr))}}
+    @media(max-width:600px){.provider-grid{grid-template-columns:1fr}:global(.recovery-card){padding:16px}.admin-section-heading label{display:block;width:100%}select{margin:8px 0;display:block;width:100%}}
   </style>
 </AdminLayout>

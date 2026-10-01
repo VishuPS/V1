@@ -33,7 +33,7 @@ name are required before importing through the existing conservative merge and
 provenance path. Existing source rules continue to determine storage eligibility.
 
 Status output contains demand counts, attempts, next attempt, recovered provider
-and failure detail. This initial implementation has no new web admin view,
+and failure detail. This implementation does not yet include
 distinct-customer prioritization, dollar-budget accounting, customer webhook,
 manual-review workflow, or product cache to invalidate. The job limit bounds
 work per invocation; it is not a monetary spending cap. Provider errors currently
