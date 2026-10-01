@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import json
+import math
+from email.utils import parsedate_to_datetime
 import logging
 import threading
 import time
@@ -23,15 +25,23 @@ from app.identifiers import normalize_isbn
 from app.ingestion.multi_source import MappedSourceProduct, apply_mapped_record
 from app.ingestion.open_food_facts import clean_text, normalize_tags, select_image_url
 from app.models import FallbackProviderState, Product, new_uuid
+from app.provider_cooldowns import reserve, postpone
 
 logger = logging.getLogger(__name__)
 
 
 def _retry_after(headers: dict[str, str], default: int = 60) -> int:
+    value = next((v for k, v in headers.items() if k.lower() == "retry-after"), None)
     try:
-        return max(1, int(headers.get("Retry-After", str(default))))
+        return max(1, int(value))
     except (TypeError, ValueError):
-        return default
+        try:
+            date = parsedate_to_datetime(value)
+            if date.tzinfo is None:
+                date = date.replace(tzinfo=timezone.utc)
+            return max(1, math.ceil((date - datetime.now(timezone.utc)).total_seconds()))
+        except (TypeError, ValueError, OverflowError):
+            return default
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +85,8 @@ class Resolution:
     providers_attempted: list[str] = field(default_factory=list)
     provider_found: str | None = None
     fallback_ms: float = 0.0
+    infrastructure_failure: bool = False
+    retry_after_seconds: int = 0
 
 
 def _json(response: HttpResponse) -> Any:
@@ -128,7 +140,7 @@ class OpenFactsFallback:
         if response.status == 404:
             return ProviderResult("miss")
         if response.status == 429 or response.status >= 500:
-            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers))
+            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers), detail=f"http_{response.status}")
         if response.status != 200:
             return ProviderResult("error", detail=f"http_{response.status}")
         data = _json(response)
@@ -180,7 +192,7 @@ class UPCItemDBFallback:
         if response.status == 404:
             return ProviderResult("miss")
         if response.status == 429 or response.status >= 500:
-            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers))
+            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers), detail=f"http_{response.status}")
         if response.status != 200:
             return ProviderResult("error", detail=f"http_{response.status}")
         data = _json(response)
@@ -251,12 +263,18 @@ class EANDBFallback:
         if response.status == 400:
             return ProviderResult("invalid", detail="provider_rejected_gtin")
         if response.status in {401, 403}:
-            return ProviderResult(
-                "unavailable", retry_after_seconds=300, detail="access_denied"
-            )
+            # Store only a known classification, never arbitrary provider response text.
+            detail = "access_denied"
+            try:
+                error = _json(response).get("error", {})
+                if isinstance(error, dict) and error.get("description") == "Your account balance is empty":
+                    detail = "account_balance_empty"
+            except (ValueError, AttributeError):
+                pass
+            return ProviderResult("unavailable", retry_after_seconds=3600, detail=detail)
         if response.status == 429 or response.status >= 500:
             return ProviderResult(
-                "unavailable", retry_after_seconds=_retry_after(response.headers)
+                "unavailable", retry_after_seconds=_retry_after(response.headers), detail=f"http_{response.status}"
             )
         if response.status != 200:
             return ProviderResult("error", detail=f"http_{response.status}")
@@ -359,9 +377,9 @@ class OpenIcecatFallback:
         if response.status == 404:
             return ProviderResult("miss")
         if response.status in {401, 403}:
-            return ProviderResult("unavailable", retry_after_seconds=300, detail="access_denied")
+            return ProviderResult("unavailable", retry_after_seconds=3600, detail="access_denied")
         if response.status == 429 or response.status >= 500:
-            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers))
+            return ProviderResult("unavailable", retry_after_seconds=_retry_after(response.headers), detail=f"http_{response.status}")
         if response.status != 200:
             return ProviderResult("error", detail=f"http_{response.status}")
         try:
@@ -529,7 +547,7 @@ class FallbackResolver:
 
     def _record(self, gtin: str, provider: ProviderAdapter, result: ProviderResult, now: datetime) -> None:
         state = self.session.scalar(select(FallbackProviderState).where(FallbackProviderState.canonical_gtin == gtin, FallbackProviderState.provider == provider.name))
-        ttl = result.retry_after_seconds or provider.negative_ttl
+        ttl = result.retry_after_seconds or (60 if result.status in {"unavailable", "error"} else provider.negative_ttl)
         if state is None:
             state = FallbackProviderState(id=new_uuid(), canonical_gtin=gtin, provider=provider.name, status=result.status, checked_at=now, expires_at=now + timedelta(seconds=ttl))
             self.session.add(state)
@@ -542,7 +560,21 @@ class FallbackResolver:
         for provider in self._route(canonical_gtin):
             if persistent_only and provider.name == "GOOGLE_BOOKS":
                 continue
+            now = datetime.now(timezone.utc)
             if self._cached(canonical_gtin, provider.name, now):
+                state = self.session.scalar(select(FallbackProviderState).where(
+                    FallbackProviderState.canonical_gtin == canonical_gtin,
+                    FallbackProviderState.provider == provider.name))
+                if state.status in {"unavailable", "error"}:
+                    resolution.infrastructure_failure = True
+                    resolution.retry_after_seconds = max(resolution.retry_after_seconds,
+                        math.ceil((self._aware(state.expires_at) - now).total_seconds()))
+                continue
+            blocked = reserve(self.session, provider.name, getattr(provider, "min_interval", 0), now)
+            if blocked:
+                resolution.infrastructure_failure = True
+                resolution.retry_after_seconds = max(resolution.retry_after_seconds,
+                    math.ceil((blocked[0] - now).total_seconds()))
                 continue
             resolution.providers_attempted.append(provider.name)
             provider_started = time.perf_counter()
@@ -552,6 +584,12 @@ class FallbackResolver:
                 logger.warning("Fallback provider failed provider=%s gtin=%s error=%s", provider.name, canonical_gtin, type(exc).__name__)
                 result = ProviderResult("unavailable", retry_after_seconds=60, detail=type(exc).__name__)
             logger.info("Fallback provider timing provider=%s gtin=%s provider_ms=%.1f status=%s", provider.name, canonical_gtin, (time.perf_counter() - provider_started) * 1000, result.status)
+            if result.status in {"unavailable", "error"}:
+                resolution.infrastructure_failure = True
+                seconds = max(result.retry_after_seconds or 60, 3600 if result.detail in {"http_401", "http_403", "access_denied"} else 0)
+                result.retry_after_seconds = seconds
+                resolution.retry_after_seconds = max(resolution.retry_after_seconds, seconds)
+                postpone(self.session, provider.name, seconds, result.detail or result.status)
             self._record(canonical_gtin, provider, result, now)
             if result.status != "found" or result.candidate is None:
                 continue

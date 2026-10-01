@@ -9,6 +9,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   </div>
   <section class="admin-section">
     <div class="admin-section-heading"><div><span class="panel-label">Provider diagnostics</span><h2>What is blocking recovery?</h2><p>Latest stored checks for products not yet recovered. Checks can come from API lookups or background recovery; these are not provider uptime statistics.</p></div></div>
+    <p id="recovery-cooldowns" class="portal-note" role="status"></p>
     <div id="recovery-providers" class="provider-grid"><p>Loading provider results…</p></div>
   </section>
   <section class="admin-section">
@@ -21,8 +22,8 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   <script>
     import { adminFetch, requireAdmin, formatDate } from "../../scripts/admin-api";
     type Check = {provider:string;status:string;detail:string|null;checked_at:string;expires_at:string};
-    type Item = {canonical_gtin:string;status:string;request_count:number;attempts:number;last_seen:string;next_attempt:string|null;provider:string|null;reason:string;checks:Check[]};
-    type Data = {generated_at:string;capture_enabled:boolean;worker_configured:boolean;counts:Record<string,number>;provider_summary:{provider:string;status:string;detail:string|null;products:number}[];total:number;items:Item[]};
+    type Item = {canonical_gtin:string;status:string;request_count:number;attempts:number;infrastructure_attempts:number;last_seen:string;next_attempt:string|null;provider:string|null;reason:string;checks:Check[]};
+    type Data = {cooldowns?:{provider:string;next_allowed_at:string;detail:string|null}[];generated_at:string;capture_enabled:boolean;worker_configured:boolean;counts:Record<string,number>;provider_summary:{provider:string;status:string;detail:string|null;products:number}[];total:number;items:Item[]};
     const labels:Record<string,string>={pending:"Pending",running:"Processing",retry:"Awaiting retry",recovered:"Recovered",unresolved:"Unresolved",miss:"No match",unavailable:"Unavailable",error:"Error",invalid:"Invalid data",found:"Source match"};
     const statusNode=document.getElementById("recovery-status")!;
     const itemsNode=document.getElementById("recovery-items")!;
@@ -36,6 +37,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       total=data.total;
       for(const [key,value] of Object.entries(data.counts)) {const node=document.getElementById(`recovery-${key}`); if(node) node.textContent=number.format(value);}
       document.getElementById("recovery-config")!.textContent=`Capture ${data.capture_enabled?"enabled":"disabled"} · Worker ${data.worker_configured?"configured":"disabled"}. Configuration does not confirm worker health. Updated ${formatDate(data.generated_at,true)}.`;
+      document.getElementById("recovery-cooldowns")!.textContent=(data.cooldowns||[]).map(c=>`${c.provider}: paused until ${formatDate(c.next_allowed_at,true)} (${c.detail||"provider cooldown"})`).join(" · ");
       const providers=document.getElementById("recovery-providers")!;
       providers.replaceChildren(...(data.provider_summary.length ? data.provider_summary.map(p=>{
         const card=element("article","","provider-card"); card.append(element("strong",p.provider),element("p",`${labels[p.status]||p.status} · ${number.format(p.products)} ${p.products===1?"product":"products"}`));
@@ -44,7 +46,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       itemsNode.replaceChildren(...data.items.map(item=>{
         const card=element("article","","recovery-card"); const head=element("div","","recovery-card-heading");
         head.append(element("h3",item.canonical_gtin),element("span",labels[item.status]||item.status,"recovery-badge")); card.append(head);
-        card.append(element("p",item.reason),element("p",`${number.format(item.request_count)} requests · ${item.attempts}/5 attempts · Last requested ${formatDate(item.last_seen,true)}`,"portal-note"));
+        card.append(element("p",item.reason),element("p",`${number.format(item.request_count)} requests · ${item.attempts}/5 lookup attempts · ${item.infrastructure_attempts ?? 0}/20 provider retries · Last requested ${formatDate(item.last_seen,true)}`,"portal-note"));
         card.append(element("p",item.next_attempt ? `${item.status==="running"?"Lease expires":"Next eligible retry"}: ${formatDate(item.next_attempt,true)}` : item.provider ? `Recovered from ${item.provider}` : "No automatic retry scheduled", "portal-note"));
         const details=document.createElement("details"); details.append(element("summary",`Latest provider checks (${item.checks.length})`));
         if(!item.checks.length) details.append(element("p","No provider checks recorded."));

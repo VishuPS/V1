@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta, timezone
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import case, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
@@ -33,14 +33,17 @@ def enqueue(session, barcodes, now=None):
 def claim(factory, now=None, max_attempts=5):
     now = now or datetime.now(timezone.utc)
     with factory() as session:
-        # Exhaust crashed jobs whose final lease has elapsed.
+        # A crashed worker is infrastructure failure, not evidence of a missing product.
         session.execute(update(ProductRecovery).where(
             ProductRecovery.status == "running", ProductRecovery.next_attempt <= now,
-            ProductRecovery.attempts >= max_attempts,
-        ).values(status="unresolved", lease_token=None))
+        ).values(
+            infrastructure_attempts=ProductRecovery.infrastructure_attempts + 1,
+            status=case((ProductRecovery.infrastructure_attempts >= 19, "unresolved"), else_="retry"),
+            detail="worker_lease_expired", lease_token=None,
+        ))
         eligible = (
             ProductRecovery.status.in_(["pending", "retry", "running"]),
-            ProductRecovery.next_attempt <= now, ProductRecovery.attempts < max_attempts,
+            ProductRecovery.next_attempt <= now, ProductRecovery.attempts < max_attempts, ProductRecovery.infrastructure_attempts < 20,
         )
         gtin = session.scalar(select(ProductRecovery.canonical_gtin).where(*eligible)
                               .order_by(ProductRecovery.request_count.desc(), ProductRecovery.first_seen).limit(1))
@@ -51,7 +54,7 @@ def claim(factory, now=None, max_attempts=5):
         result = session.execute(update(ProductRecovery).where(
             ProductRecovery.canonical_gtin == gtin, *eligible,
         ).values(status="running", lease_token=token,
-                 attempts=ProductRecovery.attempts + 1, next_attempt=now + timedelta(minutes=15)))
+                 next_attempt=now + timedelta(minutes=15)))
         session.commit()
         return (gtin, token) if result.rowcount == 1 else None
 
@@ -63,6 +66,7 @@ def run_one(factory, settings, *, resolver_factory=FallbackResolver, now=None):
         return False
     gtin, token = job
     recovered, provider, detail = False, None, "not_found"
+    infrastructure_failure, retry_after = False, 0
     try:
         with factory() as session:
             product = ProductRepository(session).find_by_barcode(parse_barcode(gtin))
@@ -72,16 +76,29 @@ def run_one(factory, settings, *, resolver_factory=FallbackResolver, now=None):
                 result = resolver_factory(session, settings).resolve(gtin, persistent_only=True)
                 recovered = result.product is not None
                 provider = result.provider_found if recovered else None
+                infrastructure_failure = getattr(result, "infrastructure_failure", False)
+                retry_after = getattr(result, "retry_after_seconds", 0)
     except Exception as exc:
         detail = type(exc).__name__
+        infrastructure_failure = True
     with factory() as session:
         row = session.get(ProductRecovery, gtin)
         if row.lease_token != token:
             return True
-        row.status = "recovered" if recovered else "unresolved" if row.attempts >= 5 else "retry"
+        if infrastructure_failure and not recovered:
+            row.infrastructure_attempts += 1
+            detail = "provider_unavailable" if detail == "not_found" else detail
+            if row.infrastructure_attempts >= 20:
+                detail = "infrastructure_retry_limit"
+        if not recovered and not infrastructure_failure:
+            row.attempts += 1
+        row.status = "recovered" if recovered else "unresolved" if row.attempts >= 5 or row.infrastructure_attempts >= 20 else "retry"
         row.provider, row.detail, row.lease_token = provider, None if recovered else detail, None
         # A full-day initial cooldown respects existing provider negative caches.
-        row.next_attempt = now + timedelta(days=min(2 ** (row.attempts - 1), 14))
+        if infrastructure_failure and not recovered:
+            row.next_attempt = now + timedelta(seconds=max(retry_after, min(300 * 2 ** min(row.infrastructure_attempts - 1, 8), 86400)))
+        else:
+            row.next_attempt = now + timedelta(days=min(2 ** max(0, row.attempts - 1), 14))
         session.commit()
     return True
 

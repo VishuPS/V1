@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from app.admin_auth import AdminContext
 from app.config import get_settings
 from app.db import get_db
-from app.models import FallbackProviderState, ProductRecovery
+from app.models import FallbackProviderState, ProductRecovery, ProviderCooldown
 
 router = APIRouter(prefix="/v1/admin/recovery", tags=["admin"])
 QueueStatus = Literal["pending", "running", "retry", "recovered", "unresolved"]
@@ -29,6 +29,7 @@ class RecoveryItem(BaseModel):
     status: str
     request_count: int
     attempts: int
+    infrastructure_attempts: int
     first_seen: datetime
     last_seen: datetime
     next_attempt: datetime | None
@@ -45,12 +46,19 @@ class ProviderSummary(BaseModel):
     products: int
 
 
+class Cooldown(BaseModel):
+    provider: str
+    next_allowed_at: datetime
+    detail: str | None
+
+
 class RecoveryDashboard(BaseModel):
     generated_at: datetime
     capture_enabled: bool
     worker_configured: bool
     counts: dict[str, int]
     provider_summary: list[ProviderSummary]
+    cooldowns: list[Cooldown]
     total: int
     limit: int
     offset: int
@@ -68,6 +76,12 @@ def reason(row, checks):
         return "Waiting for first attempt"
     if row.status == "running":
         return "Worker lease active; expired leases are retried"
+    if row.detail == "infrastructure_retry_limit":
+        return "Provider retry budget exhausted; fix provider access before requeuing"
+    if any(c.detail == "account_balance_empty" for c in checks):
+        return "EAN-DB account balance is empty; top up provider credits to restore access"
+    if row.detail == "provider_unavailable":
+        return "Provider unavailable or cooling down; product-miss budget preserved"
     if row.detail and row.detail != "not_found":
         return f"Worker error: {row.detail}"
     if any(c.detail == "access_denied" for c in checks):
@@ -110,11 +124,13 @@ def recovery_dashboard(session, *, status=None, limit=25, offset=0):
     return RecoveryDashboard(
         generated_at=datetime.now(timezone.utc), capture_enabled=settings.recovery_enabled,
         worker_configured=settings.recovery_worker_enabled, counts=counts,
+        cooldowns=[Cooldown(provider=c.provider, next_allowed_at=aware(c.next_allowed_at), detail=c.detail)
+                   for c in session.scalars(select(ProviderCooldown).where(ProviderCooldown.next_allowed_at > datetime.now(timezone.utc)).order_by(ProviderCooldown.provider))],
         provider_summary=[ProviderSummary(provider=p, status=s, detail=d, products=n) for p,s,d,n in provider_rows],
         total=counts.get(status, 0) if status else sum(counts.values()), limit=limit, offset=offset,
         items=[RecoveryItem(
             canonical_gtin=r.canonical_gtin, status=r.status, request_count=r.request_count,
-            attempts=r.attempts, first_seen=aware(r.first_seen), last_seen=aware(r.last_seen),
+            attempts=r.attempts, infrastructure_attempts=r.infrastructure_attempts, first_seen=aware(r.first_seen), last_seen=aware(r.last_seen),
             next_attempt=aware(r.next_attempt) if r.status in {"pending", "retry", "running"} else None,
             provider=r.provider, detail=r.detail, reason=reason(r, checks.get(r.canonical_gtin, [])),
             checks=checks.get(r.canonical_gtin, []),

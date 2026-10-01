@@ -563,6 +563,7 @@ class ProductRecovery(Base):
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="pending")
     request_count: Mapped[int] = mapped_column(BigInteger, nullable=False, default=1)
     attempts: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    infrastructure_attempts: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
     first_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     last_seen: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     next_attempt: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
@@ -577,3 +578,10 @@ class StripeWebhookEvent(Base):
     event_id: Mapped[str] = mapped_column(String(255), primary_key=True)
     event_type: Mapped[str] = mapped_column(String(128), nullable=False)
     processed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProviderCooldown(Base):
+    __tablename__ = "provider_cooldowns"
+    provider: Mapped[str] = mapped_column(String(64), primary_key=True)
+    next_allowed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    detail: Mapped[str | None] = mapped_column(String(128))

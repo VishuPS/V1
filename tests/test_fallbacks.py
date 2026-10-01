@@ -218,7 +218,7 @@ def test_eandb_rejects_wrong_gtin_and_handles_provider_statuses():
     assert adapter.lookup("04006381333931").status == "invalid"
     assert adapter.lookup("04006381333931").status == "miss"
     denied = adapter.lookup("04006381333931")
-    assert denied.status == "unavailable" and denied.retry_after_seconds == 300
+    assert denied.status == "unavailable" and denied.retry_after_seconds == 3600
     limited = adapter.lookup("04006381333931")
     assert limited.status == "unavailable" and limited.retry_after_seconds == 45
 

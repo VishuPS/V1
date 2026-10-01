@@ -64,3 +64,12 @@ These are latest shared checks, which may be newer than the recovery attempt.
 No evidence here establishes storage restrictions as the cause of these misses.
 Provider account access should be repaired before increasing recovery volume.
 No backfill or provider credential change was performed during this investigation.
+
+
+## Shared provider recovery controls (2026-10-01)
+
+Migration 20261001_0018 adds database-backed provider reservations and cooldowns shared by API processes and workers. Reservations commit before HTTP calls. Provider failures cannot shorten an existing cooldown. Retry-After supports case-insensitive headers and HTTP dates. Access denial pauses a provider for one hour; other errors use provider Retry-After or 60 seconds.
+
+Incomplete recovery passes preserve the five-lookup budget and increment a separate provider retry counter (maximum 20). Exponential infrastructure retry delays start at five minutes and cap at one day, while honoring longer provider cooldowns. Exhaustion becomes unresolved with infrastructure_retry_limit, not not_found. Historic lookup counters remain unchanged. Dashboard displays both counters and active shared cooldowns. Persistent-only validation and storage licensing checks are unchanged.
+
+Production EAN-DB diagnostic returned HTTP 403 on October 1. The provider JSON explicitly reports "Your account balance is empty". Restore EAN-DB credits to regain access; no credential rotation is indicated by this response. Do not repeatedly retry credentials or clear cooldowns to bypass provider restrictions. After provider access is corrected, an operator can requeue a bounded sample without resetting historical counters.
