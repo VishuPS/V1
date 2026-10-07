@@ -109,7 +109,7 @@ def main():
     parser = argparse.ArgumentParser(description="Process or inspect missing-product recovery")
     parser.add_argument("--limit", type=int, default=20, help="Maximum jobs for this invocation")
     parser.add_argument("--status", action="store_true")
-    parser.add_argument("--watch", action="store_true", help="Repeat bounded batches every five minutes")
+    parser.add_argument("--watch", action="store_true", help="Repeat bounded batches with three hours of idle time between batches")
     args = parser.parse_args()
     if not 1 <= args.limit <= 1000:
         parser.error("limit must be between 1 and 1000")
@@ -137,7 +137,8 @@ def main():
         print(f"Processed {completed} recovery jobs", flush=True)
         if not args.watch:
             break
-        time.sleep(300)
+        print("Recovery worker sleeping for 10800 seconds (3 hours)", flush=True)
+        time.sleep(10800)
 
 
 if __name__ == "__main__":

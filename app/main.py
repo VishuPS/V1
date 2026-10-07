@@ -52,7 +52,7 @@ async def supervise_recovery():
                 except asyncio.TimeoutError:
                     process.kill()
                     await process.wait()
-        await asyncio.sleep(30)
+        await asyncio.sleep(10800)
 
 
 @asynccontextmanager
