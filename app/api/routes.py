@@ -53,6 +53,13 @@ def get_product(
         parsed = parse_barcode(barcode)
     except BarcodeError as exc:
         raise api_error(status.HTTP_400_BAD_REQUEST, "invalid_barcode", str(exc)) from exc
+    # Consume quota before provider work, including product misses.
+    usage = consume_usage(session, auth, 1)
+    headers = usage_headers(auth, usage)
+    for header, value in headers.items():
+        response.headers[header] = value
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     resolution = resolve_product(session, barcode, settings=settings)
     result = resolution.result
     if not result.found:
@@ -66,11 +73,13 @@ def get_product(
             endpoint_type="single",
             retention_days=settings.lookup_analytics_retention_days,
         )
-        raise api_error(
+        error = api_error(
             status.HTTP_404_NOT_FOUND,
             "product_not_found",
             "The barcode is valid, but no product was found",
         )
+        error.headers = headers
+        raise error
     session.rollback()
     record_lookup_outcomes_safely(
         session,
@@ -81,11 +90,6 @@ def get_product(
         endpoint_type="single",
         retention_days=settings.lookup_analytics_retention_days,
     )
-    usage = consume_usage(session, auth, 1)
-    for header, value in usage_headers(auth, usage).items():
-        response.headers[header] = value
-    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
-    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return result
 
 
@@ -116,6 +120,12 @@ def batch_products(
             "batch_limit_exceeded",
             f"A maximum of {settings.batch_limit} barcodes is allowed",
         )
+    # Each submitted item consumes quota; batches remain one HTTP request.
+    usage = consume_usage(session, auth, len(payload.barcodes))
+    for header, value in usage_headers(auth, usage).items():
+        response.headers[header] = value
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     resolutions = [resolve_product(session, barcode, settings=settings) for barcode in payload.barcodes]
     results = [resolution.result for resolution in resolutions]
     outcomes = [
@@ -133,9 +143,4 @@ def batch_products(
         endpoint_type="batch",
         retention_days=settings.lookup_analytics_retention_days,
     )
-    usage = consume_usage(session, auth, 1)
-    for header, value in usage_headers(auth, usage).items():
-        response.headers[header] = value
-    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
-    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return BatchResponse(results=results)

@@ -123,7 +123,7 @@ def test_quota_accounting_and_exhaustion(
     app.dependency_overrides.pop(get_settings, None)
 
 
-def test_batch_charged_as_one_successful_api_call(
+def test_batch_charged_per_submitted_barcode(
     client: TestClient, session_factory: sessionmaker[Session]
 ) -> None:
     response = client.post(
@@ -131,11 +131,40 @@ def test_batch_charged_as_one_successful_api_call(
         json={"barcodes": ["3017620422003", "4006381333931", "123"]},
     )
     assert response.status_code == 200
-    assert response.headers["X-Monthly-Quota-Remaining"] == "249"
+    assert response.headers["X-Monthly-Quota-Remaining"] == "247"
     with session_factory() as session:
         usage = session.scalar(select(MonthlyUsage))
         assert usage.request_count == 1
-        assert usage.lookup_count == 1
+        assert usage.lookup_count == 3
+
+
+def test_missing_product_consumes_quota(client, session_factory):
+    response = client.get("/v1/products/0000000000000")
+    assert response.status_code == 404
+    assert response.headers["X-Monthly-Quota-Remaining"] == "249"
+    with session_factory() as session:
+        usage = session.scalar(select(MonthlyUsage))
+        assert usage.request_count == usage.lookup_count == 1
+
+
+def test_over_quota_batch_does_not_resolve_products(client, session_factory, monkeypatch):
+    app.dependency_overrides[get_settings] = lambda: limited_settings(quota=2)
+    def unexpected_lookup(*args, **kwargs):
+        raise AssertionError("Provider work must not run before quota approval")
+    monkeypatch.setattr("app.api.routes.resolve_product", unexpected_lookup)
+    response = client.post("/v1/products/batch", json={"barcodes": ["3017620422003"] * 3})
+    assert response.status_code == 429
+    with session_factory() as session:
+        assert session.scalar(select(MonthlyUsage)) is None
+
+
+def test_exhausted_single_does_not_resolve_products(client, monkeypatch):
+    app.dependency_overrides[get_settings] = lambda: limited_settings(quota=1)
+    assert client.get("/v1/products/3017620422003").status_code == 200
+    def unexpected_lookup(*args, **kwargs):
+        raise AssertionError("Provider work must not run when quota is exhausted")
+    monkeypatch.setattr("app.api.routes.resolve_product", unexpected_lookup)
+    assert client.get("/v1/products/0000000000000").status_code == 429
 
 
 def test_monthly_period_rollover(

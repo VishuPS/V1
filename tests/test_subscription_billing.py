@@ -113,15 +113,18 @@ def test_limit_reached_email_contains_upgrade_link(monkeypatch):
     assert "https://barcodenest.com/pricing/" in request["json"]["html"]
 
 
-def test_failed_and_account_requests_do_not_consume_usage(unauthenticated_client, session_factory):
+def test_missing_products_consume_usage_but_account_requests_do_not(unauthenticated_client, session_factory):
     user_id, key = account(session_factory)
     assert unauthenticated_client.get("/v1/products/4006381333931", headers={"X-API-Key": key}).status_code == 404
+    assert unauthenticated_client.get("/v1/products/invalid", headers={"X-API-Key": key}).status_code == 400
+    with session_factory() as session:
+        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 1
     tokens = login(unauthenticated_client, "free@example.com").json()
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     assert unauthenticated_client.get("/v1/account/usage", headers=headers).status_code == 200
     assert unauthenticated_client.get("/v1/account/subscription", headers=headers).status_code == 200
     with session_factory() as session:
-        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 0
+        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 1
 
 
 def test_free_usage_resets_after_period_end(unauthenticated_client, session_factory):
