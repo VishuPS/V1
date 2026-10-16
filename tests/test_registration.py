@@ -177,3 +177,20 @@ def test_forwarded_address_only_trusted_from_render_network(peer, expected):
              "headers": [(b"x-forwarded-for", b"203.0.113.55, 198.51.100.8")]}
     asyncio.run(middleware(scope, None, None))
     assert seen == [expected]
+
+
+def test_cloudflare_and_render_chain_uses_client_not_rotating_edge():
+    import asyncio
+    import re
+    from pathlib import Path
+    from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+    trusted = re.search(r"FORWARDED_ALLOW_IPS:-([^}]+)", Path("Dockerfile").read_text()).group(1)
+    seen = []
+    async def capture(scope, receive, send):
+        seen.append(scope["client"][0])
+    middleware = ProxyHeadersMiddleware(capture, trusted_hosts=trusted)
+    for edge in ("172.64.32.1", "104.16.10.1"):
+        scope = {"type": "http", "client": ("10.25.119.181", 1234), "scheme": "http",
+                 "headers": [(b"x-forwarded-for", f"192.0.2.99, 198.51.100.8, {edge}".encode())]}
+        asyncio.run(middleware(scope, None, None))
+    assert seen == ["198.51.100.8", "198.51.100.8"]

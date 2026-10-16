@@ -666,5 +666,7 @@ address or IPv6 /64 can claim three Free accounts. Exact `nesscoegroup.com`
 email addresses are exempt and do not consume network slots. This exemption
 uses the submitted email domain; password signup does not verify email ownership.
 Render forwards connections from its private 10.0.0.0/8 network; the container
-trusts forwarded IP headers from that network and loopback by default. Other
+trusts forwarded IP headers from that network, loopback, and the official
+Cloudflare proxy ranges (https://www.cloudflare.com/ips/) by default. This strips
+rotating edge addresses from the trusted end of the proxy chain. Other
 hosting environments should set `FORWARDED_ALLOW_IPS` to their trusted proxies.
