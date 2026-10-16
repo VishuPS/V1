@@ -139,30 +139,32 @@ def test_registration_network_hash_uses_ipv6_64_and_never_raw_address():
     assert len(first) == 64
 
 
-def test_nesscoegroup_exemption_is_exact_and_does_not_consume_slots(session_factory):
+@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com"])
+def test_domain_exemption_is_exact_and_does_not_consume_slots(session_factory, domain):
     configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
     with session_factory() as session:
         for i in range(5):
             user, _ = create_registration(session, RegistrationCreate(
-                name="Exempt User", email=f"user{i}@NeSsCoEgRoUp.CoM", password=PAYLOAD["password"]
+                name="Exempt User", email=f"user{i}@{domain.upper()}", password=PAYLOAD["password"]
             ), configured, registration_ip="203.0.113.10")
             assert user.free_tier_registration_ip_hash is None
-        for email in ("a@example.com", "b@sub.nesscoegroup.com", "c@fake-nesscoegroup.com"):
+        for email in ("a@example.com", f"b@sub.{domain}", f"c@fake-{domain}"):
             create_registration(session, RegistrationCreate(name="Regular User", email=email, password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
         with pytest.raises(HTTPException) as exc:
             create_registration(session, RegistrationCreate(name="Fourth User", email="d@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
         assert exc.value.detail["code"] == "free_tier_network_limit_reached"
 
 
-def test_existing_exempt_claim_frees_a_slot(session_factory):
+@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com"])
+def test_existing_exempt_claim_frees_a_slot(session_factory, domain):
     configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
     with session_factory() as session:
-        session.add(User(email="legacy@nesscoegroup.com", display_name="Legacy",
+        session.add(User(email=f"legacy@{domain}", display_name="Legacy",
                          free_tier_registration_ip_hash=registration_network_hash("203.0.113.10", configured)))
         session.commit()
         for i in range(3):
             create_registration(session, RegistrationCreate(name="Regular User", email=f"regular{i}@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
-        assert session.scalar(select(User).where(User.email == "legacy@nesscoegroup.com")).free_tier_registration_ip_hash is None
+        assert session.scalar(select(User).where(User.email == f"legacy@{domain}")).free_tier_registration_ip_hash is None
 
 
 @pytest.mark.parametrize("peer,expected", [("10.25.119.181", "198.51.100.8"), ("198.51.100.9", "198.51.100.9")])

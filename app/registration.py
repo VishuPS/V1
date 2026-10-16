@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from calendar import monthrange
 
 from fastapi import HTTPException, status
-from sqlalchemy import select, text, update
+from sqlalchemy import or_, select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -15,6 +15,8 @@ from app.models import ApiClient, Subscription, SubscriptionPlan, User
 from app.schemas import RegistrationCreate, RegistrationVerified
 from app.user_auth import hash_password, normalize_email
 
+
+NETWORK_LIMIT_EXEMPT_DOMAINS = ("nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com")
 
 def registration_network_hash(ip_value: str | None, settings: Settings) -> str | None:
     if not settings.free_tier_ip_limit_enabled:
@@ -80,7 +82,7 @@ def provision_free_account(
             },
         )
     # Exact email-domain exemption; lookalike and subdomains do not qualify.
-    exempt = email.rsplit("@", 1)[-1] == "nesscoegroup.com"
+    exempt = email.rsplit("@", 1)[-1] in NETWORK_LIMIT_EXEMPT_DOMAINS
     network_hash = None if exempt else registration_network_hash(registration_ip, settings)
     if network_hash:
         # Three unique claim slots preserve the existing unique constraint. The
@@ -93,16 +95,19 @@ def provision_free_account(
             # Serialize registrations for this network across workers/instances.
             lock_id = int.from_bytes(bytes.fromhex(network_hash)[:8], "big", signed=True)
             session.execute(text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id})
+        exempt_email = or_(*(
+            User.email.ilike(f"%@{domain}") for domain in NETWORK_LIMIT_EXEMPT_DOMAINS
+        ))
         used = set(session.scalars(
             select(User.free_tier_registration_ip_hash).where(
                 User.free_tier_registration_ip_hash.in_(slots),
-                ~User.email.ilike("%@nesscoegroup.com"),
+                ~exempt_email,
             )
         ))
         # Existing exempt accounts must not occupy a claim slot.
         session.execute(update(User).where(
             User.free_tier_registration_ip_hash.in_(slots),
-            User.email.ilike("%@nesscoegroup.com"),
+            exempt_email,
         ).values(free_tier_registration_ip_hash=None))
         network_hash = next((slot for slot in slots if slot not in used), None)
         if network_hash is None:
