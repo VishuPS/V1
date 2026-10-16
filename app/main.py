@@ -13,6 +13,7 @@ from fastapi.encoders import jsonable_encoder
 from sqlalchemy.exc import SQLAlchemyError
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from app.api.mail_routes import router as mail_router
 from app.api.routes import router
 from app.api.auth_routes import router as auth_router
 from app.api.admin_routes import router as admin_router
@@ -95,6 +96,7 @@ app.include_router(recovery_admin_router)
 app.include_router(router)
 app.include_router(auth_router)
 app.include_router(admin_router)
+app.include_router(mail_router)
 app.include_router(billing_router)
 app.include_router(contribution_router)
 app.include_router(contribution_admin_router)

@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -88,6 +88,8 @@ class Settings(BaseSettings):
     github_oauth_client_id: str | None = None
     github_oauth_client_secret: str | None = None
     oauth_state_minutes: int = 10
+    support_mail_address: str = "support@barcodenest.com"
+    support_mail_password: SecretStr | None = None
     resend_api_key: str | None = None
     email_from: str = "BarcodeNest <notifications@barcodenest.com>"
     stripe_secret_key: str | None = None

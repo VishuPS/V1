@@ -302,3 +302,26 @@ and authenticated lookup have all passed using the provider hostname.
 - The per-minute limiter is memory-local. Multiple workers, replicas, or hosts
   would each enforce an independent limit. Before scaling beyond one process,
   replace it with a shared implementation such as Redis.
+
+
+## Admin support inbox
+
+`/admin/email/` is an admin-only mail client for `support@barcodenest.com`.
+Set `SUPPORT_MAIL_PASSWORD` in Render Environment to the Spacemail mailbox
+password. Optionally set `SUPPORT_MAIL_ADDRESS` if changing the mailbox.
+IMAP and SMTP must be enabled in Spacemail Manager. Connections use validated
+TLS to mail.spacemail.com on ports 993 and 465; paid Render compute is required
+for outbound SMTP. No DNS/MX changes are required.
+
+Email is read from Spacemail, not copied into the product database. Passwords
+are never returned to the browser. Messages render as plain text; remote images
+are not fetched. Opening a message marks it read. Attachments download as files,
+and sending supports up to 10 attachments totaling 8 MB. Reading messages over
+15 MB falls back to webmail. Moves require the server's atomic UID MOVE support;
+the client never issues a global EXPUNGE or permanently deletes messages.
+
+Only a deliberate Send action invokes SMTP. Sent copies are appended to the
+server's Sent folder. On uncertain delivery the interface instructs the admin
+to check webmail before composing another email. Request IDs prevent duplicate
+sends within the server process for one hour, but not across restarts. Unsaved
+compose text remains in browser memory and is lost when the page is closed.
