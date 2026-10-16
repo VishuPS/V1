@@ -78,7 +78,7 @@ def test_registration_can_be_disabled(unauthenticated_client, monkeypatch):
     assert response.status_code == 503
 
 
-def test_free_tier_network_claim_blocks_a_second_email(session_factory):
+def test_free_tier_network_claim_allows_three_and_blocks_fourth(session_factory):
     configured = Settings(
         _env_file=None,
         free_tier_ip_limit_enabled=True,
@@ -93,13 +93,13 @@ def test_free_tier_network_claim_blocks_a_second_email(session_factory):
         create_registration(
             session, first, configured, registration_ip="203.0.113.10"
         )
+        create_registration(session, second, configured, registration_ip="203.0.113.10")
+        create_registration(session, RegistrationCreate(name="Third Account", email="third@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
         with pytest.raises(HTTPException) as exc:
-            create_registration(
-                session, second, configured, registration_ip="203.0.113.10"
-            )
+            create_registration(session, RegistrationCreate(name="Fourth Account", email="fourth@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
         assert exc.value.status_code == 409
         assert exc.value.detail["code"] == "free_tier_network_limit_reached"
-        assert len(session.scalars(select(User)).all()) == 1
+        assert len(session.scalars(select(User)).all()) == 3
 
 
 def test_free_tier_network_claim_allows_a_different_network(session_factory):
@@ -137,3 +137,43 @@ def test_registration_network_hash_uses_ipv6_64_and_never_raw_address():
     assert first == rotated
     assert first != "2001:db8:1:2::1"
     assert len(first) == 64
+
+
+def test_nesscoegroup_exemption_is_exact_and_does_not_consume_slots(session_factory):
+    configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
+    with session_factory() as session:
+        for i in range(5):
+            user, _ = create_registration(session, RegistrationCreate(
+                name="Exempt User", email=f"user{i}@NeSsCoEgRoUp.CoM", password=PAYLOAD["password"]
+            ), configured, registration_ip="203.0.113.10")
+            assert user.free_tier_registration_ip_hash is None
+        for email in ("a@example.com", "b@sub.nesscoegroup.com", "c@fake-nesscoegroup.com"):
+            create_registration(session, RegistrationCreate(name="Regular User", email=email, password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
+        with pytest.raises(HTTPException) as exc:
+            create_registration(session, RegistrationCreate(name="Fourth User", email="d@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
+        assert exc.value.detail["code"] == "free_tier_network_limit_reached"
+
+
+def test_existing_exempt_claim_frees_a_slot(session_factory):
+    configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
+    with session_factory() as session:
+        session.add(User(email="legacy@nesscoegroup.com", display_name="Legacy",
+                         free_tier_registration_ip_hash=registration_network_hash("203.0.113.10", configured)))
+        session.commit()
+        for i in range(3):
+            create_registration(session, RegistrationCreate(name="Regular User", email=f"regular{i}@example.com", password=PAYLOAD["password"]), configured, registration_ip="203.0.113.10")
+        assert session.scalar(select(User).where(User.email == "legacy@nesscoegroup.com")).free_tier_registration_ip_hash is None
+
+
+@pytest.mark.parametrize("peer,expected", [("10.25.119.181", "198.51.100.8"), ("198.51.100.9", "198.51.100.9")])
+def test_forwarded_address_only_trusted_from_render_network(peer, expected):
+    import asyncio
+    from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
+    seen = []
+    async def capture(scope, receive, send):
+        seen.append(scope["client"][0])
+    middleware = ProxyHeadersMiddleware(capture, trusted_hosts="127.0.0.1,10.0.0.0/8")
+    scope = {"type": "http", "client": (peer, 1234), "scheme": "http",
+             "headers": [(b"x-forwarded-for", b"203.0.113.55, 198.51.100.8")]}
+    asyncio.run(middleware(scope, None, None))
+    assert seen == [expected]

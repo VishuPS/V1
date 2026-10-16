@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from calendar import monthrange
 
 from fastapi import HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import select, text, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -48,8 +48,8 @@ def free_tier_limit_error() -> HTTPException:
         detail={
             "code": "free_tier_network_limit_reached",
             "message": (
-                "A Free account has already been created from this network. "
-                "Sign in to the existing account or contact support."
+                "Three Free accounts have already been created from this network. "
+                "Sign in to an existing account or contact support."
             ),
         },
     )
@@ -79,11 +79,34 @@ def provision_free_account(
                 "message": "An account already exists for this email address",
             },
         )
-    network_hash = registration_network_hash(registration_ip, settings)
-    if network_hash and session.scalar(
-        select(User.id).where(User.free_tier_registration_ip_hash == network_hash)
-    ) is not None:
-        raise free_tier_limit_error()
+    # Exact email-domain exemption; lookalike and subdomains do not qualify.
+    exempt = email.rsplit("@", 1)[-1] == "nesscoegroup.com"
+    network_hash = None if exempt else registration_network_hash(registration_ip, settings)
+    if network_hash:
+        # Three unique claim slots preserve the existing unique constraint. The
+        # first slot is the legacy hash so existing real-network claims count.
+        slots = [network_hash] + [
+            hashlib.sha256(f"{network_hash}:slot:{slot}".encode()).hexdigest()
+            for slot in (2, 3)
+        ]
+        if session.get_bind().dialect.name == "postgresql":
+            # Serialize registrations for this network across workers/instances.
+            lock_id = int.from_bytes(bytes.fromhex(network_hash)[:8], "big", signed=True)
+            session.execute(text("SELECT pg_advisory_xact_lock(:lock_id)"), {"lock_id": lock_id})
+        used = set(session.scalars(
+            select(User.free_tier_registration_ip_hash).where(
+                User.free_tier_registration_ip_hash.in_(slots),
+                ~User.email.ilike("%@nesscoegroup.com"),
+            )
+        ))
+        # Existing exempt accounts must not occupy a claim slot.
+        session.execute(update(User).where(
+            User.free_tier_registration_ip_hash.in_(slots),
+            User.email.ilike("%@nesscoegroup.com"),
+        ).values(free_tier_registration_ip_hash=None))
+        network_hash = next((slot for slot in slots if slot not in used), None)
+        if network_hash is None:
+            raise free_tier_limit_error()
 
     user = User(
         email=email,

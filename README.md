@@ -659,3 +659,12 @@ ISBN support is isolated in `app.identifiers`: ISBN-10 converts to ISBN-13, and
 valid 978/979 ISBN-13 values can use the existing GTIN-14 storage representation.
 Open Library bulk ingestion remains optional and is not part of deployment or
 the default source synchronization command.
+
+
+Free signup network policy: when `FREE_TIER_IP_LIMIT_ENABLED=true`, each IPv4
+address or IPv6 /64 can claim three Free accounts. Exact `nesscoegroup.com`
+email addresses are exempt and do not consume network slots. This exemption
+uses the submitted email domain; password signup does not verify email ownership.
+Render forwards connections from its private 10.0.0.0/8 network; the container
+trusts forwarded IP headers from that network and loopback by default. Other
+hosting environments should set `FORWARDED_ALLOW_IPS` to their trusted proxies.
