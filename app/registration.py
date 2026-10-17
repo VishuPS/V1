@@ -16,7 +16,97 @@ from app.schemas import RegistrationCreate, RegistrationVerified
 from app.user_auth import hash_password, normalize_email
 
 
-NETWORK_LIMIT_EXEMPT_DOMAINS = ("nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com")
+# Exact public mailbox-provider domains; never infer exemptions from a brand
+# substring or every address sharing a corporate email hosting provider.
+NETWORK_LIMIT_EXEMPT_DOMAINS = (
+    "126.com",
+    "163.com",
+    "abv.bg",
+    "aim.com",
+    "aol.com",
+    "bk.ru",
+    "bol.com.br",
+    "centrum.cz",
+    "daum.net",
+    "fastmail.com",
+    "free.fr",
+    "gmail.com",
+    "gmx.com",
+    "gmx.de",
+    "gmx.net",
+    "googlemail.com",
+    "hanmail.net",
+    "hey.com",
+    "hotmail.co.uk",
+    "hotmail.com",
+    "hotmail.de",
+    "hotmail.es",
+    "hotmail.fr",
+    "hotmail.it",
+    "icloud.com",
+    "inbox.ru",
+    "interia.pl",
+    "laposte.net",
+    "list.ru",
+    "live.co.uk",
+    "live.com",
+    "mac.com",
+    "mail.com",
+    "mail.pt",
+    "mail.ru",
+    "me.com",
+    "msn.com",
+    "naver.com",
+    "nesscoegroup.com",
+    "o2.pl",
+    "onet.pl",
+    "orange.fr",
+    "outlook.com",
+    "outlook.com.br",
+    "outlook.de",
+    "outlook.es",
+    "outlook.fr",
+    "outlook.it",
+    "outlook.pt",
+    "pm.me",
+    "proton.me",
+    "protonmail.com",
+    "qq.com",
+    "rambler.ru",
+    "rediffmail.com",
+    "rocketmail.com",
+    "sapo.pt",
+    "seznam.cz",
+    "terra.com.br",
+    "tuta.com",
+    "tutamail.com",
+    "tutanota.com",
+    "uol.com.br",
+    "web.de",
+    "wp.pl",
+    "yahoo.ca",
+    "yahoo.co.in",
+    "yahoo.co.jp",
+    "yahoo.co.uk",
+    "yahoo.com",
+    "yahoo.com.au",
+    "yahoo.com.br",
+    "yahoo.de",
+    "yahoo.es",
+    "yahoo.fr",
+    "yahoo.in",
+    "yahoo.it",
+    "yandex.com",
+    "yandex.ru",
+    "ymail.com",
+    "zoho.com",
+    "zohomail.com",
+)
+
+
+def network_limit_exempt(email: str) -> bool:
+    return email.strip().rsplit("@", 1)[-1].lower() in NETWORK_LIMIT_EXEMPT_DOMAINS
+
 
 def registration_network_hash(ip_value: str | None, settings: Settings) -> str | None:
     if not settings.free_tier_ip_limit_enabled:
@@ -82,7 +172,7 @@ def provision_free_account(
             },
         )
     # Exact email-domain exemption; lookalike and subdomains do not qualify.
-    exempt = email.rsplit("@", 1)[-1] in NETWORK_LIMIT_EXEMPT_DOMAINS
+    exempt = network_limit_exempt(email)
     network_hash = None if exempt else registration_network_hash(registration_ip, settings)
     if network_hash:
         # Three unique claim slots preserve the existing unique constraint. The

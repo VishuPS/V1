@@ -2,7 +2,7 @@ from sqlalchemy import select
 
 from app.config import Settings, get_settings
 from app.models import ApiClient, ApiKey, AuthSession, Subscription, User
-from app.registration import create_registration, registration_network_hash
+from app.registration import create_registration, registration_network_hash, network_limit_exempt, NETWORK_LIMIT_EXEMPT_DOMAINS
 from app.schemas import RegistrationCreate
 from fastapi import HTTPException
 import pytest
@@ -139,7 +139,7 @@ def test_registration_network_hash_uses_ipv6_64_and_never_raw_address():
     assert len(first) == 64
 
 
-@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com"])
+@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com", "yahoo.com", "googlemail.com", "icloud.com", "proton.me"])
 def test_domain_exemption_is_exact_and_does_not_consume_slots(session_factory, domain):
     configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
     with session_factory() as session:
@@ -155,7 +155,7 @@ def test_domain_exemption_is_exact_and_does_not_consume_slots(session_factory, d
         assert exc.value.detail["code"] == "free_tier_network_limit_reached"
 
 
-@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com"])
+@pytest.mark.parametrize("domain", ["nesscoegroup.com", "outlook.com", "gmail.com", "hotmail.com", "yahoo.com", "googlemail.com", "icloud.com", "proton.me"])
 def test_existing_exempt_claim_frees_a_slot(session_factory, domain):
     configured = Settings(_env_file=None, free_tier_ip_limit_enabled=True)
     with session_factory() as session:
@@ -196,3 +196,16 @@ def test_cloudflare_and_render_chain_uses_client_not_rotating_edge():
                  "headers": [(b"x-forwarded-for", f"192.0.2.99, 198.51.100.8, {edge}".encode())]}
         asyncio.run(middleware(scope, None, None))
     assert seen == ["198.51.100.8", "198.51.100.8"]
+
+
+@pytest.mark.parametrize("domain", NETWORK_LIMIT_EXEMPT_DOMAINS)
+def test_public_domains_match_exactly_case_insensitively(domain):
+    assert network_limit_exempt(f"person@{domain.upper()}")
+    assert not network_limit_exempt(f"person@fake-{domain}")
+    assert not network_limit_exempt(f"person@{domain}.attacker.example")
+    assert not network_limit_exempt(f"person@sub.{domain}")
+
+
+def test_custom_domains_remain_limited():
+    assert not network_limit_exempt("person@customer-company.com")
+    assert not network_limit_exempt("person@google.com")
