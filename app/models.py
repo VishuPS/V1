@@ -68,6 +68,9 @@ class Product(Base):
 
 class ApiClient(Base):
     __tablename__ = "api_clients"
+    free_credits_used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    free_credits_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
+
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     owner_user_id: Mapped[str | None] = mapped_column(
@@ -526,6 +529,9 @@ class SubscriptionPlan(Base):
 
 class Subscription(Base):
     __tablename__ = "subscriptions"
+    free_credits_used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0, server_default="0")
+    free_credits_started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=utcnow)
+
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     user_id: Mapped[str] = mapped_column(

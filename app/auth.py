@@ -206,6 +206,22 @@ class UsageResult:
     limit_reached: UsageLimitReached | None = None
 
 
+def ensure_free_allowance(session: Session, context: AuthContext) -> None:
+    if context.client.plan.upper() != "FREE":
+        return
+    used = context.client.free_credits_used
+    if context.api_key.owner_user_id:
+        subscription = session.scalar(select(Subscription).where(
+            Subscription.user_id == context.api_key.owner_user_id
+        ).order_by(Subscription.created_at.desc()))
+        if subscription is not None:
+            if subscription.plan_code != "FREE":
+                return
+            used = subscription.free_credits_used
+    if used >= 250:
+        raise _quota_error("FREE", used, 250, None)
+
+
 def consume_usage(
     session: Session,
     context: AuthContext,
@@ -213,8 +229,8 @@ def consume_usage(
     *,
     now: datetime | None = None,
 ) -> UsageResult:
-    if lookup_units < 1:
-        raise ValueError("lookup_units must be at least 1")
+    if lookup_units < 0 or (lookup_units == 0 and context.client.plan != "FREE"):
+        raise ValueError("lookup_units must be positive except for a free batch with no matches")
     timestamp = now or datetime.now(timezone.utc)
     period = current_period(timestamp)
     subscription = None
@@ -225,13 +241,34 @@ def consume_usage(
             .order_by(Subscription.created_at.desc())
             .with_for_update()
         )
-    quota = subscription.monthly_call_limit if subscription else context.plan.monthly_lookups
+    lifetime = (subscription.plan_code if subscription else context.client.plan) == "FREE"
+    quota = (250 if lifetime else subscription.monthly_call_limit) if subscription else context.plan.monthly_lookups
     if lookup_units > quota:
         raise _quota_error(context.client.plan, quota, quota, subscription.usage_period_end if subscription else None)
 
     warning = None
     limit_reached = None
-    if subscription:
+    if lifetime:
+        model, record = (Subscription, subscription) if subscription else (ApiClient, context.client)
+        updated = session.execute(update(model).where(
+            model.id == record.id, model.free_credits_used + lookup_units <= quota,
+        ).values(free_credits_used=model.free_credits_used + lookup_units)
+          .returning(model.free_credits_used)).scalar_one_or_none()
+        if updated is None:
+            session.rollback()
+            raise _quota_error("FREE", record.free_credits_used, quota, None)
+        account_used = updated
+        if subscription and lookup_units:
+            email = session.scalar(select(User.email).where(User.id == subscription.user_id))
+            if account_used == quota and subscription.usage_limit_email_sent_at is None:
+                subscription.usage_limit_email_sent_at = timestamp
+                if email:
+                    limit_reached = UsageLimitReached(email=email, plan="FREE", used=account_used, limit=quota, period_end=None)
+            elif account_used >= ceil(quota * 0.9) and subscription.usage_warning_sent_at is None:
+                subscription.usage_warning_sent_at = timestamp
+                if email:
+                    warning = UsageWarning(email=email, used=account_used, limit=quota, period_end=None)
+    elif subscription:
         period_end = _aware_utc(subscription.usage_period_end)
         if period_end <= timestamp:
             subscription.monthly_calls_used = 0
@@ -302,7 +339,7 @@ def consume_usage(
             "last_request_at": timestamp,
             "updated_at": timestamp,
         },
-        where=MonthlyUsage.lookup_count + lookup_units <= quota,
+        where=True if lifetime else MonthlyUsage.lookup_count + lookup_units <= quota,
     ).returning(MonthlyUsage.request_count, MonthlyUsage.lookup_count)
     row = session.execute(statement).one_or_none()
     if row is None:
@@ -344,11 +381,11 @@ def consume_usage(
     session.commit()
     return UsageResult(
         quota_limit=quota,
-        quota_remaining=max(0, quota - (account_used if subscription else row.lookup_count)),
+        quota_remaining=max(0, quota - (account_used if subscription or lifetime else row.lookup_count)),
         period_start=period,
         request_count=row.request_count,
         lookup_count=row.lookup_count,
-        period_end=subscription.usage_period_end if subscription else None,
+        period_end=None if lifetime else subscription.usage_period_end if subscription else None,
         warning=warning,
         limit_reached=limit_reached,
     )
@@ -359,16 +396,18 @@ def _quota_error(plan: str, used: int, quota: int, period_end: datetime | None) 
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail={
             "code": "usage_limit_reached",
-            "message": "Your monthly API call limit has been reached.",
+            "message": "Your 250 lifetime free-result credits have been used. Upgrade to continue." if plan.upper() == "FREE" else "Your monthly API call limit has been reached.",
+            "allowance_type": "lifetime" if plan.upper() == "FREE" else "monthly",
             "plan": plan.lower(),
             "used": used,
             "limit": quota,
-            "upgrade_url": "/pricing/",
+            "upgrade_url": "https://barcodenest.com/billing/",
+            "pricing_url": "https://barcodenest.com/pricing/",
         },
         headers={
             "X-Monthly-Quota-Limit": str(quota),
             "X-Monthly-Quota-Remaining": "0",
-            "X-Monthly-Quota-Period": period_end.date().isoformat() if period_end else current_period().isoformat(),
+            "X-Monthly-Quota-Period": "lifetime" if plan.upper() == "FREE" else period_end.date().isoformat() if period_end else current_period().isoformat(),
         },
     )
 
@@ -380,5 +419,6 @@ def usage_headers(context: AuthContext, usage: UsageResult) -> dict[str, str]:
         "X-RateLimit-Reset": str(context.rate_limit.reset_epoch),
         "X-Monthly-Quota-Limit": str(usage.quota_limit),
         "X-Monthly-Quota-Remaining": str(usage.quota_remaining),
-        "X-Monthly-Quota-Period": usage.period_start.isoformat(),
+        "X-Monthly-Quota-Period": "lifetime" if context.client.plan == "FREE" else usage.period_start.isoformat(),
+        "X-Allowance-Type": "lifetime" if context.client.plan == "FREE" else "monthly",
     }

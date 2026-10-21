@@ -33,6 +33,12 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       month: { STARTER: "$9.99/month", GROWTH: "$19.99/month" },
       year: { STARTER: "$95.90/year", GROWTH: "$191.90/year" },
     } as const;
+    const query = new URLSearchParams(location.search);
+    const requestedPlan = query.get("plan");
+    const requestedInterval: Interval = query.get("interval") === "year" ? "year" : "month";
+    if (requestedPlan === "STARTER" || requestedPlan === "GROWTH") {
+      sessionStorage.setItem("barcodenest_plan_intent", JSON.stringify({ plan: requestedPlan, interval: requestedInterval }));
+    }
     let selectedInterval: Interval = "month";
     const set = (id: string, value: string) => { const node = document.getElementById(id); if (node) node.textContent = value; };
     function selectInterval(interval: Interval) {
@@ -59,9 +65,16 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       set("billing-cadence", data.plan === "FREE" ? "Free" : interval === "year" ? "Yearly" : "Monthly");
       const paidPrices = data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
       set("billing-price", data.plan === "FREE" ? "Free" : paidPrices);
-      set("billing-period", new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.usage_period_end)));
+      set("billing-period", data.plan === "FREE" ? "One-off allowance — does not reset" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.usage_period_end)));
       const portal = document.querySelector<HTMLButtonElement>("#billing-portal"); if (portal) portal.hidden = !data.provider_customer_id;
-      selectInterval(interval);
+      selectInterval(requestedPlan === "STARTER" || requestedPlan === "GROWTH" ? requestedInterval : interval);
+      if (requestedPlan === "STARTER" || requestedPlan === "GROWTH") {
+        set("billing-message", `${requestedPlan === "STARTER" ? "Starter" : "Growth"} selected. Review the allowance and billing cadence, then choose the plan below to continue to checkout.`);
+        const selected = document.querySelector<HTMLButtonElement>(`[data-checkout="${requestedPlan}"]`);
+        selected?.classList.add("button-signal");
+        selected?.focus();
+        sessionStorage.removeItem("barcodenest_plan_intent");
+      }
     }
     async function redirect(path: string, body?: object) {
       set("billing-message", "Opening secure billing…");

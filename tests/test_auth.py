@@ -95,6 +95,7 @@ def limited_settings(*, quota: int = 2, rate: int = 100) -> Settings:
     return Settings(
         _env_file=None,
         plan_limits={
+            "STARTER": PlanLimit(monthly_lookups=quota, requests_per_minute=rate),
             "FREE": PlanLimit(
                 monthly_lookups=quota,
                 requests_per_minute=rate,
@@ -123,9 +124,18 @@ def test_quota_accounting_and_exhaustion(
     app.dependency_overrides.pop(get_settings, None)
 
 
+def configure_paid_metering(session_factory):
+    with session_factory() as session:
+        for record in session.scalars(select(ApiClient)):
+            record.plan = "STARTER"
+        session.commit()
+    app.dependency_overrides[get_settings] = lambda: limited_settings(quota=250)
+
+
 def test_batch_charged_per_submitted_barcode(
     client: TestClient, session_factory: sessionmaker[Session]
 ) -> None:
+    configure_paid_metering(session_factory)
     response = client.post(
         "/v1/products/batch",
         json={"barcodes": ["3017620422003", "4006381333931", "123"]},
@@ -139,6 +149,7 @@ def test_batch_charged_per_submitted_barcode(
 
 
 def test_missing_product_consumes_quota(client, session_factory):
+    configure_paid_metering(session_factory)
     response = client.get("/v1/products/0000000000000")
     assert response.status_code == 404
     assert response.headers["X-Monthly-Quota-Remaining"] == "249"
@@ -148,6 +159,7 @@ def test_missing_product_consumes_quota(client, session_factory):
 
 
 def test_over_quota_batch_does_not_resolve_products(client, session_factory, monkeypatch):
+    configure_paid_metering(session_factory)
     app.dependency_overrides[get_settings] = lambda: limited_settings(quota=2)
     def unexpected_lookup(*args, **kwargs):
         raise AssertionError("Provider work must not run before quota approval")
@@ -158,7 +170,8 @@ def test_over_quota_batch_does_not_resolve_products(client, session_factory, mon
         assert session.scalar(select(MonthlyUsage)) is None
 
 
-def test_exhausted_single_does_not_resolve_products(client, monkeypatch):
+def test_exhausted_single_does_not_resolve_products(client, monkeypatch, session_factory):
+    configure_paid_metering(session_factory)
     app.dependency_overrides[get_settings] = lambda: limited_settings(quota=1)
     assert client.get("/v1/products/3017620422003").status_code == 200
     def unexpected_lookup(*args, **kwargs):
@@ -257,7 +270,7 @@ def test_concurrent_account_calls_cannot_exceed_subscription_limit(tmp_path: Pat
         client = ApiClient(identifier="subscription-concurrent", owner_user_id=user.id, plan="FREE")
         session.add(client); session.flush()
         key = ApiKey(client=client, owner_user_id=user.id, key_prefix="gpa_subscription", key_hash="0" * 64)
-        subscription = Subscription(user_id=user.id, plan_code="FREE", monthly_call_limit=10)
+        subscription = Subscription(user_id=user.id, plan_code="FREE", monthly_call_limit=250, free_credits_used=240)
         session.add_all([key, subscription]); session.commit()
         key_id, client_id, subscription_id = key.id, client.id, subscription.id
 
@@ -275,4 +288,4 @@ def test_concurrent_account_calls_cannot_exceed_subscription_limit(tmp_path: Pat
         outcomes = list(executor.map(consume_once, range(20)))
     assert sum(outcomes) == 10
     with factory() as session:
-        assert session.get(Subscription, subscription_id).monthly_calls_used == 10
+        assert session.get(Subscription, subscription_id).free_credits_used == 250

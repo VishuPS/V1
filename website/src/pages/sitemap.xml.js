@@ -10,6 +10,8 @@ const pages = [
   ["docs/authentication/", "0.8", "monthly"],
   ["docs/rate-limits/", "0.8", "monthly"],
   ["docs/errors/", "0.8", "monthly"],
+  ["barcode-api-for-inventory/", "0.8", "monthly"],
+  ["product-data-api/", "0.8", "monthly"],
   ["pricing/", "0.9", "monthly"],
   ["data/", "0.7", "monthly"],
   ["blog/", "0.8", "weekly"],

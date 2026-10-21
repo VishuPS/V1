@@ -22,6 +22,8 @@ def account(session_factory, plan="FREE", limit=250, used=0):
         subscription.plan_code = plan
         subscription.monthly_call_limit = limit
         subscription.monthly_calls_used = used
+        if plan == "FREE":
+            subscription.free_credits_used = used
         session.scalar(select(ApiClient).where(ApiClient.owner_user_id == user_id)).plan = plan
         session.commit()
     return user_id, raw_key
@@ -110,24 +112,24 @@ def test_limit_reached_email_contains_upgrade_link(monkeypatch):
     assert request["url"] == "https://api.resend.com/emails"
     assert request["json"]["to"] == ["owner@example.com"]
     assert request["json"]["subject"] == "You have reached your BarcodeNest API limit"
-    assert "https://barcodenest.com/pricing/" in request["json"]["html"]
+    assert "https://barcodenest.com/billing/" in request["json"]["html"]
 
 
-def test_missing_products_consume_usage_but_account_requests_do_not(unauthenticated_client, session_factory):
+def test_free_missing_products_and_account_requests_do_not_consume_credits(unauthenticated_client, session_factory):
     user_id, key = account(session_factory)
     assert unauthenticated_client.get("/v1/products/4006381333931", headers={"X-API-Key": key}).status_code == 404
     assert unauthenticated_client.get("/v1/products/invalid", headers={"X-API-Key": key}).status_code == 400
     with session_factory() as session:
-        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 1
+        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 0
     tokens = login(unauthenticated_client, "free@example.com").json()
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     assert unauthenticated_client.get("/v1/account/usage", headers=headers).status_code == 200
     assert unauthenticated_client.get("/v1/account/subscription", headers=headers).status_code == 200
     with session_factory() as session:
-        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 1
+        assert session.scalar(select(Subscription.monthly_calls_used).where(Subscription.user_id == user_id)) == 0
 
 
-def test_free_usage_resets_after_period_end(unauthenticated_client, session_factory):
+def test_free_usage_does_not_reset_after_period_end(unauthenticated_client, session_factory):
     user_id, key = account(session_factory, "FREE", 250, 250)
     with session_factory() as session:
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
@@ -135,12 +137,11 @@ def test_free_usage_resets_after_period_end(unauthenticated_client, session_fact
         record.usage_warning_sent_at = datetime.now(timezone.utc)
         record.usage_limit_email_sent_at = datetime.now(timezone.utc)
         session.commit()
-    assert unauthenticated_client.get("/v1/products/3017620422003", headers={"X-API-Key": key}).status_code == 200
+    assert unauthenticated_client.get("/v1/products/3017620422003", headers={"X-API-Key": key}).status_code == 429
     with session_factory() as session:
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
-        assert record.monthly_calls_used == 1
-        assert record.usage_warning_sent_at is None
-        assert record.usage_limit_email_sent_at is None
+        assert record.free_credits_used == 250
+        assert record.monthly_calls_used == 250
 
 
 def stripe_subscription(user_id, plan, status="active", cancel=False, interval="month"):

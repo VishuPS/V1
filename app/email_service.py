@@ -14,7 +14,7 @@ class UsageWarning:
     email: str
     used: int
     limit: int
-    period_end: datetime
+    period_end: datetime | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -23,7 +23,7 @@ class UsageLimitReached:
     plan: str
     used: int
     limit: int
-    period_end: datetime
+    period_end: datetime | None
 
 
 class EmailProvider:
@@ -38,7 +38,7 @@ class ResendEmailProvider(EmailProvider):
     def __init__(self, settings: Settings) -> None:
         self.api_key = settings.resend_api_key
         self.sender = settings.email_from
-        self.upgrade_url = f"{settings.website_url.rstrip('/')}/pricing/"
+        self.upgrade_url = f"{settings.website_url.rstrip('/')}/billing/"
 
     def send_usage_warning(self, warning: UsageWarning) -> None:
         if not self.api_key:
@@ -52,9 +52,9 @@ class ResendEmailProvider(EmailProvider):
                 "to": [warning.email],
                 "subject": "You have used 90% of your BarcodeNest API allowance",
                 "html": (
-                    f"<p>You have used <strong>{warning.used}</strong> of {warning.limit} API calls.</p>"
-                    f"<p>{remaining} calls remain until {warning.period_end.date().isoformat()}.</p>"
-                    f'<p><a href="{self.upgrade_url}">View upgrade options</a></p>'
+                    f"<p>You have used <strong>{warning.used}</strong> of {warning.limit} allowance units.</p>"
+                    + (f"<p>{remaining} calls remain until {warning.period_end.date().isoformat()}.</p>" if warning.period_end else f"<p>{remaining} lifetime successful-result credits remain. Free credits do not reset.</p>")
+                    + f'<p><a href="{self.upgrade_url}">View upgrade options</a></p>'
                 ),
             },
             timeout=10,
@@ -72,14 +72,13 @@ class ResendEmailProvider(EmailProvider):
                 "to": [notice.email],
                 "subject": "You have reached your BarcodeNest API limit",
                 "html": (
-                    "<h1>Your monthly API allowance has been used</h1>"
+                    "<h1>Your API allowance has been used</h1>"
                     f"<p>Your <strong>{notice.plan.title()}</strong> plan has used "
                     f"<strong>{notice.used}</strong> of {notice.limit} API calls.</p>"
-                    f"<p>Your allowance resets on {notice.period_end.date().isoformat()}. "
-                    "Until then, additional product lookups will be blocked.</p>"
-                    f'<p><a href="{self.upgrade_url}">Upgrade your BarcodeNest plan</a> '
+                    + (f"<p>Your allowance resets on {notice.period_end.date().isoformat()}. Until then, additional product lookups will be blocked.</p>" if notice.period_end else "<p>Your lifetime free-result credits do not reset. Upgrade to continue receiving matched products.</p>")
+                    + f'<p><a href="{self.upgrade_url}">Upgrade your BarcodeNest plan</a> '
                     "to restore access with a higher monthly allowance.</p>"
-                    "<p>— The BarcodeNest team</p>"
+                    "<p>â€” The BarcodeNest team</p>"
                 ),
             },
             timeout=10,

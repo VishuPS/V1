@@ -20,8 +20,9 @@ import OAuthButtons from "../components/OAuthButtons.astro";
     <p class="auth-switch">Already have an account? <a href="/login/">Sign in</a>.</p>
   </div></section>
   <script>
+    import { pendingPlanDestination } from "../scripts/plan-intent";
     import { getAuthState } from "../scripts/auth-context";
-    getAuthState().then((auth) => { if (auth.status === "authenticated") location.replace(auth.user.is_admin ? "/admin/" : "/dashboard/"); });
+    getAuthState().then((auth) => { if (auth.status === "authenticated") location.replace(auth.user.is_admin ? "/admin/" : pendingPlanDestination() || "/dashboard/"); });
     const form = document.querySelector<HTMLFormElement>("#registration-form");
     const status = document.querySelector<HTMLElement>("#form-status");
     document.querySelector<HTMLButtonElement>('[aria-controls="password"]')?.addEventListener("click", (event) => { const button = event.currentTarget as HTMLButtonElement; const input = document.querySelector<HTMLInputElement>("#password"); if (!input) return; const show = input.type === "password"; input.type = show ? "text" : "password"; button.textContent = show ? "Hide" : "Show"; button.setAttribute("aria-label", `${show ? "Hide" : "Show"} password`); });

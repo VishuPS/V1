@@ -20,6 +20,12 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="onboarding-actions"><a class="button" href="/docs/">View API documentation</a><a class="button button-secondary" href="/dashboard/">Go to your dashboard</a></div>
   </div></section>
   <script>
+    import { pendingPlanDestination } from "../scripts/plan-intent";
+    const billingDestination = pendingPlanDestination();
+    if (billingDestination) {
+      const action = document.querySelector<HTMLAnchorElement>('.onboarding-actions a[href="/dashboard/"]');
+      if (action) { action.href = billingDestination; action.textContent = "Continue to selected plan"; }
+    }
     const key = sessionStorage.getItem("barcodenest_new_api_key");
     const keyNode = document.querySelector<HTMLElement>("#api-key");
     const keyPanel = document.querySelector<HTMLElement>("#onboarding-key");

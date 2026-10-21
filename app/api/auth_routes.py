@@ -1,3 +1,4 @@
+from app import allowances
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, Response, Security, status
@@ -325,7 +326,7 @@ def usage(context: CurrentUser, session: DbSession, settings: SettingsDep) -> Us
     )
     if subscription is None:
         raise HTTPException(404, detail={"code": "subscription_not_found", "message": "No subscription was found"})
-    period = subscription.usage_period_start.date()
+    period = current_period()
     request_count, lookup_count = session.execute(
         select(
             func.coalesce(func.sum(MonthlyUsage.request_count), 0),
@@ -334,14 +335,15 @@ def usage(context: CurrentUser, session: DbSession, settings: SettingsDep) -> Us
         .join(ApiKey, ApiKey.id == MonthlyUsage.api_key_id)
         .where(ApiKey.owner_user_id == context.user.id, MonthlyUsage.period_start == period)
     ).one()
-    used = subscription.monthly_calls_used
-    limit = subscription.monthly_call_limit
+    used = allowances.used(subscription)
+    limit = allowances.limit(subscription)
     percentage = round((used / limit * 100), 1) if limit else 100.0
     return UsageSummary(
         period_start=period, request_count=request_count, lookup_count=used,
         monthly_limit=limit, remaining=max(0, limit - used),
-        percentage_used=percentage, period_end=subscription.usage_period_end,
+        percentage_used=percentage, period_end=allowances.end(subscription),
         warning=percentage >= 90, blocked=used >= limit,
+        allowance_type="lifetime" if subscription.plan_code == "FREE" else "monthly",
     )
 
 
@@ -362,10 +364,11 @@ def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummar
         price_cents=record.plan.price_cents, currency=record.plan.currency,
         current_period_end=record.current_period_end,
         cancel_at_period_end=record.cancel_at_period_end,
-        monthly_calls_used=record.monthly_calls_used,
-        monthly_call_limit=record.monthly_call_limit,
-        usage_period_start=record.usage_period_start,
-        usage_period_end=record.usage_period_end,
+        monthly_calls_used=allowances.used(record),
+        monthly_call_limit=allowances.limit(record),
+        usage_period_start=allowances.start(record),
+        usage_period_end=allowances.end(record),
         provider_customer_id=record.provider_customer_id,
         billing_interval=record.billing_interval,
+        allowance_type="lifetime" if record.plan_code == "FREE" else "monthly",
     )

@@ -154,6 +154,7 @@ class ApiKeyCreated(ApiKeySummary):
 
 
 class UsageSummary(BaseModel):
+    allowance_type: str = "monthly"
     period_start: date
     request_count: int
     lookup_count: int
@@ -166,6 +167,7 @@ class UsageSummary(BaseModel):
 
 
 class SubscriptionSummary(BaseModel):
+    allowance_type: str = "monthly"
     plan: str
     status: str
     price_cents: int | None
@@ -175,7 +177,7 @@ class SubscriptionSummary(BaseModel):
     monthly_calls_used: int
     monthly_call_limit: int
     usage_period_start: datetime
-    usage_period_end: datetime
+    usage_period_end: datetime | None
     provider_customer_id: str | None
     billing_interval: str
 

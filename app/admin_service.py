@@ -1,3 +1,4 @@
+from app import allowances
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -261,12 +262,12 @@ def list_users(
                 api_key_status=key_status,
                 is_admin=user.is_admin,
                 active=user.active,
-                usage=subscription.monthly_calls_used if subscription else 0,
-                usage_limit=subscription.monthly_call_limit if subscription else 0,
-                usage_percentage=(round(subscription.monthly_calls_used / subscription.monthly_call_limit * 100, 1) if subscription and subscription.monthly_call_limit else 0),
+                usage=allowances.used(subscription) if subscription else 0,
+                usage_limit=allowances.limit(subscription) if subscription else 0,
+                usage_percentage=(round(allowances.used(subscription) / allowances.limit(subscription) * 100, 1) if subscription and allowances.limit(subscription) else 0),
                 subscription_status=subscription.status if subscription else "none",
-                usage_period_start=subscription.usage_period_start if subscription else None,
-                usage_period_end=subscription.usage_period_end if subscription else None,
+                usage_period_start=allowances.start(subscription) if subscription else None,
+                usage_period_end=allowances.end(subscription) if subscription else None,
             )
         )
     return AdminUserList(items=items, total=total, limit=limit, offset=offset)
@@ -335,11 +336,11 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
                 status=subscription.status,
                 provider=subscription.provider,
                 current_period_end=subscription.current_period_end,
-                monthly_calls_used=subscription.monthly_calls_used,
-                monthly_call_limit=subscription.monthly_call_limit,
-                usage_percentage=(round(subscription.monthly_calls_used / subscription.monthly_call_limit * 100, 1) if subscription.monthly_call_limit else 0),
-                usage_period_start=subscription.usage_period_start,
-                usage_period_end=subscription.usage_period_end,
+                monthly_calls_used=allowances.used(subscription),
+                monthly_call_limit=allowances.limit(subscription),
+                usage_percentage=(round(allowances.used(subscription) / allowances.limit(subscription) * 100, 1) if allowances.limit(subscription) else 0),
+                usage_period_start=allowances.start(subscription),
+                usage_period_end=allowances.end(subscription),
             )
             if subscription else None
         ),

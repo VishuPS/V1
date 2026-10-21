@@ -12,7 +12,7 @@ The table covers services with publicly available information we could verify. â
 
 | Provider | Free access snapshot | Entry paid plan snapshot | Allowance and limit behavior |
 | --- | --- | --- | --- |
-| [BarcodeNest](/pricing/) | 250 calls/month; 30 requests/minute | Starter: $9.99/month | 2,000 calls/month; 300 requests/minute; quota exhaustion returns 429, no automatic per-call overage in the documented plan |
+| [BarcodeNest](/pricing/) | 250 lifetime successful-result credits; 30 requests/minute | Starter: $9.99/month | 2,000 calls/month; 300 requests/minute; quota exhaustion returns 429, no automatic per-call overage in the documented plan |
 | [Barcode Lookup](https://www.barcodelookup.com/api) | Test account offered; ongoing free allowance not established here | Starter: $99/month | 5,000 calls/month; confirm overage and account-specific restrictions with the provider |
 | [UPCitemdb](https://devs.upcitemdb.com/) | Explorer: 100 combined requests/day | DEV: $99/month | 20,000 lookup calls/day, with 600,000/month shown; search has a separate allowance; daily limits reject by default, with extensions and overage arrangements documented |
 | [Open Food Facts](https://openfoodfacts.github.io/openfoodfacts-server/api/) | Open food-data API under usage and licensing rules | No commercial subscription comparison asserted | Evaluate endpoint limits and data obligations; it is not an unlimited hosted catalog entitlement |

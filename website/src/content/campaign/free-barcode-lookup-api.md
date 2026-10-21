@@ -4,7 +4,7 @@ keywords: "free barcode API, free barcode lookup API, barcode API free, free UPC
 ---
 A free barcode lookup API can be enough to validate an idea or support a small, controlled workflow. “Free” usually describes a limited allowance or access arrangement, not unlimited requests, complete coverage or unrestricted reuse. Read the quota, rate limit and data terms together before building around a service.
 
-BarcodeNest's published Free plan provides **250 API calls per month and 30 requests per minute**, with single and batch lookup access and account-based API key management. These figures were checked against the pricing page and repository configuration on September 13, 2026. Consult [current pricing](/pricing/) and your account's response headers for the allowance that applies when you use it.
+BarcodeNest's published Free plan provides **250 lifetime successful-result credits and 30 requests per minute**, with single and batch lookup access and account-based API key management. These figures were checked against the pricing page and repository configuration on September 13, 2026. Consult [current pricing](/pricing/) and your account's response headers for the allowance that applies when you use it.
 
 ## Understand the different meanings of free
 
@@ -44,7 +44,7 @@ A free allowance is most useful when it lets you learn something measurable. Def
 
 Count upstream requests, not screen views. One page may render a previously cached record with no new lookup. Another may request several products. Duplicate event handlers and repeated camera frames can generate far more requests than the visible user actions suggest.
 
-As an illustrative calculation, 40 unique uncached single-product requests each day produce about 1,200 requests in a 30-day period. That would exceed a 250-call monthly allowance even though the application feels small. Conversely, a catalog that repeatedly displays a permitted local cache may require fewer new lookups. These are workload examples, not usage guarantees.
+As an illustrative calculation, 40 unique uncached single-product requests each day produce about 1,200 requests in a 30-day period. That would exceed a 250-credit lifetime allowance even though the application feels small. Conversely, a catalog that repeatedly displays a permitted local cache may require fewer new lookups. These are workload examples, not usage guarantees.
 
 Measure bursts too. A month with 200 requests can still hit a 30-request-per-minute limit if they arrive together. Use a queue for imports and coalesce duplicate in-flight requests. Monitor the returned rate and monthly quota headers instead of hard-coding assumptions about remaining capacity.
 

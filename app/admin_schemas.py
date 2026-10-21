@@ -97,7 +97,7 @@ class AdminSubscription(BaseModel):
     monthly_call_limit: int
     usage_percentage: float
     usage_period_start: datetime
-    usage_period_end: datetime
+    usage_period_end: datetime | None
 
 
 class AdminActivity(BaseModel):

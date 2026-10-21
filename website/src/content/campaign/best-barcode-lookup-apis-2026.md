@@ -20,7 +20,7 @@ Commercial facts below are a snapshot checked on September 13, 2026. Pricing and
 
 | Option | Documented approach | Access and pricing snapshot | Evaluate carefully |
 | --- | --- | --- | --- |
-| [BarcodeNest](/pricing/) | UPC-A, EAN-8, EAN-13 and GTIN-14 lookup; canonical GTIN; single and batch requests | Free: 250 calls/month; Starter: $9.99/month for 2,000 calls | Coverage by market; optional images and attributes; monthly and per-minute limits |
+| [BarcodeNest](/pricing/) | UPC-A, EAN-8, EAN-13 and GTIN-14 lookup; canonical GTIN; single and batch requests | Free: 250 lifetime successful-result credits; Starter: $9.99/month for 2,000 calls | Coverage by market; optional images and attributes; monthly and per-minute limits |
 | [Barcode Lookup](https://www.barcodelookup.com/api) | Barcode and product-attribute search; images and store information in its documented schema | Test account offered; Starter: $99/month for 5,000 calls | Which returned fields exist for your items; test-account terms; rights to retain data |
 | [UPCitemdb](https://devs.upcitemdb.com/) | Lookup and search with JSON responses | Explorer: 100 combined requests/day; DEV: $99/month, with daily lookup and search limits | Daily allocation versus burst demand; separate search usage; overage configuration |
 | [Open Food Facts](https://openfoodfacts.github.io/openfoodfacts-server/api/) | Open, community-contributed food product data and API | Open-data service; API usage rules and database licensing apply | Food focus; attribution/share-alike obligations; record completeness |
@@ -56,7 +56,7 @@ Source information matters when users report incorrect details. Preserve the sou
 
 ## Compare limits with real traffic
 
-Monthly allowance and per-minute rate limits solve different problems. A small monthly workload can still burst past a short-window limit when users scan several items together. BarcodeNest's published Free plan lists 250 calls per month and 30 requests per minute. Read current account headers and the [rate-limit reference](/docs/rate-limits/) rather than assuming those values never change.
+Monthly allowance and per-minute rate limits solve different problems. A small monthly workload can still burst past a short-window limit when users scan several items together. BarcodeNest's published Free plan lists 250 lifetime successful-result credits and 30 requests per minute. Read current account headers and the [rate-limit reference](/docs/rate-limits/) rather than assuming those values never change.
 
 Cache permitted results and coalesce simultaneous requests for the same canonical identifier. Negative caching can reduce repeated misses, but use a shorter expiry for unknown products so newly indexed items can appear. Do not turn a network timeout into a durable product-not-found cache entry.
 

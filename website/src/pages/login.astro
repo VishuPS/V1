@@ -14,8 +14,9 @@ import OAuthButtons from "../components/OAuthButtons.astro";
     <p class="auth-switch">Need an account? <a href="/register/">Start with the Free plan</a>.</p>
   </div></section>
   <script>
+    import { pendingPlanDestination } from "../scripts/plan-intent";
     import { getAuthState } from "../scripts/auth-context";
-    getAuthState().then((auth) => { if (auth.status === "authenticated") location.replace(auth.user.is_admin ? "/admin/" : "/dashboard/"); });
+    getAuthState().then((auth) => { if (auth.status === "authenticated") location.replace(auth.user.is_admin ? "/admin/" : pendingPlanDestination() || "/dashboard/"); });
     const oauthError = new URLSearchParams(location.search).get("oauth_error");
     if (oauthError) { const message = document.querySelector<HTMLElement>("#login-status"); if (message) { message.className = "form-status error"; message.textContent = oauthError === "cancelled" ? "Google or GitHub sign-in was cancelled." : "Social sign-in could not be completed."; } history.replaceState({}, "", "/login/"); }
     const form = document.querySelector<HTMLFormElement>("#login-form"); const status = document.querySelector<HTMLElement>("#login-status");

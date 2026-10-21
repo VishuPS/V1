@@ -4,7 +4,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 
 from app.barcodes import BarcodeError, parse_barcode
-from app.auth import AuthContext, authenticate_api_key, consume_usage, usage_headers
+from app.auth import AuthContext, authenticate_api_key, consume_usage, ensure_free_allowance, usage_headers
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.schemas import BatchRequest, BatchResponse, ErrorResponse, LookupResult
@@ -53,13 +53,11 @@ def get_product(
         parsed = parse_barcode(barcode)
     except BarcodeError as exc:
         raise api_error(status.HTTP_400_BAD_REQUEST, "invalid_barcode", str(exc)) from exc
-    # Consume quota before provider work, including product misses.
-    usage = consume_usage(session, auth, 1)
-    headers = usage_headers(auth, usage)
-    for header, value in headers.items():
-        response.headers[header] = value
-    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
-    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
+    ensure_free_allowance(session, auth)
+    headers = {}
+    if auth.client.plan != "FREE":
+        usage = consume_usage(session, auth, 1)
+        headers = usage_headers(auth, usage)
     resolution = resolve_product(session, barcode, settings=settings)
     result = resolution.result
     if not result.found:
@@ -90,6 +88,12 @@ def get_product(
         endpoint_type="single",
         retention_days=settings.lookup_analytics_retention_days,
     )
+    if auth.client.plan == "FREE":
+        usage = consume_usage(session, auth, 1)
+    for header, value in usage_headers(auth, usage).items():
+        response.headers[header] = value
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return result
 
 
@@ -120,12 +124,9 @@ def batch_products(
             "batch_limit_exceeded",
             f"A maximum of {settings.batch_limit} barcodes is allowed",
         )
-    # Each submitted item consumes quota; batches remain one HTTP request.
-    usage = consume_usage(session, auth, len(payload.barcodes))
-    for header, value in usage_headers(auth, usage).items():
-        response.headers[header] = value
-    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
-    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
+    ensure_free_allowance(session, auth)
+    if auth.client.plan != "FREE":
+        usage = consume_usage(session, auth, len(payload.barcodes))
     resolutions = [resolve_product(session, barcode, settings=settings) for barcode in payload.barcodes]
     results = [resolution.result for resolution in resolutions]
     outcomes = [
@@ -143,4 +144,11 @@ def batch_products(
         endpoint_type="batch",
         retention_days=settings.lookup_analytics_retention_days,
     )
+    if auth.client.plan == "FREE":
+        units = sum(result.found for result in results)
+        usage = consume_usage(session, auth, units)
+    for header, value in usage_headers(auth, usage).items():
+        response.headers[header] = value
+    background_tasks.add_task(send_usage_warning_safely, settings, usage.warning)
+    background_tasks.add_task(send_usage_limit_reached_safely, settings, usage.limit_reached)
     return BatchResponse(results=results)
