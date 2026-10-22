@@ -1,0 +1,84 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const install = "python -m pip install requests";
+const example = `import os
+import requests
+
+
+def lookup_product(barcode: str):
+    # Keep identifiers as strings: leading zeros are meaningful.
+    if not isinstance(barcode, str):
+        raise TypeError("Pass the barcode as a string")
+    barcode = barcode.strip()
+    if not (barcode.isascii() and barcode.isdigit()
+            and len(barcode) in (8, 12, 13, 14)):
+        raise ValueError("Expected 8, 12, 13, or 14 ASCII digits")
+
+    response = requests.get(
+        f"https://api.barcodenest.com/v1/products/{barcode}",
+        headers={"X-API-Key": os.environ["BARCODENEST_API_KEY"]},
+        timeout=(5, 30),
+    )
+    if response.status_code == 404:
+        return None
+    # Authentication, invalid check digits, quota and server errors
+    # remain errors; do not silently label them as missing products.
+    response.raise_for_status()
+    return response.json()
+
+
+if __name__ == "__main__":
+    result = lookup_product("3017620422003")
+    if result is None:
+        print("No product record found for this barcode.")
+    else:
+        product = result.get("product") or {}
+        print("Name:", product.get("name") or "Not available")
+        print("Brand:", product.get("brand") or "Not available")
+        print("Image:", product.get("image_url") or "Not available")`;
+---
+<BlogPostLayout title="Barcode Lookup in Python: Product Data API Tutorial | BarcodeNest" heading="How to look up product information by barcode in Python" description="Build a Python barcode lookup with requests and BarcodeNest. Keep leading zeros, handle missing products, and distinguish API errors from missing data." author="BarcodeNest Editorial Team" published="2026-10-22" readingTime="6 min read">
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page"><strong>On this page</strong><a href="#setup">Set up Python</a><a href="#lookup">Look up a product</a><a href="#errors">Handle errors</a><a href="#production">Use it in an application</a></aside>
+    <div class="article-body">
+      <p>A barcode gives your application a product identifier. To turn that identifier into a name, brand or image, you need a product data source. This tutorial uses Python and the BarcodeNest <a href="/barcode-api/">barcode lookup API</a> to request a record and handle the cases where a lookup cannot return usable data.</p>
+      <p>The input here is a barcode number you already have, such as text from a scanner. Reading barcode pixels from a photo is a separate decoding step. This example does not access a camera or decode an image.</p>
+      <h2 id="setup">1. Set up Python and your API key</h2>
+      <p>Use Python 3 and install the <code>requests</code> HTTP library in your project's virtual environment:</p>
+      <CodeBlock label="Install the HTTP client" language="bash" code={install} />
+      <p><a href="/register/">Create a BarcodeNest account</a> and obtain an API key. Store it in an environment variable named <code>BARCODENEST_API_KEY</code> before running the script. For example, in PowerShell:</p>
+      <CodeBlock label="PowerShell environment variable" language="powershell" code={'$env:BARCODENEST_API_KEY = "YOUR_API_KEY"'} />
+      <p>On macOS or Linux, use <code>export BARCODENEST_API_KEY="YOUR_API_KEY"</code>. Replace the placeholder with your own key. Keep the key out of source control, browser JavaScript and application logs. Check the <a href="/pricing/">current plans</a> for your account's allowance.</p>
+      <h2 id="lookup">2. Request product data from the barcode</h2>
+      <p>Save the following as <code>lookup.py</code>, then run <code>python lookup.py</code>. It sends a GET request to <code>/v1/products/&#123;barcode&#125;</code>, authenticates with the <code>X-API-Key</code> header, and prints optional product fields.</p>
+      <CodeBlock label="Python barcode lookup" language="python" code={example} />
+      <p>The sample identifier demonstrates the request format; it does not promise a particular current product record. Returned names, images and other attributes depend on available source data. The <a href="/docs/barcode-lookup/">endpoint reference</a> documents the full response.</p>
+      <h3>Why the barcode stays a string</h3>
+      <p>Converting a barcode to an integer can remove leading zeros. Keep it as text when importing CSV files, storing it in a database and passing it between services. The example accepts EAN-8, UPC-A, EAN-13 and GTIN-14 lengths and rejects non-ASCII digits before making a request.</p>
+      <p>This local check only validates the input's shape. BarcodeNest also checks the identifier's check digit. A number can have the right length and still be invalid. See <a href="/blog/upc-vs-ean-vs-gtin/">UPC vs EAN vs GTIN</a> for the relationship between these formats.</p>
+      <h2 id="errors">3. Distinguish missing products from failed requests</h2>
+      <p>The function returns <code>None</code> only when the endpoint returns HTTP 404. Other unsuccessful responses raise <code>requests.HTTPError</code>. A timeout raises <code>requests.Timeout</code>; connection failures raise <code>requests.ConnectionError</code>. Catch these exceptions at your application's boundary and show a useful message.</p>
+      <table><thead><tr><th>Outcome</th><th>Application behavior</th></tr></thead><tbody>
+        <tr><td>200: product found</td><td>Read the product object and allow for missing or null attributes.</td></tr>
+        <tr><td>400: invalid barcode</td><td>Ask the user to check the scanned digits; do not retry unchanged input.</td></tr>
+        <tr><td>401: authentication error</td><td>Check the server's API key configuration.</td></tr>
+        <tr><td>404: product not found</td><td>Offer manual product entry or a review workflow.</td></tr>
+        <tr><td>429: rate or allowance limit</td><td>Inspect the error and your account usage before retrying.</td></tr>
+        <tr><td>5xx or network failure</td><td>Offer a retry; automated retries should be bounded and use backoff.</td></tr>
+      </tbody></table>
+      <p>A valid barcode does not guarantee a database match. Likewise, a match does not guarantee an image, ingredients or every other field your interface would like to display. Avoid treating absent metadata as a broken integration.</p>
+      <p>Do not retry every 429 indefinitely: a short rate limit and an exhausted account allowance require different responses. Consult the <a href="/docs/rate-limits/">limits guide</a> and <a href="/docs/errors/">error reference</a>.</p>
+      <h2 id="production">4. Connect the lookup to your application</h2>
+      <p>In an inventory workflow, let the user scan an item, send the identifier to your backend, and use the returned metadata to prefill a product form. Ask the user to confirm the match before changing stock records. Product identity data does not tell you the quantity currently on your shelves.</p>
+      <p>Keep API calls on your server so the key remains private. Set request timeouts, avoid logging authentication headers, and rate-limit your own lookup route. If you cache results, review the applicable data terms and choose an expiry policy rather than assuming records never change.</p>
+      <p>For multiple identifiers, review the batch endpoint documentation rather than starting an unbounded set of parallel requests. Check current batch limits and metering before choosing that approach.</p>
+      <h2>Frequently asked questions</h2>
+      <h3>Can Python identify a product from a barcode image?</h3><p>You first need an image decoder to extract the number. Pass the decoded number to a lookup service to request product metadata. Decoding and database lookup solve different parts of the workflow.</p>
+      <h3>Can I use the same function for UPC and EAN?</h3><p>Yes. The endpoint supports UPC-A and EAN identifiers as documented above. Preserve the original digits and let the API validate the check digit and derive its canonical identifier.</p>
+      <h3>Does a barcode lookup return a live retail price?</h3><p>This tutorial retrieves product identity fields. Do not assume a product match includes a current store price, stock level or offer; those require suitable retailer or inventory data.</p>
+      <h2>Try it with your own product workflow</h2>
+      <p><a href="/register/">Get a BarcodeNest API key</a>, run the example with a barcode from your catalog, and test both a successful match and a missing record. For a larger integration, start with the <a href="/barcode-api-for-inventory/">inventory API guide</a> and <a href="/docs/">developer documentation</a>.</p>
+    </div>
+  </div>
+</BlogPostLayout>
