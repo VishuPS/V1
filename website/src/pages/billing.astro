@@ -12,6 +12,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       <div><dt>Subscription status</dt><dd id="billing-status">&mdash;</dd></div>
       <div><dt>Billing cadence</dt><dd id="billing-cadence">&mdash;</dd></div>
       <div><dt>Price</dt><dd id="billing-price">&mdash;</dd></div>
+      <div><dt id="billing-renewal-label">Next renewal</dt><dd id="billing-renewal">&mdash;</dd></div>
       <div><dt>Allowance resets</dt><dd id="billing-period">&mdash;</dd></div>
     </dl>
     <div class="billing-toggle" role="group" aria-label="Billing cadence">
@@ -62,6 +63,9 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       const data = await response.json();
       const interval: Interval = data.billing_interval === "year" ? "year" : "month";
       set("billing-plan", data.plan); set("billing-status", data.status);
+      set("billing-renewal-label", data.cancel_at_period_end ? "Subscription ends" : "Next renewal");
+      set("billing-renewal", data.plan === "FREE" || !data.current_period_end ? "Not applicable" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.current_period_end)));
+      if (data.cancel_at_period_end) set("billing-message", "Cancellation scheduled. Your paid access continues until the subscription end date.");
       set("billing-cadence", data.plan === "FREE" ? "Free" : interval === "year" ? "Yearly" : "Monthly");
       const paidPrices = data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
       set("billing-price", data.plan === "FREE" ? "Free" : paidPrices);

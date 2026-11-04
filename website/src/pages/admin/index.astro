@@ -8,7 +8,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
     <article><span>API keys</span><strong id="metric-keys">—</strong><small><b id="metric-active-keys">—</b> active</small></article>
     <article><span>Requests today</span><strong id="metric-requests-today">—</strong><small>UTC calendar day</small></article>
     <article><span>Requests this month</span><strong id="metric-requests-month">—</strong><small>Across all API keys</small></article>
-    <article class="admin-metric-placeholder"><span>Active subscriptions</span><strong>—</strong><small>Available when billing is connected</small></article>
+    <article><span>Active paid subscriptions</span><strong id="metric-subscriptions">—</strong><small id="metric-subscriptions-note">Loading subscription records…</small></article>
   </div>
   <section class="admin-section lookup-analytics-section">
     <div class="admin-section-heading"><div><span class="panel-label">Coverage observability · last 30 days</span><h2>Real lookup outcomes</h2><p>Valid GTIN lookups only. Malformed input, credentials, IP addresses and user agents are not recorded.</p></div></div>
@@ -31,6 +31,13 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
   <script>
     import { adminFetch, requireAdmin } from "../../scripts/admin-api";
     const set = (id: string, value: number) => { const node = document.getElementById(id); if (node) node.textContent = new Intl.NumberFormat().format(value); };
+    function renderSubscriptions(data: {active_subscriptions: number | null; subscriptions_connected: boolean}) {
+      const count = document.getElementById("metric-subscriptions");
+      const note = document.getElementById("metric-subscriptions-note");
+      const connected = data.subscriptions_connected && typeof data.active_subscriptions === "number";
+      if (count) count.textContent = connected ? new Intl.NumberFormat().format(data.active_subscriptions!) : "Unavailable";
+      if (note) note.textContent = connected ? "Active or trialing Starter and Growth plans" : "Subscription records could not be loaded";
+    }
     type Miss = { canonical_gtin:string; barcode_type:string; request_count:number; unique_accounts:number; last_seen_at:string; fallback_status:string; last_fallback_check:string|null };
     async function loadCoverage() {
       const [summaryResponse, missesResponse] = await Promise.all([adminFetch("/analytics/lookups?days=30"), adminFetch("/analytics/misses?days=30&limit=10")]);
@@ -41,7 +48,7 @@ import AdminLayout from "../../layouts/AdminLayout.astro";
       const tbody = document.getElementById("coverage-misses");
       if (tbody && misses.items.length) tbody.replaceChildren(...misses.items.map((item: Miss) => { const row=document.createElement("tr"); [item.canonical_gtin,item.barcode_type,new Intl.NumberFormat().format(item.request_count),new Intl.NumberFormat().format(item.unique_accounts),new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.last_seen_at)),item.fallback_status,item.last_fallback_check ? new Intl.DateTimeFormat("en",{dateStyle:"medium"}).format(new Date(item.last_fallback_check)) : "Never"].forEach(value=>{const cell=document.createElement("td");cell.textContent=value;row.appendChild(cell);}); const action=document.createElement("td"); const link=document.createElement("a"); link.className="admin-row-link"; link.href=`/contribute/product/?gtin=${encodeURIComponent(item.canonical_gtin)}`; link.textContent="Add product"; action.append(link); row.append(action); return row; }));
     }
-    async function loadDashboard() { const response = await requireAdmin(); if (!response) return; const data = await response.json(); set("metric-users", data.total_users); set("metric-users-today", data.new_users_today); set("metric-users-month", data.new_users_this_month); set("metric-keys", data.total_api_keys); set("metric-active-keys", data.active_api_keys); set("metric-requests-today", data.total_requests_today); set("metric-requests-month", data.total_requests_this_month); await loadCoverage(); const updated = document.getElementById("dashboard-updated"); if (updated) updated.textContent = `Updated ${new Intl.DateTimeFormat("en", { timeStyle: "short" }).format(new Date())}`; }
+    async function loadDashboard() { const response = await requireAdmin(); if (!response) return; const data = await response.json(); renderSubscriptions(data); set("metric-users", data.total_users); set("metric-users-today", data.new_users_today); set("metric-users-month", data.new_users_this_month); set("metric-keys", data.total_api_keys); set("metric-active-keys", data.active_api_keys); set("metric-requests-today", data.total_requests_today); set("metric-requests-month", data.total_requests_this_month); await loadCoverage(); const updated = document.getElementById("dashboard-updated"); if (updated) updated.textContent = `Updated ${new Intl.DateTimeFormat("en", { timeStyle: "short" }).format(new Date())}`; }
     loadDashboard().catch((error) => { const status = document.getElementById("admin-status"); if (status) { status.className = "form-status error"; status.textContent = error instanceof Error ? error.message : "Dashboard unavailable."; } });
   </script>
 </AdminLayout>

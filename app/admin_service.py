@@ -336,6 +336,8 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
                 status=subscription.status,
                 provider=subscription.provider,
                 current_period_end=subscription.current_period_end,
+                cancel_at_period_end=subscription.cancel_at_period_end,
+                billing_interval=subscription.billing_interval,
                 monthly_calls_used=allowances.used(subscription),
                 monthly_call_limit=allowances.limit(subscription),
                 usage_percentage=(round(allowances.used(subscription) / allowances.limit(subscription) * 100, 1) if allowances.limit(subscription) else 0),

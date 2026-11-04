@@ -115,6 +115,21 @@ def test_admin_dashboard_and_searchable_user_list(
     assert details.status_code == 200
     assert details.json()["organization"] == "Nest Labs"
     assert len(details.json()["api_keys"]) == 1
+    from app.models import Subscription, ApiClient
+    with session_factory() as session:
+        subscription = session.scalar(select(Subscription).where(Subscription.user_id == target_id))
+        subscription.plan_code = "STARTER"
+        subscription.monthly_call_limit = 2000
+        subscription.cancel_at_period_end = True
+        subscription.billing_interval = "year"
+        session.scalar(select(ApiClient).where(ApiClient.owner_user_id == target_id)).plan = "STARTER"
+        session.commit()
+    assert unauthenticated_client.get("/v1/admin/dashboard", headers=headers).json()["active_subscriptions"] == 1
+    updated = unauthenticated_client.get(f"/v1/admin/users/{target_id}", headers=headers).json()
+    assert updated["plan"] == "STARTER"
+    assert updated["subscription"]["monthly_call_limit"] == 2000
+    assert updated["subscription"]["cancel_at_period_end"] is True
+    assert updated["subscription"]["billing_interval"] == "year"
 
 
 def test_admin_disables_account_changes_role_and_regenerates_key(

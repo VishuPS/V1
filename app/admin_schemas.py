@@ -93,6 +93,8 @@ class AdminSubscription(BaseModel):
     status: str
     provider: str | None
     current_period_end: datetime | None
+    cancel_at_period_end: bool = False
+    billing_interval: str = "month"
     monthly_calls_used: int
     monthly_call_limit: int
     usage_percentage: float
