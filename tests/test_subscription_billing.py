@@ -282,3 +282,85 @@ def test_incomplete_subscription_does_not_activate_paid_plan(session_factory):
         process_stripe_event(session, get_settings(), {"id": "evt_incomplete", "type": "customer.subscription.created", "data": {"object": stripe_subscription(user_id, "STARTER", status="incomplete")}})
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
         assert record.plan_code == "FREE"
+
+
+def test_failed_renewal_then_payment_recovery(session_factory):
+    user_id, _ = account(session_factory)
+    settings = get_settings().model_copy(update={"stripe_starter_price_id": "price_starter"})
+    obj = stripe_subscription(user_id, "STARTER")
+    class StripeStub:
+        def subscription(self, subscription_id):
+            assert subscription_id == obj["id"]
+            return obj
+    with session_factory() as session:
+        process_stripe_event(session, settings, {"id":"evt_start", "type":"customer.subscription.created", "data":{"object":obj}})
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        record.monthly_calls_used = 100
+        session.commit()
+        invoice = {"parent":{"subscription_details":{"subscription":"sub_123"}}}
+        obj["status"] = "past_due"
+        process_stripe_event(session, settings, {"id":"evt_failed", "type":"invoice.payment_failed", "data":{"object":invoice}}, StripeStub())
+        assert record.status == "past_due"
+        assert record.monthly_calls_used == 100
+        obj["metadata"] = {}
+        obj["status"] = "active"
+        obj["current_period_start"] += 2_592_000
+        obj["current_period_end"] += 2_592_000
+        process_stripe_event(session, settings, {"id":"evt_recovered", "type":"invoice.paid", "data":{"object":invoice}}, StripeStub())
+        assert record.status == "active"
+        assert record.monthly_calls_used == 0
+        assert record.plan_code == "STARTER"
+
+
+def test_signed_webhook_activation_and_cancellation_without_refunds(unauthenticated_client, session_factory, monkeypatch):
+    from app.main import app
+    user_id, _ = account(session_factory)
+    settings = get_settings().model_copy(update={"stripe_secret_key":"sk_test_local_mock", "stripe_webhook_secret":"whsec_local", "stripe_starter_price_id":"price_starter"})
+    app.dependency_overrides[get_settings] = lambda: settings
+    obj = stripe_subscription(user_id, "STARTER")
+    obj["metadata"] = {}
+    monkeypatch.setattr("app.billing.StripeClient.subscription", lambda self, sub_id: obj)
+    # No cancellation path may issue a refund or any other Stripe mutation.
+    def unexpected_post(*args, **kwargs):
+        raise AssertionError("Webhook processing must not mutate Stripe or refund payments")
+    monkeypatch.setattr("app.billing.httpx.post", unexpected_post)
+    def deliver(event, valid=True):
+        payload = json.dumps(event).encode()
+        t = str(int(time.time()))
+        digest = hmac.new(settings.stripe_webhook_secret.encode(), t.encode()+b"."+payload, hashlib.sha256).hexdigest()
+        return unauthenticated_client.post("/v1/billing/webhooks/stripe", content=payload, headers={"Content-Type":"application/json", "Stripe-Signature":f"t={t},v1={digest if valid else 'invalid'}"})
+    reference = user_id+"_"+hmac.new(settings.api_key_hash_secret.encode(),user_id.encode(),hashlib.sha256).hexdigest()
+    event = {"id":"evt_http_checkout", "type":"checkout.session.completed", "data":{"object":{"subscription":"sub_123","client_reference_id":reference,"payment_status":"paid"}}}
+    assert deliver(event,valid=False).status_code == 400
+    with session_factory() as session:
+        assert session.scalar(select(Subscription.plan_code).where(Subscription.user_id == user_id)) == "FREE"
+    assert deliver(event).json() == {"received":True,"processed":True}
+    assert deliver(event).json() == {"received":True,"processed":False}
+    obj["cancel_at_period_end"] = True
+    assert deliver({"id":"evt_http_schedule", "type":"customer.subscription.updated", "data":{"object":obj}}).status_code == 200
+    with session_factory() as session:
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        assert record.plan_code == "STARTER" and record.cancel_at_period_end
+    assert deliver({"id":"evt_http_end", "type":"customer.subscription.deleted", "data":{"object":{"id":"sub_123"}}}).status_code == 200
+    with session_factory() as session:
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        assert record.plan_code == "FREE"
+        assert session.scalar(select(ApiClient.plan).where(ApiClient.owner_user_id == user_id)) == "FREE"
+
+
+def test_terminal_payment_failure_blocks_paid_api_and_late_invoice_cannot_restore_it(unauthenticated_client, session_factory):
+    user_id, key = account(session_factory)
+    settings = get_settings().model_copy(update={"stripe_starter_price_id":"price_starter"})
+    obj = stripe_subscription(user_id,"STARTER")
+    class StripeStub:
+        def subscription(self, _id): return obj
+    with session_factory() as session:
+        process_stripe_event(session,settings,{"id":"evt_paid_start","type":"customer.subscription.created","data":{"object":obj}})
+        obj["metadata"] = {}
+        obj["status"] = "unpaid"
+        process_stripe_event(session,settings,{"id":"evt_unpaid","type":"customer.subscription.updated","data":{"object":obj}},StripeStub())
+        process_stripe_event(session,settings,{"id":"evt_old_paid","type":"invoice.paid","data":{"object":{"subscription":"sub_123"}}},StripeStub())
+        assert session.scalar(select(Subscription.status).where(Subscription.user_id == user_id)) == "unpaid"
+    response=unauthenticated_client.get("/v1/products/3017620422003",headers={"X-API-Key":key})
+    assert response.status_code == 402
+    assert response.json()["error"]["code"] == "subscription_payment_required"

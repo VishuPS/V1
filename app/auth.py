@@ -176,6 +176,12 @@ def authenticate_api_key(
         raise auth_error("revoked_api_key", "The API key is revoked")
     if record.expires_at and _aware_utc(record.expires_at) <= datetime.now(timezone.utc):
         raise auth_error("expired_api_key", "The API key has expired")
+    if record.owner_user_id and record.client.plan != "FREE":
+        subscription = session.scalar(select(Subscription).where(
+            Subscription.user_id == record.owner_user_id
+        ).order_by(Subscription.created_at.desc()))
+        if subscription and subscription.status not in {"active", "trialing", "past_due"}:
+            raise HTTPException(402, detail={"code": "subscription_payment_required", "message": "Your paid subscription is not active. Update your payment method in Billing."})
     plan = settings.plan_limits.get(record.client.plan.upper())
     if plan is None:
         raise HTTPException(

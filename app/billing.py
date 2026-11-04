@@ -151,6 +151,8 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     if not record: return
     if obj.get("status") not in {"active", "trialing", "past_due"}:
         # An incomplete checkout must not grant paid access.
+        if record.provider_subscription_id == obj.get("id"):
+            record.status = obj.get("status") or record.status
         return
     now = datetime.now(timezone.utc)
     previous_period = record.current_period_start
@@ -201,14 +203,16 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
         reference_user = verified_reference(obj.get("client_reference_id"), settings)
         if subscription_obj: _apply_subscription(session, settings, subscription_obj, reference_user or (obj.get("metadata") or {}).get("user_id"))
     elif event_type in {"customer.subscription.created", "customer.subscription.updated"}:
-        _apply_subscription(session, settings, obj)
+        current = stripe.subscription(obj["id"]) if stripe else obj
+        _apply_subscription(session, settings, current)
     elif event_type in {"invoice.paid", "invoice.payment_succeeded", "invoice.payment_failed"}:
         subscription_id = _subscription_id(obj)
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == subscription_id)) if subscription_id else None
         if record:
-            if stripe and event_type != "invoice.payment_failed":
+            if stripe:
                 _apply_subscription(session, settings, stripe.subscription(subscription_id), record.user_id)
-            record.status = "active" if event_type != "invoice.payment_failed" else "past_due"
+            else:
+                record.status = "active" if event_type != "invoice.payment_failed" else "past_due"
     elif event_type == "customer.subscription.deleted":
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == obj.get("id")))
         if record:
