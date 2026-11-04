@@ -77,6 +77,14 @@ class StripeClient:
     def portal(self, customer_id: str) -> str:
         return self._post("/billing_portal/sessions", [("customer",customer_id),("return_url",f"{self.settings.website_url.rstrip('/')}/billing/")])["url"]
 
+    def call_pack_checkout(self, user_id: str, email: str, customer_id: str | None) -> str:
+        price = self.settings.stripe_one_time_price_id
+        if not price: raise HTTPException(503, detail="One-time packs are not configured")
+        data = [("mode","payment"),("payment_method_types[0]","card"),("line_items[0][price]",price),("line_items[0][quantity]","1"),("success_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=success"),("cancel_url",f"{self.settings.website_url.rstrip('/')}/billing/?checkout=cancelled"),("client_reference_id",user_id),("metadata[user_id]",user_id),("metadata[plan]","ONE_TIME")]
+        data.append(("customer",customer_id) if customer_id else ("customer_creation","always"))
+        if not customer_id: data.append(("customer_email",email))
+        return self._post("/checkout/sessions",data)["url"]
+
     def subscription(self, subscription_id: str) -> dict:
         return self._get(f"/subscriptions/{subscription_id}")
 
@@ -197,6 +205,11 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
     except IntegrityError:
         session.rollback(); return False
     obj = ((event.get("data") or {}).get("object") or {})
+    if event_type == "checkout.session.completed" and (obj.get("metadata") or {}).get("plan") == "ONE_TIME":
+        from app.call_packs import activate
+        activate(session, obj)
+        session.commit()
+        return True
     if event_type == "checkout.session.completed":
         subscription_id = _subscription_id(obj)
         subscription_obj = stripe.subscription(subscription_id) if subscription_id and stripe else obj.get("subscription_object")

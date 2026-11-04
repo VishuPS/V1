@@ -25,6 +25,11 @@ def current_subscription(session: Session, user_id: str) -> Subscription:
 def checkout(payload: CheckoutCreate, request: Request, context: CurrentUser, session: DbSession, settings: SettingsDep) -> BillingRedirect:
     ensure_allowed_origin(request, settings)
     subscription = current_subscription(session, context.user.id)
+    if payload.plan == "ONE_TIME":
+        if not subscription or subscription.plan_code not in {"FREE", "ONE_TIME"}:
+            from fastapi import HTTPException
+            raise HTTPException(409, detail="Call packs are available to Free and one-time accounts; your recurring subscription is unchanged")
+        return BillingRedirect(url=StripeClient(settings).call_pack_checkout(context.user.id, context.user.email, subscription.provider_customer_id))
     url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan, payload.billing_interval)
     if not url:
         url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, payload.billing_interval, subscription.provider_customer_id if subscription else None)

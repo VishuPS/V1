@@ -1,4 +1,6 @@
 from app import allowances
+from app.call_packs import details as pack_details
+from app.models import CallPack
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import HTTPException, status
@@ -180,6 +182,7 @@ def dashboard_summary(session: Session) -> AdminDashboardSummary:
     month = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
     usage_month = current_period(today)
     return AdminDashboardSummary(
+        active_call_packs=session.scalar(select(func.count()).select_from(CallPack).where(CallPack.expires_at > datetime.now(timezone.utc), CallPack.used < CallPack.calls)) or 0,
         total_users=session.scalar(select(func.count()).select_from(User)) or 0,
         new_users_today=session.scalar(
             select(func.count()).select_from(User).where(User.created_at >= today)
@@ -307,6 +310,9 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
         .where(Subscription.user_id == user.id)
         .order_by(Subscription.created_at.desc())
     )
+    if subscription and subscription.plan_code == "ONE_TIME":
+        from app.call_packs import sync
+        sync(session, subscription)
     activity = [AdminActivity(kind="registered", label="Account registered", occurred_at=user.created_at)]
     if user.last_login_at:
         activity.append(AdminActivity(kind="login", label="Last signed in", occurred_at=user.last_login_at))
@@ -332,6 +338,7 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
         usage_period=period,
         subscription=(
             AdminSubscription(
+                call_packs=pack_details(session, user_id),
                 plan=subscription.plan_code,
                 status=subscription.status,
                 provider=subscription.provider,

@@ -562,6 +562,17 @@ class Subscription(Base):
     plan: Mapped[SubscriptionPlan] = relationship()
 
 
+class CallPack(Base):
+    __tablename__ = "call_packs"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    checkout_session_id: Mapped[str] = mapped_column(String(255), unique=True)
+    calls: Mapped[int] = mapped_column(BigInteger, nullable=False, default=500)
+    used: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    activated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+
+
 class ProductRecovery(Base):
     __tablename__ = "product_recovery"
 

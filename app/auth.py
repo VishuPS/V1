@@ -182,6 +182,11 @@ def authenticate_api_key(
         ).order_by(Subscription.created_at.desc()))
         if subscription and subscription.status not in {"active", "trialing", "past_due"}:
             raise HTTPException(402, detail={"code": "subscription_payment_required", "message": "Your paid subscription is not active. Update your payment method in Billing."})
+    if record.client.plan in {"FREE", "ONE_TIME"}:
+        from app.call_packs import sync
+        subscription = session.scalar(select(Subscription).where(Subscription.user_id == record.owner_user_id).order_by(Subscription.created_at.desc()).with_for_update())
+        sync(session, subscription)
+        session.commit()
     plan = settings.plan_limits.get(record.client.plan.upper())
     if plan is None:
         raise HTTPException(
@@ -247,14 +252,18 @@ def consume_usage(
             .order_by(Subscription.created_at.desc())
             .with_for_update()
         )
+    one_time = subscription is not None and subscription.plan_code == "ONE_TIME"
     lifetime = (subscription.plan_code if subscription else context.client.plan) == "FREE"
     quota = (250 if lifetime else subscription.monthly_call_limit) if subscription else context.plan.monthly_lookups
-    if lookup_units > quota:
+    if lookup_units > quota and not one_time:
         raise _quota_error(context.client.plan, quota, quota, subscription.usage_period_end if subscription else None)
 
     warning = None
     limit_reached = None
-    if lifetime:
+    if one_time:
+        from app.call_packs import consume
+        account_used, quota = consume(session, subscription, lookup_units, timestamp)
+    elif lifetime:
         model, record = (Subscription, subscription) if subscription else (ApiClient, context.client)
         updated = session.execute(update(model).where(
             model.id == record.id, model.free_credits_used + lookup_units <= quota,
@@ -345,7 +354,7 @@ def consume_usage(
             "last_request_at": timestamp,
             "updated_at": timestamp,
         },
-        where=True if lifetime else MonthlyUsage.lookup_count + lookup_units <= quota,
+        where=True if lifetime or one_time else MonthlyUsage.lookup_count + lookup_units <= quota,
     ).returning(MonthlyUsage.request_count, MonthlyUsage.lookup_count)
     row = session.execute(statement).one_or_none()
     if row is None:
@@ -426,5 +435,5 @@ def usage_headers(context: AuthContext, usage: UsageResult) -> dict[str, str]:
         "X-Monthly-Quota-Limit": str(usage.quota_limit),
         "X-Monthly-Quota-Remaining": str(usage.quota_remaining),
         "X-Monthly-Quota-Period": "lifetime" if context.client.plan == "FREE" else usage.period_start.isoformat(),
-        "X-Allowance-Type": "lifetime" if context.client.plan == "FREE" else "monthly",
+        "X-Allowance-Type": "lifetime" if context.client.plan == "FREE" else "one_time" if context.client.plan == "ONE_TIME" else "monthly",
     }

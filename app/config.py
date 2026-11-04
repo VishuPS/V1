@@ -13,6 +13,7 @@ class PlanLimit(BaseModel):
 def default_plan_limits() -> dict[str, PlanLimit]:
     return {
         "FREE": PlanLimit(monthly_lookups=250, requests_per_minute=30),
+        "ONE_TIME": PlanLimit(monthly_lookups=500, requests_per_minute=30),
         "STARTER": PlanLimit(monthly_lookups=2_000, requests_per_minute=300),
         "GROWTH": PlanLimit(monthly_lookups=5_000, requests_per_minute=1_200),
     }
@@ -94,6 +95,7 @@ class Settings(BaseSettings):
     email_from: str = "BarcodeNest <notifications@barcodenest.com>"
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None
+    stripe_one_time_price_id: str | None = None
     stripe_starter_price_id: str | None = None
     stripe_growth_price_id: str | None = None
     stripe_starter_annual_price_id: str | None = None
@@ -157,7 +159,7 @@ class Settings(BaseSettings):
     def normalize_plan_names(
         cls, value: dict[str, PlanLimit]
     ) -> dict[str, PlanLimit]:
-        return {name.upper(): limits for name, limits in value.items()}
+        return {"ONE_TIME": PlanLimit(monthly_lookups=500, requests_per_minute=30), **{name.upper(): limits for name, limits in value.items()}}
 
     @model_validator(mode="after")
     def validate_production_safety(self) -> "Settings":

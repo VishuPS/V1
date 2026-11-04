@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class AdminDashboardSummary(BaseModel):
+    active_call_packs: int = 0
     total_users: int
     new_users_today: int
     new_users_this_month: int
@@ -89,6 +90,7 @@ class AdminApiKey(BaseModel):
 
 
 class AdminSubscription(BaseModel):
+    call_packs: list[dict] = Field(default_factory=list)
     plan: str
     status: str
     provider: str | None

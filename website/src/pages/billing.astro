@@ -3,7 +3,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
 ---
 <AccountLayout title="Billing" current="billing">
   <header class="portal-header">
-    <div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your subscription and monthly API allowance.</p></div>
+    <div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your plan, one-time call packs and API allowance.</p></div>
     <a class="button button-secondary" href="/pricing/">Compare plans</a>
   </header>
   <section class="portal-panel">
@@ -13,20 +13,22 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       <div><dt>Billing cadence</dt><dd id="billing-cadence">&mdash;</dd></div>
       <div><dt>Price</dt><dd id="billing-price">&mdash;</dd></div>
       <div><dt id="billing-renewal-label">Next renewal</dt><dd id="billing-renewal">&mdash;</dd></div>
-      <div><dt>Allowance resets</dt><dd id="billing-period">&mdash;</dd></div>
+      <div><dt id="billing-allowance-label">Allowance resets</dt><dd id="billing-period">&mdash;</dd></div>
     </dl>
     <div class="billing-toggle" role="group" aria-label="Billing cadence">
       <button class="is-active" type="button" data-billing-toggle="month" aria-pressed="true">Monthly</button>
       <button type="button" data-billing-toggle="year" aria-pressed="false">Yearly <span>Save 20%</span></button>
     </div>
-    <div class="billing-actions">
+    <div class="billing-actions"><button id="buy-pack" class="button button-secondary" type="button">Buy 500 calls · $4.99 once</button>
       <button class="button" data-checkout="STARTER" type="button">Choose Starter · $9.99/month</button>
       <button class="button" data-checkout="GROWTH" type="button">Choose Growth · $19.99/month</button>
       <button id="billing-portal" class="button button-secondary" type="button" hidden>Manage billing</button>
     </div>
+    <p class="portal-note">One-time packs cost $4.99 for 500 calls and expire 30 days after activation. They do not renew. Buying another pack does not extend an older pack.</p>
     <p class="portal-note">Annual plans are billed once per year. API allowances still reset every month.</p>
     <p class="portal-note">Cancel through Manage billing to stop future renewals. Your paid access continues until the end of the paid period. Cancellation does not issue a refund or prorated credit.</p>
   </section>
+  <section id="pack-panel" class="portal-panel" hidden><h2>Your active call packs</h2><p>Each pack expires independently. Earliest-expiring calls are used first. No automatic renewal.</p><ul id="pack-list"></ul></section>
   <div id="billing-message" class="form-status" role="status" aria-live="polite"></div>
   <script>
     import { authFetch, requireUser, responseMessage } from "../scripts/auth-context";
@@ -38,7 +40,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
     const query = new URLSearchParams(location.search);
     const requestedPlan = query.get("plan");
     const requestedInterval: Interval = query.get("interval") === "year" ? "year" : "month";
-    if (requestedPlan === "STARTER" || requestedPlan === "GROWTH") {
+    if (requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
       sessionStorage.setItem("barcodenest_plan_intent", JSON.stringify({ plan: requestedPlan, interval: requestedInterval }));
     }
     let selectedInterval: Interval = "month";
@@ -64,18 +66,25 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       const data = await response.json();
       const interval: Interval = data.billing_interval === "year" ? "year" : "month";
       set("billing-plan", data.plan); set("billing-status", data.status);
+      set("billing-allowance-label", data.plan === "ONE_TIME" ? "Next pack expires" : data.plan === "FREE" ? "Free allowance" : "Allowance resets");
       set("billing-renewal-label", data.cancel_at_period_end ? "Subscription ends" : "Next renewal");
-      set("billing-renewal", data.plan === "FREE" || !data.current_period_end ? "Not applicable" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.current_period_end)));
+      set("billing-renewal", data.plan === "FREE" || data.plan === "ONE_TIME" || !data.current_period_end ? "Not applicable" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.current_period_end)));
       if (data.cancel_at_period_end) set("billing-message", "Cancellation scheduled. Your paid access continues until the subscription end date.");
-      set("billing-cadence", data.plan === "FREE" ? "Free" : interval === "year" ? "Yearly" : "Monthly");
+      set("billing-cadence", data.plan === "FREE" ? "Free" : data.plan === "ONE_TIME" ? "One-time; no renewal" : interval === "year" ? "Yearly" : "Monthly");
       const paidPrices = data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
-      set("billing-price", data.plan === "FREE" ? "Free" : paidPrices);
+      set("billing-price", data.plan === "FREE" ? "Free" : data.plan === "ONE_TIME" ? "$4.99 per pack" : paidPrices);
       set("billing-period", data.plan === "FREE" ? "One-off allowance — does not reset" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.usage_period_end)));
+      const packButton = document.querySelector<HTMLButtonElement>("#buy-pack");
+      if (packButton) packButton.hidden = data.plan !== "FREE" && data.plan !== "ONE_TIME";
+      const packList = document.getElementById("pack-list");
+      if (packList) { packList.replaceChildren(); for (const pack of data.call_packs || []) { const item=document.createElement("li"); item.textContent=`${pack.remaining} of ${pack.calls} calls remaining · expires ${new Intl.DateTimeFormat("en", {dateStyle:"long",timeStyle:"short"}).format(new Date(pack.expires_at))}`; packList.append(item); } }
+      const packPanel = document.getElementById("pack-panel"); if (packPanel) packPanel.hidden = !(data.call_packs?.length);
+      if (data.plan === "ONE_TIME") { set("billing-renewal", "Does not renew"); }
       const portal = document.querySelector<HTMLButtonElement>("#billing-portal"); if (portal) portal.hidden = !data.provider_customer_id;
-      selectInterval(requestedPlan === "STARTER" || requestedPlan === "GROWTH" ? requestedInterval : interval);
-      if (requestedPlan === "STARTER" || requestedPlan === "GROWTH") {
-        set("billing-message", `${requestedPlan === "STARTER" ? "Starter" : "Growth"} selected. Review the allowance and billing cadence, then choose the plan below to continue to checkout.`);
-        const selected = document.querySelector<HTMLButtonElement>(`[data-checkout="${requestedPlan}"]`);
+      selectInterval(requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME" ? requestedInterval : interval);
+      if (requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
+        set("billing-message", `${requestedPlan === "ONE_TIME" ? "500-call one-time pack" : requestedPlan === "STARTER" ? "Starter" : "Growth"} selected. Review the allowance and billing cadence, then choose the plan below to continue to checkout.`);
+        const selected = document.querySelector<HTMLButtonElement>(requestedPlan === "ONE_TIME" ? "#buy-pack" : `[data-checkout="${requestedPlan}"]`);
         selected?.classList.add("button-signal");
         selected?.focus();
         sessionStorage.removeItem("barcodenest_plan_intent");
@@ -89,6 +98,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
     }
     document.querySelectorAll<HTMLButtonElement>("[data-billing-toggle]").forEach((button) => button.addEventListener("click", () => selectInterval(button.dataset.billingToggle as Interval)));
     document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => button.addEventListener("click", () => redirect("/billing/checkout", { plan: button.dataset.checkout, billing_interval: selectedInterval })));
+    document.querySelector("#buy-pack")?.addEventListener("click", () => redirect("/billing/checkout", {plan:"ONE_TIME"}));
     document.querySelector("#billing-portal")?.addEventListener("click", () => redirect("/billing/portal"));
     load();
   </script>

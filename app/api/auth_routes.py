@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.auth import current_period, issue_api_key
+from app.call_packs import details as pack_details
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.models import ApiClient, ApiKey, AuthSession, MonthlyUsage, Subscription, User
@@ -63,6 +64,11 @@ def token_response(tokens, settings: Settings) -> TokenResponse:
 
 
 def account_client(session: Session, user: User) -> ApiClient:
+    from app.call_packs import sync
+    record = session.scalar(select(Subscription).where(Subscription.user_id == user.id).order_by(Subscription.created_at.desc()))
+    if record and record.plan_code in {"FREE", "ONE_TIME"}:
+        sync(session, record)
+        session.commit()
     client = session.scalar(
         select(ApiClient).where(ApiClient.owner_user_id == user.id)
     )
@@ -339,16 +345,18 @@ def usage(context: CurrentUser, session: DbSession, settings: SettingsDep) -> Us
     limit = allowances.limit(subscription)
     percentage = round((used / limit * 100), 1) if limit else 100.0
     return UsageSummary(
+        call_packs=pack_details(session, context.user.id),
         period_start=period, request_count=request_count, lookup_count=used,
         monthly_limit=limit, remaining=max(0, limit - used),
         percentage_used=percentage, period_end=allowances.end(subscription),
         warning=percentage >= 90, blocked=used >= limit,
-        allowance_type="lifetime" if subscription.plan_code == "FREE" else "monthly",
+        allowance_type="lifetime" if subscription.plan_code == "FREE" else "one_time" if subscription.plan_code == "ONE_TIME" else "monthly",
     )
 
 
 @router.get("/account/subscription", response_model=SubscriptionSummary)
 def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummary:
+    account_client(session, context.user)
     record = session.scalar(
         select(Subscription)
         .where(Subscription.user_id == context.user.id)
@@ -360,6 +368,7 @@ def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummar
             detail={"code": "subscription_not_found", "message": "No subscription was found"},
         )
     return SubscriptionSummary(
+        call_packs=pack_details(session, context.user.id),
         plan=record.plan_code, status=record.status,
         price_cents=record.plan.price_cents, currency=record.plan.currency,
         current_period_end=record.current_period_end,
@@ -370,5 +379,5 @@ def subscription(context: CurrentUser, session: DbSession) -> SubscriptionSummar
         usage_period_end=allowances.end(record),
         provider_customer_id=record.provider_customer_id,
         billing_interval=record.billing_interval,
-        allowance_type="lifetime" if record.plan_code == "FREE" else "monthly",
+        allowance_type="lifetime" if record.plan_code == "FREE" else "one_time" if record.plan_code == "ONE_TIME" else "monthly",
     )

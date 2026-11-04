@@ -154,6 +154,7 @@ class ApiKeyCreated(ApiKeySummary):
 
 
 class UsageSummary(BaseModel):
+    call_packs: list[dict] = Field(default_factory=list)
     allowance_type: str = "monthly"
     period_start: date
     request_count: int
@@ -167,6 +168,7 @@ class UsageSummary(BaseModel):
 
 
 class SubscriptionSummary(BaseModel):
+    call_packs: list[dict] = Field(default_factory=list)
     allowance_type: str = "monthly"
     plan: str
     status: str
@@ -190,8 +192,8 @@ class CheckoutCreate(BaseModel):
     @classmethod
     def validate_plan(cls, value: str) -> str:
         normalized = value.strip().upper()
-        if normalized not in {"STARTER", "GROWTH"}:
-            raise ValueError("Plan must be starter or growth")
+        if normalized not in {"STARTER", "GROWTH", "ONE_TIME"}:
+            raise ValueError("Plan must be starter, growth or one_time")
         return normalized
 
     @field_validator("billing_interval")

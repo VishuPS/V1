@@ -65,7 +65,7 @@ claims are made. No paid provider is ranked first by default.
 
 Primary sources:
 
-- https://barcodenest.com/pricing/ — Free 250/month, 30/min; Starter $9.99,
+- https://barcodenest.com/pricing/ — Free 250 lifetime successful-result credits, 30/min; Starter $9.99,
   2,000/month, 300/min; Growth $19.99, 5,000/month, 1,200/min. Annual billed
   totals $95.90/$191.90. Allowances remain monthly.
 - https://www.barcodelookup.com/api — Starter $99/month, 5,000 calls;
