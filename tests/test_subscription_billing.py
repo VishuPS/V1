@@ -239,3 +239,46 @@ def test_payment_link_webhook_maps_price_to_account(session_factory):
         assert process_stripe_event(session, settings, event, StripeStub()) is True
         record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
         assert (record.plan_code, record.monthly_call_limit) == ("GROWTH", 5_000)
+
+
+def test_payment_link_renewal_and_scheduled_cancellation_without_metadata(session_factory):
+    user_id, _ = account(session_factory)
+    settings = get_settings().model_copy(update={"stripe_starter_price_id": "price_starter"})
+    obj = stripe_subscription(user_id, "STARTER")
+    with session_factory() as session:
+        process_stripe_event(session, settings, {"id": "evt_initial", "type": "customer.subscription.created", "data": {"object": obj}})
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        record.monthly_calls_used = 700
+        session.commit()
+        obj["metadata"] = {}
+        obj["cancel_at_period_end"] = True
+        process_stripe_event(session, settings, {"id": "evt_scheduled", "type": "customer.subscription.updated", "data": {"object": obj}})
+        assert record.cancel_at_period_end is True
+        assert record.plan_code == "STARTER"
+        assert record.monthly_calls_used == 700
+        obj["cancel_at_period_end"] = False
+        obj["current_period_start"] += 2_592_000
+        obj["current_period_end"] += 2_592_000
+        class StripeStub:
+            def subscription(self, _id):
+                return obj
+        event = {"id": "evt_renewed", "type": "invoice.paid", "data": {"object": {"subscription": "sub_123"}}}
+        process_stripe_event(session, settings, event, StripeStub())
+        assert record.monthly_calls_used == 0
+        assert record.cancel_at_period_end is False
+        record.monthly_calls_used = 10
+        session.commit()
+        process_stripe_event(session, settings, {**event, "id": "evt_renewed_duplicate_invoice"}, StripeStub())
+        assert record.monthly_calls_used == 10
+        process_stripe_event(session, settings, {"id": "evt_ended", "type": "customer.subscription.deleted", "data": {"object": {"id": "sub_123"}}})
+        assert record.plan_code == "FREE"
+        assert record.monthly_call_limit == 250
+        assert session.scalar(select(ApiClient).where(ApiClient.owner_user_id == user_id)).plan == "FREE"
+
+
+def test_incomplete_subscription_does_not_activate_paid_plan(session_factory):
+    user_id, _ = account(session_factory)
+    with session_factory() as session:
+        process_stripe_event(session, get_settings(), {"id": "evt_incomplete", "type": "customer.subscription.created", "data": {"object": stripe_subscription(user_id, "STARTER", status="incomplete")}})
+        record = session.scalar(select(Subscription).where(Subscription.user_id == user_id))
+        assert record.plan_code == "FREE"

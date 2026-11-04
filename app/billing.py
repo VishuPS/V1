@@ -49,7 +49,7 @@ class StripeClient:
         self.headers = {"Authorization": f"Bearer {settings.stripe_secret_key}"}
 
     def _post(self, path: str, data: list[tuple[str, str]]) -> dict:
-        response = httpx.post(f"{self.base_url}{path}", headers=self.headers, data=data, timeout=20)
+        response = httpx.post(f"{self.base_url}{path}", headers={**self.headers, "Content-Type": "application/x-www-form-urlencoded"}, content=urlencode(data), timeout=20)
         if response.status_code >= 400:
             raise HTTPException(502, detail={"code":"billing_provider_error","message":"Stripe could not complete the request"})
         return response.json()
@@ -136,6 +136,8 @@ def _price_details(settings: Settings, price_id: str | None, price: dict, metada
 def _apply_subscription(session: Session, settings: Settings, obj: dict, fallback_user_id: str | None = None) -> None:
     metadata = obj.get("metadata") or {}
     user_id = metadata.get("user_id") or fallback_user_id
+    if not user_id and obj.get("id"):
+        user_id = session.scalar(select(Subscription.user_id).where(Subscription.provider_subscription_id == obj["id"]))
     if not user_id: return
     first_item = ((obj.get("items") or {}).get("data") or [{}])[0]
     price_id = (first_item.get("price") or {}).get("id") or obj.get("price_id")
@@ -147,11 +149,21 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     if not period_end: return
     record = session.scalar(select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc()).with_for_update())
     if not record: return
+    if obj.get("status") not in {"active", "trialing", "past_due"}:
+        # An incomplete checkout must not grant paid access.
+        return
     now = datetime.now(timezone.utc)
+    previous_period = record.current_period_start
+    if previous_period and previous_period.tzinfo is None:
+        previous_period = previous_period.replace(tzinfo=timezone.utc)
+    usage_end = record.usage_period_end
+    if usage_end.tzinfo is None:
+        usage_end = usage_end.replace(tzinfo=timezone.utc)
     reset_usage = (
         record.plan_code != plan
         or record.billing_interval != billing_interval
-        or record.usage_period_end <= now
+        or usage_end <= now
+        or (billing_interval == "month" and previous_period is not None and period_start > previous_period)
     )
     record.plan_code = plan
     record.status = obj.get("status") or "active"
@@ -188,12 +200,14 @@ def process_stripe_event(session: Session, settings: Settings, event: dict, stri
         subscription_obj = stripe.subscription(subscription_id) if subscription_id and stripe else obj.get("subscription_object")
         reference_user = verified_reference(obj.get("client_reference_id"), settings)
         if subscription_obj: _apply_subscription(session, settings, subscription_obj, reference_user or (obj.get("metadata") or {}).get("user_id"))
-    elif event_type == "customer.subscription.updated":
+    elif event_type in {"customer.subscription.created", "customer.subscription.updated"}:
         _apply_subscription(session, settings, obj)
     elif event_type in {"invoice.paid", "invoice.payment_succeeded", "invoice.payment_failed"}:
         subscription_id = _subscription_id(obj)
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == subscription_id)) if subscription_id else None
         if record:
+            if stripe and event_type != "invoice.payment_failed":
+                _apply_subscription(session, settings, stripe.subscription(subscription_id), record.user_id)
             record.status = "active" if event_type != "invoice.payment_failed" else "past_due"
     elif event_type == "customer.subscription.deleted":
         record = session.scalar(select(Subscription).where(Subscription.provider_subscription_id == obj.get("id")))
