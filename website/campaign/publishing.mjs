@@ -1,3 +1,4 @@
+import { staticPosts } from "../src/content/blog-posts.mjs";
 import { entryForPath, publishedEntries } from './schedule.mjs';
 
 export const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -21,7 +22,8 @@ export function sitemapEntries(now) {
   return publishedEntries(now).map(p=>`<url><loc>${origin}/blog/${p.slug}/</loc><lastmod>${p.published}</lastmod></url>`).join('');
 }
 export function rss(now) {
-  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>BarcodeNest Developer Guides</title><link>${origin}/blog/</link><description>Practical barcode API engineering guides</description>${publishedEntries(now).reverse().map(p=>`<item><title>${escape(p.title)}</title><link>${origin}/blog/${p.slug}/</link><guid>${origin}/blog/${p.slug}/</guid><pubDate>${new Date(p.published).toUTCString()}</pubDate></item>`).join('')}</channel></rss>`;
+  const posts = [...publishedEntries(now), ...staticPosts.filter(p => Date.parse(p.published) <= now)].sort((a,b) => Date.parse(b.published)-Date.parse(a.published));
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"><channel><title>BarcodeNest Developer Guides</title><link>${origin}/blog/</link><description>Practical barcode API engineering guides</description>${posts.map(p=>`<item><title>${escape(p.title)}</title><link>${origin}/blog/${p.slug}/</link><guid>${origin}/blog/${p.slug}/</guid><pubDate>${new Date(p.published).toUTCString()}</pubDate></item>`).join('')}</channel></rss>`;
 }
 export function response(body, type, request, status = 200) {
   return new Response(request.method === 'HEAD' ? null : body, {status, headers:{

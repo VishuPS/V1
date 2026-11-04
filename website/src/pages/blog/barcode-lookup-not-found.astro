@@ -1,0 +1,37 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const example = `curl --fail-with-body \
+  -H "X-API-Key: $BARCODENEST_API_KEY" \
+  "https://api.barcodenest.com/v1/products/3017620422003"`;
+---
+<BlogPostLayout title="Barcode Lookup Not Found? Diagnose 400, 404 & API Errors | BarcodeNest" heading="Why a barcode lookup returns no product—and how to handle it" description="Distinguish invalid barcodes, missing products, authentication errors and quota limits. Build a barcode lookup fallback that keeps inventory work moving." author="BarcodeNest Editorial Team" published="2026-11-04" readingTime="6 min read">
+  <div class="article-shell container"><aside class="article-toc" aria-label="On this page"><strong>On this page</strong><a href="#first-distinguish-invalid-input-from-a-missing-product">First distinguish invalid input from a missing product</a><a href="#use-the-http-status-to-choose-the-next-action">Use the HTTP status to choose the next action</a><a href="#reproduce-a-lookup-without-your-scanner-application">Reproduce a lookup without your scanner application</a><a href="#why-valid-products-can-be-absent">Why valid products can be absent</a><a href="#keep-a-missing-match-from-blocking-inventory-work">Keep a missing match from blocking inventory work</a><a href="#build-the-lookup-into-your-application">Build the lookup into your application</a></aside><div class="article-body">
+    <p>A scanner can read a barcode correctly while your product lookup returns no match. Scanning extracts an identifier; a product API must find a record associated with that identifier. Those are separate steps. Before switching providers or repeating the same request, establish which step failed.</p>
+    <h2 id="first-distinguish-invalid-input-from-a-missing-product">First distinguish invalid input from a missing product</h2>
+    <p>BarcodeNest accepts GTIN-8, UPC-A, EAN-13 and GTIN-14 identifiers. Send the digits as a string so leading zeros survive storage, CSV imports and JSON serialization. A valid length is only a preliminary check: the check digit must also be valid.</p>
+    <p>Do not remove an arbitrary leading digit to make an identifier fit. Some scanner outputs contain an AIM symbology identifier, a newline or other scanner-specific data. Parse those using your scanner's documented output format before calling the API. A QR code containing a URL also needs a different parsing step from a numeric GTIN.</p>
+    <h2 id="use-the-http-status-to-choose-the-next-action">Use the HTTP status to choose the next action</h2>
+    <table><thead><tr><th>Response</th><th>Meaning</th><th>Next action</th></tr></thead><tbody>
+      <tr><td>400</td><td>Invalid barcode input or check digit</td><td>Check the original scan and formatting. Correct the input before retrying.</td></tr>
+      <tr><td>401</td><td>Missing, invalid or revoked API key</td><td>Check server-side credentials. Do not ask the user to scan again.</td></tr>
+      <tr><td>402</td><td>Paid subscription is not active</td><td>Review payment status and update the payment method through Billing.</td></tr>
+      <tr><td>404</td><td>Valid identifier, no indexed product</td><td>Offer manual entry and retain the barcode for later review.</td></tr>
+      <tr><td>429</td><td>Rate or allowance limit</td><td>Read the error code. Wait for a temporary request limit; review usage for an exhausted allowance.</td></tr>
+      <tr><td>5xx or network failure</td><td>Service or transport problem</td><td>Use a small, bounded retry budget with backoff.</td></tr>
+    </tbody></table>
+    <p>These statuses describe the single-product endpoint. Batch requests have per-item outcomes, so inspect each result rather than treating a successful batch HTTP response as proof that every barcode matched. See the <a href="/docs/errors/">error reference</a> and <a href="/docs/barcode-lookup/">single and batch endpoint documentation</a>.</p>
+    <h2 id="reproduce-a-lookup-without-your-scanner-application">Reproduce a lookup without your scanner application</h2>
+    <CodeBlock label="Single-product request from your server" language="bash" code={example} />
+    <p>Set the environment variable on your own machine or server. Keep the key out of screenshots, shared logs and frontend bundles. Replace the sample identifier with the original barcode from your workflow. Record the HTTP status and error code separately from the product data.</p>
+    <h2 id="why-valid-products-can-be-absent">Why valid products can be absent</h2>
+    <p>A checksum establishes that the identifier has a valid structure; it does not establish that a particular API has a record. Coverage depends on the indexed sources, category and market. A recently launched item, a regional package size or a supplier's internal identifier may not resolve. Even when a product matches, its image, ingredients or other fields can be missing.</p>
+    <p>Measure coverage with a representative sample from your own suppliers. Track the match rate and the completeness of the fields your application actually needs. Avoid extrapolating from one well-known product. BarcodeNest paid plans increase allowances and request rates; they use the same product index as Free. Read the <a href="/data/">data-source and coverage notes</a> before choosing a plan.</p>
+    <h2 id="keep-a-missing-match-from-blocking-inventory-work">Keep a missing match from blocking inventory work</h2>
+    <ol><li>Preserve the original barcode as a string.</li><li>Show a clear “product not found” state, separate from a network failure.</li><li>Allow authorized staff to enter a name and required inventory fields manually.</li><li>Store the provenance of manual and API fields so later enrichment does not overwrite reviewed data.</li><li>Recheck unresolved items deliberately instead of repeatedly calling the API on every render.</li></ol>
+    <p>If you have verified public product facts, you can <a href="/contribute/product/">submit a product contribution</a> for review. Do not submit confidential supplier data or material you lack permission to provide. Contribution does not guarantee publication.</p>
+    <h2 id="build-the-lookup-into-your-application">Build the lookup into your application</h2>
+    <p>Use the <a href="/blog/barcode-lookup-javascript/">JavaScript barcode lookup tutorial</a> for a server-side integration, or the <a href="/blog/barcode-lookup-python/">Python example</a> for scripts and imports. For stock systems, start with the <a href="/barcode-api-for-inventory/">inventory API integration guide</a>.</p>
+    <p><a href="/register/">Create a free account</a> to evaluate your actual catalog, then <a href="/pricing/">compare allowances</a> when you know the volume and coverage your workflow requires.</p>
+  </div></div>
+</BlogPostLayout>

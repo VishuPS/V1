@@ -1,0 +1,36 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+import example from "../../content/examples/barcode-lookup.mjs?raw";
+const usage = `import { lookupProduct } from './barcode-lookup.mjs';
+
+const result = await lookupProduct('3017620422003', process.env.BARCODENEST_API_KEY);
+if (result === null) {
+  console.log('No match: offer manual product entry.');
+} else {
+  console.log(result.product);
+}`;
+---
+<BlogPostLayout title="JavaScript Barcode Lookup API Tutorial for Node.js | BarcodeNest" heading="How to look up barcode product data in JavaScript with Node.js" description="Use server-side fetch to look up UPC, EAN and GTIN product data. Keep API keys private, preserve leading zeros and handle missing products in Node.js." author="BarcodeNest Editorial Team" published="2026-11-04" readingTime="6 min read">
+  <div class="article-shell container"><aside class="article-toc" aria-label="On this page"><strong>On this page</strong><a href="#keep-the-lookup-on-your-server">Keep the lookup on your server</a><a href="#look-up-a-upc-ean-or-gtin-as-a-string">Look up a UPC, EAN or GTIN as a string</a><a href="#use-the-helper-in-an-inventory-or-catalog-workflow">Use the helper in an inventory or catalog workflow</a><a href="#handle-missing-records-separately-from-errors">Handle missing records separately from errors</a><a href="#evaluate-coverage-before-increasing-volume">Evaluate coverage before increasing volume</a><a href="#next-steps">Next steps</a></aside><div class="article-body">
+    <p>A barcode scanner gives your application an identifier. To display a product name, brand or other catalog attributes, send that identifier to a product data API. This tutorial uses Node.js fetch and BarcodeNest's single-product endpoint; the scanner itself can be a USB device, mobile camera or a barcode already stored in a catalog.</p>
+    <h2 id="keep-the-lookup-on-your-server">Keep the lookup on your server</h2>
+    <p>Create a <a href="/register/">BarcodeNest account</a>, then store your key in a server environment variable named <code>BARCODENEST_API_KEY</code>. The example uses Node.js 20 or later and its built-in fetch API, so no HTTP package is required. Save it as <code>barcode-lookup.mjs</code>.</p>
+    <p>Do not copy this key into a React component, a public environment variable or browser JavaScript. A production frontend should call your authenticated backend, which validates input, enforces its own limits and makes the BarcodeNest request. Making an unrestricted proxy public can expose your allowance even if the key remains hidden.</p>
+    <h2 id="look-up-a-upc-ean-or-gtin-as-a-string">Look up a UPC, EAN or GTIN as a string</h2>
+    <CodeBlock label="barcode-lookup.mjs — server-side helper" language="javascript" code={example} />
+    <p>The preliminary format check accepts only supported digit lengths. BarcodeNest performs the check-digit validation. Keep identifiers as strings throughout the application: converting them to numbers loses leading zeros. The fifteen-second timeout prevents an upstream request from waiting indefinitely; choose a suitable timeout for your own service.</p>
+    <h2 id="use-the-helper-in-an-inventory-or-catalog-workflow">Use the helper in an inventory or catalog workflow</h2>
+    <CodeBlock label="Call from a server-side module" language="javascript" code={usage} />
+    <p>A successful response contains the lookup result and product record. Treat individual product fields as optional; a match does not promise a product image or every nutritional or packaging attribute. Keep your own stock count, warehouse location, supplier cost and inventory movements in your application. The API supplies product metadata, rather than managing inventory transactions.</p>
+    <h2 id="handle-missing-records-separately-from-errors">Handle missing records separately from errors</h2>
+    <p>The helper returns <code>null</code> for a 404 product miss. It throws for authentication, payment, validation and usage-limit errors, preserving the status and API error code. This prevents a billing or network issue from being mislabeled as a missing product.</p>
+    <ul><li><strong>400:</strong> correct the barcode before retrying.</li><li><strong>401:</strong> check the server key configuration.</li><li><strong>402:</strong> review the paid subscription and payment method.</li><li><strong>429:</strong> distinguish temporary request limits from an exhausted allowance using the error code.</li><li><strong>Network errors and 5xx:</strong> consider bounded retries with backoff; do not retry indefinitely.</li></ul>
+    <p>Do not expose raw upstream errors or secrets to users. Log an internal request identifier, HTTP status and error code; avoid logging authorization headers. See the <a href="/blog/barcode-lookup-not-found/">barcode troubleshooting guide</a> for a complete missing-product workflow.</p>
+    <h2 id="evaluate-coverage-before-increasing-volume">Evaluate coverage before increasing volume</h2>
+    <p>Build a sample from the suppliers, markets and categories you expect to support. Measure product matches and required-field completeness separately. Keep a review path for missing or conflicting data and record where each field came from. The <a href="/data/">coverage notes</a> explain why availability varies.</p>
+    <p>For larger imports, read the <a href="/docs/barcode-lookup/">batch endpoint reference</a> and <a href="/docs/rate-limits/">rate-limit documentation</a>. Batch responses require per-item handling; do not assume the single-product response shape applies to a batch.</p>
+    <h2 id="next-steps">Next steps</h2>
+    <p>Follow the <a href="/barcode-api-for-inventory/">inventory integration guide</a>, compare <a href="/pricing/">Free, Starter and Growth</a>, or use the <a href="/blog/barcode-lookup-python/">Python tutorial</a> for a scripting workflow. Evaluate a representative sample before buying more volume; upgrading changes allowances and request rates, not product coverage.</p>
+  </div></div>
+</BlogPostLayout>

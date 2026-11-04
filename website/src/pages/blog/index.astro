@@ -10,6 +10,8 @@ const collectionSchema = {
   description,
   url: "https://barcodenest.com/blog/",
   hasPart: [
+    { "@type": "Article", headline: "JavaScript barcode lookup with Node.js", url: "https://barcodenest.com/blog/barcode-lookup-javascript/", datePublished: "2026-11-04" },
+    { "@type": "Article", headline: "Why a barcode lookup returns no product", url: "https://barcodenest.com/blog/barcode-lookup-not-found/", datePublished: "2026-11-04" },
     { "@type": "Article", headline: "How to look up product information by barcode in Python", url: "https://barcodenest.com/blog/barcode-lookup-python/", datePublished: "2026-10-22" },
     {
       "@type": "Article",
@@ -55,6 +57,11 @@ const collectionSchema = {
     </div>
   </section>
 
+  <section class="container blog-archive" aria-labelledby="latest-integration-guides">
+    <div class="blog-archive-head"><div><div class="eyebrow">Practical integration</div><h2 id="latest-integration-guides">New developer guides</h2></div></div>
+    <a class="blog-archive-row" href="/blog/barcode-lookup-javascript/"><div class="article-card-meta"><span>JavaScript tutorial</span><time datetime="2026-11-04">Nov 4, 2026</time></div><h3>How to look up barcode product data with Node.js</h3><span class="archive-arrow" aria-hidden="true">→</span></a>
+    <a class="blog-archive-row" href="/blog/barcode-lookup-not-found/"><div class="article-card-meta"><span>Troubleshooting</span><time datetime="2026-11-04">Nov 4, 2026</time></div><h3>Why a barcode lookup returns no product—and how to handle it</h3><span class="archive-arrow" aria-hidden="true">→</span></a>
+  </section>
   <section class="container blog-featured" aria-labelledby="python-guide">
     <article class="blog-card-copy"><div class="article-card-meta"><span>Python tutorial</span><time datetime="2026-10-22">Oct 22, 2026</time><span>6 min read</span></div>
     <h2 id="python-guide"><a href="/blog/barcode-lookup-python/">How to look up product information by barcode in Python</a></h2>

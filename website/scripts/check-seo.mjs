@@ -3,6 +3,7 @@ import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import campaignHtml from '../generated/campaign.mjs';
 import { entries, entryForPath } from '../campaign/schedule.mjs';
+import { staticPosts } from '../src/content/blog-posts.mjs';
 
 const dist = fileURLToPath(new URL("../dist/", import.meta.url));
 if (!existsSync(dist)) throw new Error("dist is missing; run pnpm build before pnpm check:seo");
@@ -67,6 +68,10 @@ for (const asset of ["robots.txt", "sitemap.xml", "favicon.svg", "barcode-lookup
   if (!existsSync(join(dist, asset))) failures.push(`dist/${asset}: missing`);
 }
 const sitemap = readFileSync(join(dist, "sitemap.xml"), "utf8");
+for (const post of staticPosts) {
+  if (!sitemap.includes(`https://barcodenest.com/blog/${post.slug}/`)) failures.push(`sitemap: missing static guide ${post.slug}`);
+  if (!existsSync(join(dist, 'blog', post.slug, 'index.html'))) failures.push(`missing article file: ${post.slug}`);
+}
 for (const route of ["barcode-api/", "upc-api/", "ean-api/", "gtin-api/", "barcode-database/", "contribute/", "contribute/product/", "contribute/store/", "contribute/brand/", "contribute/bulk/", "docs/barcode-lookup/", "docs/authentication/", "docs/rate-limits/", "docs/errors/"]) {
   if (!sitemap.includes(`https://barcodenest.com/${route}`)) failures.push(`sitemap: missing ${route}`);
 }

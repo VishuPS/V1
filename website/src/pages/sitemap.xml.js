@@ -1,3 +1,4 @@
+import { staticPosts } from "../content/blog-posts.mjs";
 const pages = [
   ["", "1.0", "weekly"],
   ["barcode-api/", "0.9", "monthly"],
@@ -15,6 +16,8 @@ const pages = [
   ["pricing/", "0.9", "monthly"],
   ["data/", "0.7", "monthly"],
   ["blog/", "0.8", "weekly"],
+  ["blog/barcode-lookup-javascript/", "0.8", "monthly"],
+  ["blog/barcode-lookup-not-found/", "0.8", "monthly"],
   ["blog/barcode-lookup-python/", "0.8", "monthly"],
   ["blog/2d-barcodes-2027/", "0.8", "monthly"],
   ["blog/gs1-digital-link-explained/", "0.8", "monthly"],
@@ -34,9 +37,11 @@ const pages = [
 ];
 
 export function GET() {
-  const lastmod = new Date().toISOString().slice(0, 10);
+  const dates = new Map(staticPosts.map(p => [`blog/${p.slug}/`, p.published.slice(0,10)]));
+  for (const path of ["blog/", "barcode-api-for-inventory/", "docs/errors/"]) dates.set(path, "2026-11-04");
   const urls = pages.map(([page, priority, changefreq]) => {
-    return `<url><loc>https://barcodenest.com/${page}</loc><lastmod>${lastmod}</lastmod><changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
+    const lastmod = dates.get(page);
+    return `<url><loc>https://barcodenest.com/${page}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
   }).join("");
   return new Response(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`, {
     headers: { "Content-Type": "application/xml; charset=utf-8" },
