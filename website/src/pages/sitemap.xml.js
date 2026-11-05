@@ -38,7 +38,7 @@ const pages = [
 
 export function GET() {
   const dates = new Map(staticPosts.map(p => [`blog/${p.slug}/`, p.published.slice(0,10)]));
-  for (const path of ["blog/", "barcode-api-for-inventory/", "docs/errors/"]) dates.set(path, "2026-11-04");
+  for (const path of ["", "pricing/", "docs/rate-limits/", "blog/", "barcode-api-for-inventory/", "docs/errors/"]) dates.set(path, "2026-11-04");
   const urls = pages.map(([page, priority, changefreq]) => {
     const lastmod = dates.get(page);
     return `<url><loc>https://barcodenest.com/${page}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
