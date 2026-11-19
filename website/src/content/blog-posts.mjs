@@ -1,5 +1,45 @@
 export const staticPosts = [
   {
+    "slug": "enrich-barcode-csv-python",
+    "title": "How to enrich a CSV of UPC and EAN barcodes with product data",
+    "published": "2026-11-19T00:00:00Z"
+  },
+  {
+    "slug": "barcode-lookup-php",
+    "title": "How to look up barcode product data in PHP with cURL",
+    "published": "2026-11-19T00:00:00Z"
+  },
+  {
+    "slug": "can-a-barcode-prove-a-product-is-real",
+    "title": "Can a barcode tell you if a product is real?",
+    "published": "2026-11-12T00:00:00Z"
+  },
+  {
+    "slug": "retail-unit-vs-case-barcode",
+    "title": "Retail unit vs. case barcode: which GTIN should you use?",
+    "published": "2026-11-12T00:00:00Z"
+  },
+  {
+    "slug": "batch-barcode-lookup-api",
+    "title": "How to look up multiple barcodes in one API request",
+    "published": "2026-11-11T00:00:00Z"
+  },
+  {
+    "slug": "sku-vs-upc-inventory",
+    "title": "SKU vs UPC: which identifier should your inventory use?",
+    "published": "2026-11-11T00:00:00Z"
+  },
+  {
+    "slug": "barcode-check-digit-javascript",
+    "title": "How to validate barcode check digits in JavaScript",
+    "published": "2026-11-10T00:00:00Z"
+  },
+  {
+    "slug": "keep-leading-zeros-barcodes-excel",
+    "title": "How to keep leading zeros in Excel barcode columns",
+    "published": "2026-11-10T00:00:00Z"
+  },
+  {
     "slug": "barcode-lookup-javascript",
     "title": "How to look up barcode product data in JavaScript with Node.js",
     "published": "2026-11-04T00:00:00Z"

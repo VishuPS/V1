@@ -58,7 +58,7 @@ const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structu
     <meta name="twitter:image:alt" content={imageAlt} />
     {!noindex && <link rel="canonical" href={canonical} />}
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaGraph)} />
+    <script type="application/ld+json" is:inline set:html={JSON.stringify(schemaGraph).replace(/</g, "\\u003c")} />
     <title>{title}</title>
   </head>
   <body>

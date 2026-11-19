@@ -1,0 +1,95 @@
+---
+const { category } = Astro.props;
+const labels = category === "labels";
+---
+<div class="tool-grid container" data-csv-tool={category}>
+  <section class="tool-card"><h2>{labels ? "Create a label sheet" : "Preview and enrich your CSV"}</h2>
+    <form id="csv-tool-form">
+      <label for="tool-key">BarcodeNest API key</label><input id="tool-key" type="password" autocomplete="off" required aria-describedby="key-hint" />
+      <p id="key-hint" class="tool-hint">Use a key from <a href="/api-keys/">your account</a>. It stays in this page's memory and is sent directly to the BarcodeNest API.</p>
+      <label for="csv-file">CSV file</label><input id="csv-file" type="file" accept=".csv,text/csv" required aria-describedby="csv-hint" />
+      <p id="csv-hint" class="tool-hint">{labels ? "Required column: barcode. Optional columns: symbology, title, detail, copies. A4 sheets contain 10 labels. Up to 100 labels including copies." : "Required column: barcode. Up to 100 data rows and a 500 KB file. Keep leading zeros when exporting."}</p>
+      <div class="tool-actions">
+        {!labels && <button type="button" id="preview-csv" class="button button-secondary">Preview without spending units</button>}
+        <button type="submit" class="button button-signal">{labels ? "Create PDF labels" : "Enrich and download CSV"}</button>
+      </div>
+    </form>
+    <p id="csv-status" class="tool-status" role="status" aria-live="polite"></p>
+    <a id="csv-result" class="button button-secondary" hidden>Download result</a>
+    <p class="tool-hint">{labels ? "Each printed label, including copies, uses one label unit. This PDF uses a general A4 layout. Print at actual size and test alignment before using label stock." : "Processing uses one enrichment unit per input row, including duplicates and invalid or unmatched barcodes. Preview uses no units. Review results before importing."}</p>
+  </section>
+  <section class="tool-card"><h2>Your separate allowances</h2><p>Tool allowances are shared across the API keys in your account and reset on the first day of each month at 00:00 UTC.</p>
+    <button id="load-balances" type="button" class="button button-secondary">Check remaining units</button><dl id="service-balances" class="tool-balances"></dl>
+    <p id="balance-status" class="tool-status" role="status" aria-live="polite"></p>
+    <table class="tool-table"><caption>Monthly units by plan</caption><thead><tr><th>Service</th><th>Free</th><th>Starter</th><th>Growth</th></tr></thead><tbody><tr><th>Images</th><td>100</td><td>2,000</td><td>10,000</td></tr><tr><th>Labels</th><td>25</td><td>500</td><td>2,500</td></tr><tr><th>Enrichment rows</th><td>250</td><td>2,000</td><td>5,000</td></tr></tbody></table>
+    <p class="tool-hint">Free and one-time lookup-pack accounts receive the Free tool allowances. Lookup packs add product lookup credits. Check your balance for the allowance applied to your account.</p><a href="/pricing/">Compare plans →</a>
+  </section>
+</div>
+<script>
+  import { API, responseMessage } from "../scripts/auth-context";
+  const root = document.querySelector<HTMLElement>("[data-csv-tool]")!;
+  const labels = root.dataset.csvTool === "labels";
+  const key = document.querySelector<HTMLInputElement>("#tool-key")!;
+  const status = document.querySelector<HTMLElement>("#csv-status")!;
+  const result = document.querySelector<HTMLAnchorElement>("#csv-result")!;
+  const form = document.querySelector<HTMLFormElement>("#csv-tool-form")!;
+  let downloadUrl = "", previewedText = "", previewedKey = "";
+  let busy = false;
+  async function request(path: string, body?: unknown) {
+    if (!key.value.trim()) throw new Error("Enter your API key first.");
+    const response = await fetch(API + path, { method: body ? "POST" : "GET",
+      headers: { "X-API-Key": key.value.trim(), ...(body ? { "Content-Type": "application/json" } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {}) });
+    if (!response.ok) throw new Error(await responseMessage(response));
+    return response;
+  }
+  async function balances() {
+    const state = document.querySelector<HTMLElement>("#balance-status")!;
+    try {
+      const data = await (await request("/services/usage")).json();
+      const list = document.querySelector<HTMLElement>("#service-balances")!;
+      list.replaceChildren();
+      for (const [category, raw] of Object.entries(data.categories)) {
+        const item = raw as { remaining: number; limit: number };
+        const row = document.createElement("div");
+        const term = document.createElement("dt"); term.textContent = category;
+        const value = document.createElement("dd"); value.textContent = item.remaining.toLocaleString() + " / " + item.limit.toLocaleString() + " remaining";
+        row.append(term, value); list.append(row);
+      }
+      state.textContent = "Monthly balances updated.";
+    } catch (error) { state.textContent = error instanceof Error ? error.message : "Could not load balances."; }
+  }
+  async function run(preview: boolean) {
+    if (busy || !form.reportValidity()) return;
+    const file = document.querySelector<HTMLInputElement>("#csv-file")!.files?.[0];
+    if (!file) return;
+    busy = true; result.hidden = true;
+    const buttons = Array.from(root.querySelectorAll<HTMLButtonElement>("button"));
+    buttons.forEach((button) => button.disabled = true);
+    status.dataset.error = "false"; status.textContent = preview ? "Checking your CSV…" : "Processing your file…";
+    try {
+      if (file.size > 500_000) throw new Error("Choose a CSV smaller than 500 KB.");
+      const csvText = await file.text();
+      if (!labels && !preview && (csvText !== previewedText || key.value.trim() !== previewedKey)) throw new Error("Preview this CSV with the current key before spending enrichment units.");
+      const path = labels ? "/labels/from-csv" : preview ? "/products/enrichment-preview" : "/products/enrich-csv";
+      const response = await request(path, { csv_text: csvText });
+      if (preview) {
+        const data = await response.json();
+        previewedText = csvText; previewedKey = key.value.trim();
+        status.textContent = data.rows + " rows. " + data.local_matches + " local matches, " + data.local_unmatched + " local misses, " + data.invalid_rows + " invalid rows. Processing costs " + data.units_required + " enrichment units. " + data.balance.remaining + " remaining.";
+      } else {
+        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+        downloadUrl = URL.createObjectURL(await response.blob());
+        result.href = downloadUrl; result.download = labels ? "barcodenest-labels.pdf" : "enriched-products.csv"; result.hidden = false;
+        status.textContent = "Your file is ready. Download it below.";
+        await balances();
+      }
+    } catch (error) {
+      status.dataset.error = "true";
+      status.textContent = error instanceof Error ? error.message : "The request could not complete. Check usage before retrying a processing request.";
+    } finally { busy = false; buttons.forEach((button) => button.disabled = false); }
+  }
+  document.querySelector("#load-balances")!.addEventListener("click", balances);
+  document.querySelector("#preview-csv")?.addEventListener("click", () => run(true));
+  form.addEventListener("submit", (event) => { event.preventDefault(); run(false); });
+</script>

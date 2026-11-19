@@ -1,0 +1,18 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { products, productPath, productUrl } from '../../lib/product-pilot.mjs';
+import '../../styles/product-pilot.css';
+const schema = {'@context':'https://schema.org','@type':'CollectionPage',name:'Barcode product directory',url:'https://barcodenest.com/products/',mainEntity:{'@type':'ItemList',itemListElement:products.map((p,i)=>({'@type':'ListItem',position:i+1,name:p.name,url:productUrl(p)}))}};
+---
+<BaseLayout title="Barcode Product Directory | Verified Product Records | BarcodeNest" description="Browse 100 sourced product records by barcode, with product names, brands, available pack details and links to the original data sources." structuredData={schema}>
+  <section class="catalog-hero"><div class="container">
+    <nav class="catalog-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Products</span></nav>
+    <div class="eyebrow">Product directory</div><h1>A barcode. A product. A source.</h1>
+    <p class="lede">Explore {products.length} selected product records with traceable sources. Compare the barcode on your packaging with the identifier on the product page.</p>
+    <p>Building an application? Use the <a href="/docs/barcode-lookup/" style="text-decoration:underline">barcode lookup API</a> to query the wider catalog.</p>
+  </div></section>
+  <section class="catalog-content" aria-label="Product records"><div class="container catalog-grid">
+    {products.map(p => <a class="catalog-card" href={productPath(p)}><span class="catalog-label">{p.brand}</span><h2>{p.name}</h2>{p.quantity && <p>{p.quantity}</p>}<span class="catalog-code">{p.barcode}</span></a>)}
+  </div></section>
+  <section class="catalog-content"><div class="narrow"><h2>About these records</h2><p><a href="/barcode-validator/">Check a barcode’s format and check digit</a> before looking for its product record.</p><p>This directory is a selected part of the BarcodeNest catalog. Details vary by source and may change. Always check current packaging for ingredients, allergens and other safety information.</p><p>Read about <a href="/data/">coverage and data sources</a>, or <a href="/docs/">integrate the API</a>.</p></div></section>
+</BaseLayout>

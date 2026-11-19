@@ -10,6 +10,21 @@ class PlanLimit(BaseModel):
     requests_per_minute: int
 
 
+class ServiceLimit(BaseModel):
+    generation: int = Field(ge=0)
+    labels: int = Field(ge=0)
+    enrichment: int = Field(ge=0)
+
+
+def default_service_limits() -> dict[str, ServiceLimit]:
+    return {
+        "FREE": ServiceLimit(generation=100, labels=25, enrichment=250),
+        "ONE_TIME": ServiceLimit(generation=100, labels=25, enrichment=250),
+        "STARTER": ServiceLimit(generation=2_000, labels=500, enrichment=2_000),
+        "GROWTH": ServiceLimit(generation=10_000, labels=2_500, enrichment=5_000),
+    }
+
+
 def default_plan_limits() -> dict[str, PlanLimit]:
     return {
         "FREE": PlanLimit(monthly_lookups=250, requests_per_minute=30),
@@ -20,6 +35,7 @@ def default_plan_limits() -> dict[str, PlanLimit]:
 
 
 class Settings(BaseSettings):
+    service_limits: dict[str, ServiceLimit] = Field(default_factory=default_service_limits)
     app_name: str = "Grocery & Retail Product Barcode API"
     app_env: str = "development"
     database_url: str = "sqlite:///./products.db"
@@ -153,6 +169,14 @@ class Settings(BaseSettings):
         if value < 1:
             raise ValueError("BATCH_LIMIT must be at least 1")
         return value
+
+    @field_validator("service_limits")
+    @classmethod
+    def normalize_service_names(cls, value: dict[str, ServiceLimit]) -> dict[str, ServiceLimit]:
+        limits = {name.upper(): item for name, item in value.items()}
+        if "FREE" in limits:
+            limits.setdefault("ONE_TIME", limits["FREE"])
+        return limits
 
     @field_validator("plan_limits")
     @classmethod

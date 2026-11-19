@@ -18,6 +18,7 @@ from app.api.routes import router
 from app.api.auth_routes import router as auth_router
 from app.api.admin_routes import router as admin_router
 from app.api.billing_routes import router as billing_router
+from app.api.tool_routes import router as tool_router
 from app.api.contribution_routes import admin_router as contribution_admin_router
 from app.api.contribution_routes import router as contribution_router
 from app.config import get_settings
@@ -90,6 +91,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization", "X-API-Key"],
+    expose_headers=["X-Service-Category", "X-Service-Quota-Limit", "X-Service-Quota-Remaining", "X-Service-Quota-Period", "X-Enrichment-Matched", "Content-Disposition"],
 )
 from app.recovery_admin import router as recovery_admin_router
 app.include_router(recovery_admin_router)
@@ -98,6 +100,7 @@ app.include_router(auth_router)
 app.include_router(admin_router)
 app.include_router(mail_router)
 app.include_router(billing_router)
+app.include_router(tool_router)
 app.include_router(contribution_router)
 app.include_router(contribution_admin_router)
 

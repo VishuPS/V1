@@ -1,7 +1,10 @@
+import { productRedirect } from './src/lib/product-pilot.mjs';
 import html from './generated/campaign.mjs';
 import { campaignResponse } from './campaign/publishing.mjs';
 export default {
   async fetch(request, env) {
+    const redirect = productRedirect(request);
+    if (redirect) return redirect;
     const campaign = await campaignResponse(request, env, html);
     if (campaign) return campaign;
     const url = new URL(request.url);

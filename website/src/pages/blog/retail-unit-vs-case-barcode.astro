@@ -1,0 +1,36 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+---
+<BlogPostLayout title="Retail Unit vs. Case Barcode: Which GTIN to Use | BarcodeNest" heading="Retail unit vs. case barcode: which GTIN should you use?" description="Learn how retail unit, inner pack, and case GTINs differ. Match the barcode to the packaging level you sell, order, or receive." author="BarcodeNest Editorial Team" published="2026-11-12" readingTime="4 min read">
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>On this page</strong>
+      <a href="#read-the-label">Find the packaging level on the label</a>
+      <a href="#normalize-correctly">Keep normalization separate from pack conversion</a>
+      <a href="#receive-and-sell">Record units consistently when receiving stock</a>
+      <a href="#lookup-pack-size">What to do when a lookup returns a different size</a>
+    </aside>
+    <div class="article-body">
+      <p>Use the barcode for the packaging level you’re recording. If you sell one bottle, use the identifier on that bottle. If you order or receive a case, use the case identifier and record how many sellable units it contains.</p>
+      <section aria-labelledby="read-the-label">
+        <h2 id="read-the-label">Find the packaging level on the label</h2>
+        <p>Start with the physical label and the supplier’s item record. A bottle, an inner pack, and a shipping case can each be separate trade items. GS1’s <a href="https://ref.gs1.org/standards/gtin-management/" rel="external">GTIN Management Standard</a> explains when distinct identifiers apply at different levels in the packaging hierarchy.</p>
+        <p>Suppose you receive a case containing 12 bottles and sell the bottles individually. Store the case GTIN for receiving and the bottle GTIN for checkout. Record that one case contains 12 bottles from the supplier’s specification. The barcode digits alone do not give you that conversion.</p>
+      </section>
+      <section aria-labelledby="normalize-correctly">
+        <h2 id="normalize-correctly">Keep normalization separate from pack conversion</h2>
+        <p>A GTIN can be represented as 14 digits by padding it on the left with zeros. For example, <code>3017620422003</code> and its padded form <code>03017620422003</code> represent the same identifier. The extra zero does not turn that item into a case.</p>
+        <p>If the case and unit have different assigned GTINs, keep both. Avoid trimming a case code to force a match with a unit. The <a href="/barcode-validator/">BarcodeNest validator</a> checks the number and shows its normalized representation for matching. Use the <a href="/blog/sku-vs-upc-inventory/">SKU vs. UPC guide</a> to decide where the identifiers belong in your inventory records.</p>
+      </section>
+      <section aria-labelledby="receive-and-sell">
+        <h2 id="receive-and-sell">Record units consistently when receiving stock</h2>
+        <ol><li>Check which packaging level your purchase order describes.</li><li>Scan that level and match its GTIN to the supplier item.</li><li>Confirm the number of sellable units in each package.</li><li>Record the quantity in the unit your inventory system uses.</li><li>Send mismatched or missing identifiers for review before changing stock.</li></ol><p>For three cases of 12 bottles, an inventory system that tracks bottles would add 36 units. Keep the received case count and pack conversion with the transaction so the inventory change can be audited later.</p>
+      </section>
+      <section aria-labelledby="lookup-pack-size">
+        <h2 id="lookup-pack-size">What to do when a lookup returns a different size</h2>
+        <p>Compare the printed number and package description with the supplier record. A similar name is common across sizes. If the barcode belongs to a different pack, map it to the right record instead of merging items based on the name.</p>
+        <p>When importing a catalog, preserve each original barcode and its row. Use <a href="/blog/batch-barcode-lookup-api/">batch lookup</a> to find available product details, then confirm packaging and quantities with the supplier. For products that come back without a match, see the <a href="/blog/barcode-lookup-not-found/">missing product guide</a>.</p>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>

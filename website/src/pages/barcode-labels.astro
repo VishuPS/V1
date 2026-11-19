@@ -1,0 +1,12 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import BarcodeCsvTool from "../components/BarcodeCsvTool.astro";
+import CodeBlock from "../components/CodeBlock.astro";
+import "../styles/barcode-tools.css";
+const example = 'barcode,title,detail,copies,symbology\n3017620422003,Sample product,SKU-001,2,ean13\nSKU-002,Internal item,Shelf A,1,code128';
+---
+<BaseLayout title="Barcode Label Printing from CSV & PDF Label API | BarcodeNest" description="Upload a barcode CSV and create a printable A4 PDF label sheet. Add product names, SKU details and copies with a separate label printing allowance." current="tools">
+  <header class="tool-hero container"><div class="eyebrow">Barcode labels</div><h1>From a product list to a printable label sheet.</h1><p class="lede">Upload the identifiers you already use, add a name or SKU, and download a PDF. Label units have their own allowance.</p></header>
+  <BarcodeCsvTool category="labels" />
+  <section class="tool-reference narrow"><h2>Start with this CSV format</h2><CodeBlock label="Label CSV" language="csv" code={example} /><p>Use <code>ean13</code>, <code>upca</code>, <code>code128</code> or <code>qr</code> in the symbology column. Include the check digit for UPC and EAN. Label titles and details support printable Latin characters, including common accented letters and currency symbols. Product lookup can help you find metadata before preparing your label file.</p><div class="tool-links"><a href="/barcode-generator/">Generate a single barcode for free</a><a href="/csv-product-enrichment/">Enrich product data</a><a href="/docs/barcode-tools/">Label API documentation</a></div></section>
+</BaseLayout>

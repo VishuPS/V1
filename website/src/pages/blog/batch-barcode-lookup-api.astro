@@ -1,0 +1,45 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const example = "const barcodes = [\"3017620422003\", \"012345678905\"];\n\nconst response = await fetch(\"https://api.barcodenest.com/v1/products/batch\", {\n  method: \"POST\",\n  headers: {\n    \"Content-Type\": \"application/json\",\n    \"X-API-Key\": process.env.BARCODENEST_API_KEY\n  },\n  body: JSON.stringify({ barcodes }),\n  signal: AbortSignal.timeout(15000)\n});\n\nif (!response.ok) {\n  const detail = await response.text();\n  throw new Error(`Lookup failed (${response.status}): ${detail}`);\n}\n\nconst { results } = await response.json();\nconst rows = results.map((result, index) => ({\n  input: barcodes[index],\n  gtin: result.canonical_gtin,\n  status: !result.valid ? \"invalid\" : result.found ? \"found\" : \"missing\",\n  productName: result.product?.name ?? null\n}));\nconsole.table(rows);";
+---
+<BlogPostLayout title="Batch Barcode Lookup API with JavaScript | BarcodeNest" heading="How to look up multiple barcodes in one API request" description="Look up UPC, EAN and GTIN codes in batches with JavaScript. Map results to inventory rows, handle missing products and plan for rate and usage limits." author="BarcodeNest Editorial Team" published="2026-11-11" readingTime="5 min read">
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>On this page</strong>
+      <a href="#when-to-batch">When to use batch barcode lookup</a>
+      <a href="#send-a-batch">Send a batch request from JavaScript</a>
+      <a href="#handle-results">Handle invalid, missing, and found items</a>
+      <a href="#plan-the-import">Plan batch size, rate limits, and usage</a>
+      <a href="#review-the-output">Review a sample before the full run</a>
+    </aside>
+    <div class="article-body">
+      <section aria-labelledby="when-to-batch">
+        <h2 id="when-to-batch">When to use batch barcode lookup</h2>
+        <p>Use a batch when you already have a list of identifiers, such as an inventory export, an incoming supplier file, or a queue of items to enrich. BarcodeNest accepts up to 100 barcode strings per request at <code>POST /v1/products/batch</code>. The response returns one result per input, in the same order.</p>
+        <p>For a checkout or receiving screen where the user scans one item and waits for its name, a <a href="/docs/barcode-lookup/">single lookup</a> keeps the workflow straightforward. For a file import, start with a small batch and inspect the returned fields before processing the rest of the file.</p>
+      </section>
+      <section aria-labelledby="send-a-batch">
+        <h2 id="send-a-batch">Send a batch request from JavaScript</h2>
+        <p>Run this example on a server with your BarcodeNest key in <code>BARCODENEST_API_KEY</code>. Keep the key in the server environment. Read each barcode as a string so its leading zeros survive JSON serialization. The example maps each response back to its input position.</p>
+        <CodeBlock label="Server-side JavaScript batch request" language="javascript" code={example} />
+      </section>
+      <section aria-labelledby="handle-results">
+        <h2 id="handle-results">Handle invalid, missing, and found items</h2>
+        <ul><li><strong>Invalid:</strong> <code>valid</code> is false. Review the original number with the <a href="/barcode-validator/">barcode validator</a>.</li><li><strong>Missing:</strong> <code>valid</code> is true and <code>found</code> is false. Keep the input for manual review or a later lookup.</li><li><strong>Found:</strong> <code>found</code> is true. Use the product fields you need and preserve existing reviewed data when an optional field is absent.</li></ul><p>Check the HTTP status before processing <code>results</code>. An authentication or quota error applies to the request as a whole. A missing product is an individual result within a successful batch response. See the <a href="/docs/errors/">API error reference</a> and <a href="/blog/barcode-lookup-not-found/">missing-product guide</a>.</p>
+      </section>
+      <section aria-labelledby="plan-the-import">
+        <h2 id="plan-the-import">Plan batch size, rate limits, and usage</h2>
+        <p>Split larger files into batches of up to 100. Deduplicate validated identifiers when multiple rows need the same product, and retain the list of original rows attached to each identifier. For example, 270 unique identifiers require at least three requests at the maximum batch size. After each completed batch, save the results and checkpoint the import so it can resume from the next unfinished batch.</p>
+        <p>Request rate and usage allowance are tracked separately. The Free allowance counts successful product results over the lifetime of the account. Paid usage counts submitted batch items. Check the <a href="/docs/rate-limits/">allowance documentation</a> and response headers before increasing concurrency. For a short-window <code>rate_limit_exceeded</code> response, wait for <code>Retry-After</code>. For <code>usage_limit_reached</code>, pause the job and review the allowance.</p>
+        <p>After a timeout, a request may already have been processed. Keep retries bounded, record which requests completed, and consider whether retrying could consume additional usage.</p>
+      </section>
+      <section aria-labelledby="review-the-output">
+        <h2 id="review-the-output">Review a sample before the full run</h2>
+        <p>Include products from several suppliers and categories. Measure how many valid identifiers return matches, then measure how often those matches contain the fields you need. An inventory importer may only need a name and brand. A catalog integration may also require a pack size or image.</p>
+        <p>Keep your <a href="/blog/sku-vs-upc-inventory/">internal SKU and barcode in separate fields</a> when writing the results back. Start with a small file or <a href="/products/">browse example product records</a> to see what a match can contain.</p>
+      </section>
+    <p><a href="/blog/enrich-barcode-csv-python/">Apply batch lookups to a CSV file with the Python enrichment tutorial</a>.</p></div>
+  </div>
+</BlogPostLayout>

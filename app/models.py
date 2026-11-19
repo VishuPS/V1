@@ -602,3 +602,17 @@ class ProviderCooldown(Base):
     provider: Mapped[str] = mapped_column(String(64), primary_key=True)
     next_allowed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     detail: Mapped[str | None] = mapped_column(String(128))
+
+
+class ServiceUsage(Base):
+    __tablename__ = "service_usage"
+    __table_args__ = (
+        UniqueConstraint("account_scope", "category", "period_start", name="uq_service_usage_scope_category_period"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    account_scope: Mapped[str] = mapped_column(String(48), nullable=False)
+    category: Mapped[str] = mapped_column(String(16), nullable=False)
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    units: Mapped[int] = mapped_column(BigInteger, nullable=False, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)

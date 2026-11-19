@@ -1,5 +1,20 @@
 import { staticPosts } from "../content/blog-posts.mjs";
 const pages = [
+  ["barcode-generator/", "0.8", "monthly"],
+  ["barcode-labels/", "0.8", "monthly"],
+  ["csv-product-enrichment/", "0.8", "monthly"],
+  ["docs/barcode-tools/", "0.8", "monthly"],
+  ["blog/enrich-barcode-csv-python/", "0.8", "monthly"],
+  ["blog/barcode-lookup-php/", "0.8", "monthly"],
+
+  ["blog/retail-unit-vs-case-barcode/", "0.8", "monthly"],
+  ["blog/can-a-barcode-prove-a-product-is-real/", "0.8", "monthly"],
+  ["blog/sku-vs-upc-inventory/", "0.8", "monthly"],
+  ["blog/batch-barcode-lookup-api/", "0.8", "monthly"],
+  ["blog/keep-leading-zeros-barcodes-excel/", "0.8", "monthly"],
+  ["blog/barcode-check-digit-javascript/", "0.8", "monthly"],
+  ["barcode-validator/", "0.8", "monthly"],
+  ["products/", "0.8", "weekly"],
   ["", "1.0", "weekly"],
   ["barcode-api/", "0.9", "monthly"],
   ["upc-api/", "0.9", "monthly"],
@@ -39,6 +54,9 @@ const pages = [
 export function GET() {
   const dates = new Map(staticPosts.map(p => [`blog/${p.slug}/`, p.published.slice(0,10)]));
   for (const path of ["", "pricing/", "docs/rate-limits/", "blog/", "barcode-api-for-inventory/", "docs/errors/"]) dates.set(path, "2026-11-04");
+  dates.set("barcode-validator/", "2026-11-12");
+  dates.set("", "2026-11-12");
+  dates.set("blog/", "2026-11-19");
   const urls = pages.map(([page, priority, changefreq]) => {
     const lastmod = dates.get(page);
     return `<url><loc>https://barcodenest.com/${page}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;

@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { products, productPath, productUrl, productSchema } from '../../lib/product-pilot.mjs';
+import '../../styles/product-pilot.css';
+export function getStaticPaths() { return products.map(product => ({params:{barcode:product.barcode},props:{product}})); }
+const { product: p } = Astro.props;
+const related = products.filter(item => item.gtin !== p.gtin).sort((a,b)=>Number(b.brand===p.brand)-Number(a.brand===p.brand)).slice(0,3);
+const breadcrumbs = {'@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://barcodenest.com/'},{'@type':'ListItem',position:2,name:'Products',item:'https://barcodenest.com/products/'},{'@type':'ListItem',position:3,name:p.name,item:productUrl(p)}]};
+const schema = {'@context':'https://schema.org','@graph':[productSchema(p),breadcrumbs]};
+const description = `${p.name} — barcode ${p.barcode}. View ${p.brand} product identity${p.quantity ? ', pack size '+p.quantity : ''}, equivalent GTIN and source attribution.`;
+---
+<BaseLayout title={`${p.name} | Barcode ${p.barcode} | BarcodeNest`} description={description} structuredData={schema}>
+  <section class="catalog-hero"><div class="container">
+    <nav class="catalog-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><a href="/products/">Products</a><span aria-hidden="true">/</span><span aria-current="page" class="catalog-code">{p.barcode}</span></nav>
+    <div class="eyebrow">{p.brand}</div><h1>{p.name}</h1><p class="lede">Product information for barcode <strong class="catalog-code">{p.barcode}</strong>{p.quantity ? ` · ${p.quantity}` : ''}.</p>
+  </div></section>
+  <section class="catalog-content"><div class="container catalog-detail-grid">
+    <div><h2>Product details</h2><dl>
+      <div><dt>Product name</dt><dd>{p.name}</dd></div><div><dt>Brand</dt><dd>{p.brand}</dd></div>
+      <div><dt>Barcode</dt><dd class="catalog-code">{p.barcode}</dd></div><div><dt>Canonical GTIN-14</dt><dd class="catalog-code">{p.gtin}</dd></div>
+      {p.quantity && <div><dt>Pack size</dt><dd>{p.quantity}</dd></div>}
+      {p.categories.length>0 && <div><dt>Categories</dt><dd>{p.categories.join(', ')}</dd></div>}
+      {p.countries.length>0 && <div><dt>Markets listed</dt><dd>{p.countries.join(', ')}</dd></div>}
+      <div><dt>Catalog updated</dt><dd><time datetime={p.modified}>{p.modified}</time></dd></div>
+    </dl></div>
+    <aside class="catalog-note"><h2>Use this product in your app</h2><p>Look up this identifier using the BarcodeNest REST API. A free account provides an API key for trying your own product sample.</p><p><a href="/docs/barcode-lookup/">Read the lookup documentation</a></p><p><a href="/register/">Create a free account</a> · <a href="/pricing/">View plans</a></p></aside>
+  </div></section>
+  <section class="catalog-content"><div class="narrow"><h2>Sources and attribution</h2><p>The factual details above are drawn from the following catalog sources. Follow the links to check the underlying records and applicable reuse terms.</p>
+    <ul class="catalog-sources">{p.sources.map(s=><li><a href={s.source_url} rel="external">{s.source.replaceAll('_',' ')} — {new URL(s.source_url).hostname}</a><small>{s.license}</small></li>)}</ul>
+    <p>BarcodeNest normalizes equivalent barcode formats into one product identity. Available equivalents: <span class="catalog-code">{p.aliases.join(', ')}</span>.</p>
+    <p>Product information can change. Check the packaging for ingredients, allergens and safety instructions. <a href="/contact/">Report a correction</a> or read our <a href="/data/">data-source policy</a>.</p>
+  </div></section>
+  <section class="catalog-content"><div class="container"><h2>Explore more product records</h2><div class="catalog-grid">{related.map(item=><a class="catalog-card" href={productPath(item)}><span class="catalog-label">{item.brand}</span><h3>{item.name}</h3><span class="catalog-code">{item.barcode}</span></a>)}</div><p style="margin-top:24px"><a href="/products/">Browse all product records</a> · <a href="/docs/barcode-lookup/">Barcode API guide</a></p></div></section>
+</BaseLayout>

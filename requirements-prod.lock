@@ -33,3 +33,10 @@ typing_extensions==4.16.0
 uvicorn==0.51.0
 watchfiles==1.2.0
 websockets==16.1.1
+
+python-barcode==0.16.1
+Pillow==12.3.0
+qrcode==8.2
+reportlab==4.5.1
+
+charset-normalizer==3.5.1

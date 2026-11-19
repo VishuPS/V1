@@ -10,7 +10,7 @@ from calendar import monthrange
 from math import ceil
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import Depends, HTTPException, Request, Security, status
 from fastapi.security import APIKeyHeader
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
@@ -156,6 +156,7 @@ def authenticate_api_key(
     raw_key: Annotated[str | None, Security(api_key_header)],
     session: Annotated[Session, Depends(get_db)],
     settings: Annotated[Settings, Depends(get_settings)],
+    request: Request = None,
 ) -> AuthContext:
     if not raw_key:
         raise auth_error("missing_api_key", "X-API-Key header is required")
@@ -196,7 +197,17 @@ def authenticate_api_key(
                 "message": "The API key references an unavailable plan",
             },
         )
-    rate = rate_limiter.check(record.id, plan.requests_per_minute)
+    category = {
+        "/v1/barcodes/render": "generation",
+        "/v1/labels/render": "labels",
+        "/v1/labels/from-csv": "labels",
+        "/v1/products/enrich-csv": "enrichment",
+        "/v1/products/enrichment-preview": "enrichment",
+        "/v1/services/usage": "services",
+    }.get(request.url.path if request else "", "lookups")
+    scope = record.owner_user_id or record.client.owner_user_id or record.client_id
+    rate_key = record.id if category == "lookups" else f"{scope}:{category}"
+    rate = rate_limiter.check(rate_key, plan.requests_per_minute)
     return AuthContext(api_key=record, client=record.client, plan=plan, rate_limit=rate)
 
 

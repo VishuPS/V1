@@ -1,0 +1,45 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import validator from '../../lib/barcode-validator.mjs?raw';
+const usage = `import { validateBarcode } from './barcode-validator.mjs';
+
+const result = validateBarcode('012345678905');
+if (!result.valid) {
+  console.error(result.error);
+} else {
+  console.log(result.format);  // UPC-A
+  console.log(result.value);   // 012345678905
+  console.log(result.gtin14);  // 00012345678905
+}`;
+---
+<BlogPostLayout title="Barcode Check Digit Validation in JavaScript | BarcodeNest" heading="How to validate barcode check digits in JavaScript" description="Validate UPC, EAN and GTIN check digits in JavaScript. Preserve leading zeros, explain invalid input and separate barcode validation from product lookup." author="BarcodeNest Editorial Team" published="2026-11-10" readingTime="7 min read">
+  <div class="article-shell container"><aside class="article-toc" aria-label="On this page"><strong>On this page</strong><a href="#what-validation-checks">What validation checks</a><a href="#check-digit-calculation">Calculate the check digit</a><a href="#javascript-validator">JavaScript validator</a><a href="#handle-errors">Handle errors clearly</a><a href="#validation-vs-lookup">Validation versus lookup</a><a href="#integration-checklist">Integration checklist</a></aside><div class="article-body">
+    <p>A scanner can read a number successfully while your application still receives an incorrect identifier. A missing digit, a pasted space or a spreadsheet conversion can change the value before it reaches a product lookup API. Barcode validation gives you a small, useful check at the boundary of your application.</p>
+    <p>This guide implements length and check-digit validation for EAN-8, UPC-A, EAN-13 and GTIN-14. You can try the same logic in the <a href="/barcode-validator/">free BarcodeNest barcode validator</a> before adding it to your own code.</p>
+    <h2 id="what-validation-checks">What barcode validation can check</h2>
+    <p>A basic GTIN validator checks three things: the input contains the expected characters, its length is supported, and the final digit agrees with the preceding digits. These checks help detect common transcription errors. They do not establish who owns the identifier or whether it has been assigned to a product.</p>
+    <p>Keep the number as a string. The value <code>012345678905</code> contains twelve digits; converting it to a JavaScript number removes its first zero. Do not use <code>parseInt</code>, <code>Number</code> or a numeric form field to store a barcode. A text input with <code>inputmode="numeric"</code> can offer a numeric keyboard without turning the identifier into a quantity.</p>
+    <p>The supported lengths are 8 for EAN-8, 12 for UPC-A, 13 for EAN-13 and 14 for GTIN-14. This implementation evaluates eight-digit numbers as EAN-8; it does not decode or expand UPC-E. It also does not validate ISBN-10, QR payloads or arbitrary alphanumeric barcode formats.</p>
+    <h2 id="check-digit-calculation">How the GTIN check-digit calculation works</h2>
+    <p>Set aside the final digit. Starting at the rightmost remaining digit, apply alternating weights of 3 and 1, then add the weighted values. The check digit brings that sum to a multiple of ten. When the sum already ends in zero, the check digit is zero.</p>
+    <p>For <code>3017620422003</code>, the body is <code>301762042200</code>. Its weighted sum is 57, so the expected check digit is 3. In code, the final step is <code>(10 - sum % 10) % 10</code>. Applying the weights from the right avoids separate formulas for each supported length.</p>
+    <p>GS1 documents the final check digit as an integrity check for its fixed-length numeric identification keys. Its <a href="https://gs1ca.org/check-digit" rel="external">official check-digit calculator</a> provides another way to check examples.</p>
+    <h2 id="javascript-validator">A JavaScript validator that preserves the identifier</h2>
+    <p>Save the following module as <code>barcode-validator.mjs</code>. It uses no external package or network request. It trims surrounding whitespace, rejects internal separators and non-ASCII digits, and reports the expected final digit when the checksum fails.</p>
+    <CodeBlock label="barcode-validator.mjs" language="javascript" code={validator} />
+    <p>The successful result includes the original string, detected format and a zero-padded GTIN-14 for matching. The equivalent representations describe compatible identifier forms; they do not represent newly allocated product codes.</p>
+    <CodeBlock label="Validate a UPC-A without losing its leading zero" language="javascript" code={usage} />
+    <h2 id="handle-errors">Explain errors without silently rewriting the barcode</h2>
+    <p>If a thirteen-digit input has the wrong final digit, show the expected value and ask the user to compare the whole number with the packaging. A discrepancy can originate in any position. Automatically replacing the last digit can turn a mistyped number into a different checksum-valid identifier.</p>
+    <p>Handle empty input separately from unsupported length and checksum failure. Keep the submitted text visible so it can be corrected. In a form, associate a visible label with the field, announce the result accessibly, and clear an old success result when the user edits the number.</p>
+    <p>A checksum catches many input errors, but it is not a guarantee against every possible error. Do not describe a passing number as an authenticated product. Even an all-zero string can satisfy the arithmetic; assignment and ownership require separate verification.</p>
+    <h2 id="validation-vs-lookup">A valid barcode is not the same as a found product</h2>
+    <p>Validation answers whether the number has the expected structure. Product lookup asks whether a data source contains a matching record. A valid identifier may be absent from a catalog, and a matching record may still lack an image, ingredients or pack size.</p>
+    <p>After validation, send the identifier as text to your backend. Keep API keys on that backend and let the server validate the input again. Client-side checks help users correct mistakes; the server must still validate requests it receives.</p>
+    <p>See the <a href="/blog/barcode-lookup-javascript/">Node.js product lookup tutorial</a> for a server-side integration. If a valid number returns no record, follow the <a href="/blog/barcode-lookup-not-found/">missing-product troubleshooting guide</a> rather than treating an authentication or usage-limit error as a product miss.</p>
+    <h2 id="integration-checklist">A practical integration checklist</h2>
+    <ul><li>Store and transmit identifiers as strings.</li><li>Validate supported lengths, ASCII digits and the checksum on both client and server.</li><li>Keep the original submitted value alongside any canonical representation.</li><li>Test valid examples, invalid final digits, empty input and pasted separators.</li><li>Separate invalid input, product-not-found results and API errors.</li><li>Review product data before replacing an existing catalog record.</li></ul>
+    <p>Start with the <a href="/barcode-validator/">free validator</a>, explore <a href="/products/">sourced product records</a>, or read the <a href="/docs/barcode-lookup/">API lookup documentation</a>. If your identifiers come from a spreadsheet, learn <a href="/blog/keep-leading-zeros-barcodes-excel/">how to preserve barcode leading zeros in Excel</a>.</p>
+  </div></div>
+</BlogPostLayout>

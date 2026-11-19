@@ -1,0 +1,60 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import "../styles/barcode-tools.css";
+const schema = {"@context":"https://schema.org","@type":"WebApplication",name:"BarcodeNest Barcode Generator",applicationCategory:"UtilitiesApplication",operatingSystem:"Any",isAccessibleForFree:true,url:"https://barcodenest.com/barcode-generator/",description:"Generate EAN-13, UPC-A, Code 128 and QR images in your browser."};
+---
+<BaseLayout title="Free Barcode Generator & Barcode Generation API | BarcodeNest" description="Generate UPC-A, EAN-13, Code 128 and QR codes for free. Download SVG or PNG images, print labels, or automate rendering with the BarcodeNest API." structuredData={schema} current="tools">
+  <header class="tool-hero container"><div class="eyebrow">Barcode tools</div><h1>Turn your identifiers into barcodes.</h1><p class="lede">Generate EAN-13, UPC-A, Code 128 and QR images. Download a vector SVG or PNG, then use our API when you need to automate.</p></header>
+  <div class="tool-grid container">
+    <section class="tool-card"><h2>Create a barcode</h2><form id="generator">
+      <label for="symbology">Barcode format</label><select id="symbology"><option value="ean13">EAN-13</option><option value="upca">UPC-A</option><option value="code128">Code 128</option><option value="qrcode">QR code</option></select>
+      <label for="barcode-value">Barcode value</label><input id="barcode-value" value="3017620422003" maxlength="500" required autocomplete="off" aria-describedby="generator-hint" />
+      <p class="tool-hint" id="generator-hint">For UPC and EAN, enter your assigned number including the correct check digit. For Code 128, enter a SKU or other internal identifier.</p>
+      <div class="tool-actions"><button class="button button-signal" type="submit">Generate barcode</button></div>
+    </form><p id="generator-status" class="tool-status" role="status" aria-live="polite"></p><p class="tool-hint">Free browser tool. The value stays on this device. Obtain an assigned GTIN before using a UPC or EAN for a retail product.</p></section>
+    <section class="tool-card" aria-label="Barcode preview"><div class="tool-preview"><img id="barcode-image" alt="Generated barcode preview" hidden /><p id="preview-empty">Your barcode will appear here.</p></div><div class="tool-actions"><a id="download-svg" class="button button-secondary" hidden download="barcode.svg">Download SVG</a><a id="download-png" class="button button-secondary" hidden download="barcode.png">Download PNG</a></div><p class="tool-hint">Keep the white margins when printing. Test your printed label with the scanners used in your workflow.</p></section>
+  </div>
+  <section class="tool-reference container"><h2>Take the next step</h2><div class="tool-links"><a href="/barcode-labels/">Print labels from CSV</a><a href="/csv-product-enrichment/">Find product data for a CSV</a><a href="/docs/barcode-tools/">Use the generation API</a><a href="/barcode-validator/">Validate a GTIN</a></div><p>For product names, brands and images, use a <a href="/barcode-api/">barcode lookup</a>. QR codes and internal Code 128 identifiers can carry other text and do not automatically have a product record.</p><a class="button button-signal" href="/register/">Create an account for API access</a></section>
+</BaseLayout>
+<script is:inline src="/vendor/bwip-js.min.js"></script>
+<script>
+  import { validateBarcode } from "../lib/barcode-validator.mjs";
+  const form = document.querySelector<HTMLFormElement>("#generator")!;
+  const status = document.querySelector<HTMLElement>("#generator-status")!;
+  let svgUrl = "";
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const value = document.querySelector<HTMLInputElement>("#barcode-value")!.value;
+    const bcid = document.querySelector<HTMLSelectElement>("#symbology")!.value;
+    try {
+      if (bcid === "ean13" || bcid === "upca") {
+        const expected = bcid === "ean13" ? 13 : 12;
+        if (value.length !== expected || !validateBarcode(value).valid) throw new Error("Enter " + expected + " digits with the correct check digit.");
+      }
+      if (bcid === "code128" && !/^[\x20-\x7e]{1,80}$/.test(value)) throw new Error("Use 1 to 80 printable ASCII characters for Code 128.");
+      const renderer = (window as any).bwipjs;
+      if (!renderer) throw new Error("The renderer could not load. Refresh and try again.");
+      const options = { bcid, text: value, scale: 3, height: 22, includetext: bcid !== "qrcode", padding: 15 };
+      const svg = renderer.toSVG(options);
+      const canvas = document.createElement("canvas");
+      renderer.toCanvas(canvas, options);
+      if (svgUrl) URL.revokeObjectURL(svgUrl);
+      svgUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml" }));
+      const image = document.querySelector<HTMLImageElement>("#barcode-image")!;
+      image.src = svgUrl; image.hidden = false;
+      document.querySelector<HTMLElement>("#preview-empty")!.hidden = true;
+      const svgLink = document.querySelector<HTMLAnchorElement>("#download-svg")!;
+      svgLink.href = svgUrl; svgLink.hidden = false;
+      const pngLink = document.querySelector<HTMLAnchorElement>("#download-png")!;
+      pngLink.href = canvas.toDataURL("image/png"); pngLink.hidden = false;
+      status.dataset.error = "false"; status.textContent = "Barcode ready to download.";
+    } catch (error) {
+      status.dataset.error = "true";
+      status.textContent = error instanceof Error ? error.message : "The barcode could not be generated.";
+      document.querySelector<HTMLElement>("#download-svg")!.hidden = true;
+      document.querySelector<HTMLElement>("#download-png")!.hidden = true;
+      document.querySelector<HTMLElement>("#barcode-image")!.hidden = true;
+      document.querySelector<HTMLElement>("#preview-empty")!.hidden = false;
+    }
+  });
+</script>

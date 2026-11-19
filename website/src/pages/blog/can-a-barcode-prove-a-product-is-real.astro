@@ -1,0 +1,36 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+---
+<BlogPostLayout title="Can a Barcode Prove a Product Is Real? | BarcodeNest" heading="Can a barcode tell you if a product is real?" description="Learn what a barcode checksum, product lookup, and Verified by GS1 can each tell you when you want to check whether a product is genuine." author="BarcodeNest Editorial Team" published="2026-11-12" readingTime="4 min read">
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>On this page</strong>
+      <a href="#check-the-number">Check the barcode number first</a>
+      <a href="#compare-product-details">Compare the product and packaging</a>
+      <a href="#verify-assignment">Check who assigned the identifier</a>
+      <a href="#what-results-mean">What each check tells you</a>
+    </aside>
+    <div class="article-body">
+      <p>A barcode can help you identify the product the packaging claims to contain. A copied barcode can also pass a checksum and return the same catalog record. If you’re checking authenticity, use the barcode to gather evidence and compare it with the physical item and its seller.</p>
+      <section aria-labelledby="check-the-number">
+        <h2 id="check-the-number">Check the barcode number first</h2>
+        <p>Enter the digits printed beneath the barcode into the <a href="/barcode-validator/">free BarcodeNest validator</a>. It checks the length and final digit for UPC-A, EAN-8, EAN-13, and GTIN-14. Keep leading zeros when you copy the code. A failed checksum is a reason to recheck the transcription and make sure you copied the full number.</p>
+        <p>For example, <code>3017620422003</code> passes the EAN-13 checksum. Changing its last digit to <code>4</code> makes it fail. That test checks the arithmetic relationship between the digits. It provides no information about the seller or physical item.</p>
+      </section>
+      <section aria-labelledby="compare-product-details">
+        <h2 id="compare-product-details">Compare the product and packaging</h2>
+        <p>Look up the number in a catalog, then compare the result with the item in front of you. Check the brand, model, size, and pack count. A mismatch can also come from stale catalog data, a regional variant, or a barcode copied from the outer carton. Read the <a href="/blog/retail-unit-vs-case-barcode/">guide to unit and case barcodes</a> if the quantity differs.</p>
+        <p>BarcodeNest provides a <a href="/products/">public product directory</a> and a <a href="/docs/barcode-lookup/">product lookup API</a>. Product details depend on what is available from the underlying sources. Keep the exact code for follow-up if the catalog returns no match.</p>
+      </section>
+      <section aria-labelledby="verify-assignment">
+        <h2 id="verify-assignment">Check who assigned the identifier</h2>
+        <p><a href="https://www2.gs1.org/services/verified-by-gs1" rel="external">Verified by GS1</a> can tell you which company is associated with a GS1 identifier and show product information when available from the data owner. Compare the result with the packaging and any information supplied by the brand.</p>
+        <p>The same GTIN can appear on every unit of a trade item. Someone can reproduce it on another label. For a physical item whose authenticity matters, check the seller, receipt, and any serial or lot information the manufacturer uses for verification. Use the manufacturer’s official support or verification channel if you need help assessing the item.</p>
+      </section>
+      <section aria-labelledby="what-results-mean">
+        <h2 id="what-results-mean">What each check tells you</h2>
+        <table class="status-table"><thead><tr><th scope="col">Check</th><th scope="col">What you learn</th></tr></thead><tbody><tr><th scope="row">Length and check digit</th><td>Whether the number follows the supported barcode format and checksum</td></tr><tr><th scope="row">Product lookup</th><td>Which product details a catalog associates with the number</td></tr><tr><th scope="row">Verified by GS1</th><td>Which company is associated with the identifier and what product details are available</td></tr><tr><th scope="row">Manufacturer verification</th><td>Whether the brand can verify the specific item using its available serial, lot, or purchase information</td></tr></tbody></table>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>

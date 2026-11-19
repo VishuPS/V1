@@ -1,0 +1,44 @@
+---
+import BlogPostLayout from '../../layouts/BlogPostLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const example = "{\n  \"sku\": \"COFFEE-250G-DARK\",\n  \"barcodes\": [\"012345678905\"],\n  \"canonical_gtin\": \"00012345678905\",\n  \"location\": \"A-04\",\n  \"stock_on_hand\": 12\n}";
+---
+<BlogPostLayout title="SKU vs UPC: How to Store Both in Inventory | BarcodeNest" heading="SKU vs UPC: which identifier should your inventory use?" description="Learn how SKUs and UPCs work together in inventory. Store internal item IDs separately from barcodes and use GTINs to look up supplier product data." author="BarcodeNest Editorial Team" published="2026-11-11" readingTime="5 min read">
+  <div class="article-shell container">
+    <aside class="article-toc" aria-label="On this page">
+      <strong>On this page</strong>
+      <a href="#sku-and-upc">What is the difference between a SKU and a UPC?</a>
+      <a href="#inventory-fields">Store SKUs and barcodes in separate fields</a>
+      <a href="#variants-and-packs">Account for product variants and pack sizes</a>
+      <a href="#receiving-workflow">A practical receiving workflow</a>
+      <a href="#lookup-by-barcode">Use barcode lookups to enrich supplier records</a>
+    </aside>
+    <div class="article-body">
+      <section aria-labelledby="sku-and-upc">
+        <h2 id="sku-and-upc">What is the difference between a SKU and a UPC?</h2>
+        <p>A SKU is an identifier your business assigns to an item in its own system. A UPC-A barcode encodes a 12-digit GTIN used to identify a trade item. The two can live on the same inventory row and serve different jobs.</p><table class="status-table"><thead><tr><th scope="col">Identifier</th><th scope="col">Common job</th><th scope="col">Example</th></tr></thead><tbody><tr><th scope="row">Internal SKU</th><td>Connect stock, locations, and transactions inside your business</td><td><code>COFFEE-250G-DARK</code></td></tr><tr><th scope="row">UPC-A</th><td>Match a scan to a packaged product or supplier record</td><td><code>012345678905</code></td></tr><tr><th scope="row">Canonical GTIN</th><td>Compare equivalent barcode representations</td><td><code>00012345678905</code></td></tr></tbody></table><p>Two suppliers can use different SKUs for the same packaged item. They can also reuse the same SKU text for different items. Preserve supplier SKUs with their supplier identity, then use the verified barcode as another way to match records.</p>
+      </section>
+      <section aria-labelledby="inventory-fields">
+        <h2 id="inventory-fields">Store SKUs and barcodes in separate fields</h2>
+        <p>Give each inventory item a stable internal identifier. Keep each verified barcode as text and store a normalized GTIN alongside it if your system uses barcode matching. This example illustrates an internal inventory record. The stock count and location come from your inventory system.</p>
+        <CodeBlock label="Illustrative internal inventory record" language="json" code={example} />
+      </section>
+      <section aria-labelledby="variants-and-packs">
+        <h2 id="variants-and-packs">Account for product variants and pack sizes</h2>
+        <p>A single bottle, a multipack, and a shipping case can have different GTINs. Treat each identifier as a distinct trade item until you have confirmed the packaging relationship. A similar product name alone gives too little information to merge records.</p>
+        <p>For an inventory item with multiple accepted barcodes, keep a mapping table and record where each identifier came from. If a new scan maps to several active SKUs, route it for review. The same check is useful when a supplier changes a package or sends an unexpected code.</p>
+        <p>Check leading zeros before comparing identifiers. Store them as strings, validate the check digit, and normalize supported representations for matching. The <a href="/blog/keep-leading-zeros-barcodes-excel/">Excel import guide</a> shows how to preserve those strings when a supplier sends a CSV.</p>
+      </section>
+      <section aria-labelledby="receiving-workflow">
+        <h2 id="receiving-workflow">A practical receiving workflow</h2>
+        <ol><li>Read the scanned digits as text and validate the format and check digit.</li><li>Search your internal barcode mapping for a known SKU.</li><li>For an unmapped identifier, query a product data source and review the returned name, brand, and packaging.</li><li>Confirm the SKU mapping before updating stock. Save the barcode and the source of the match.</li><li>Send ambiguous or missing records to manual review with the original identifier intact.</li></ol><p>For example, if the scan returns a 250 g bag and your purchase order is for a carton, compare the packaging before recording the quantity received. Your product lookup provides identity and available attributes. Your inventory workflow applies the receiving rules.</p>
+      </section>
+      <section aria-labelledby="lookup-by-barcode">
+        <h2 id="lookup-by-barcode">Use barcode lookups to enrich supplier records</h2>
+        <p>Try the <a href="/barcode-validator/">free barcode validator</a> on a sample, then compare its normalized identifier with your inventory mapping. Browse the <a href="/products/">product directory</a> for examples of records with source attribution.</p>
+        <p>For a supplier file, use <a href="/blog/batch-barcode-lookup-api/">batch barcode lookup</a> to fetch product data. Save each result alongside the original supplier row and preserve existing fields that your team has verified. See the <a href="/barcode-api-for-inventory/">inventory API guide</a> for how lookup fits into a receiving or catalog workflow.</p>
+      </section>
+    </div>
+  </div>
+</BlogPostLayout>

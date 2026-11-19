@@ -10,4 +10,4 @@ Disallow: /settings/
 Disallow: /auth/
 Disallow: /oauth-complete/
 
-Sitemap: https://barcodenest.com/sitemap.xml
+Sitemap: https://barcodenest.com/sitemap-index.xml
