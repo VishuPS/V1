@@ -3,7 +3,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
 ---
 <AccountLayout title="Billing" current="billing">
   <header class="portal-header">
-    <div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your plan, one-time call packs and API allowance.</p></div>
+    <div><div class="eyebrow">Plan</div><h1>Billing</h1><p>Your creation plan, product lookup plan and service allowances.</p></div>
     <a class="button button-secondary" href="/pricing/">Compare plans</a>
   </header>
   <section class="portal-panel">
@@ -20,12 +20,12 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       <button type="button" data-billing-toggle="year" aria-pressed="false">Yearly <span>Save 20%</span></button>
     </div>
     <div class="billing-actions"><button id="buy-pack" class="button button-secondary" type="button">Buy 500 calls · $4.99 once</button>
-      <button class="button" data-checkout="STARTER" type="button">Choose Starter · $9.99/month</button>
+      <button class="button" data-checkout="CREATOR" type="button">Choose Creator · $4.99/month</button><button class="button" data-checkout="STARTER" type="button">Choose Starter · $9.99/month</button>
       <button class="button" data-checkout="GROWTH" type="button">Choose Growth · $19.99/month</button>
       <button id="billing-portal" class="button button-secondary" type="button" hidden>Manage billing</button>
     </div>
     <p class="portal-note">One-time packs cost $4.99 for 500 calls and expire 30 days after activation. They do not renew. Buying another pack does not extend an older pack.</p>
-    <p class="portal-note">Annual plans are billed once per year. API allowances still reset every month.</p>
+    <p class="portal-note">Creator is $4.99/month for 1,000 images and 250 labels. ZIP batches accept up to 25 images. Product lookup and CSV enrichment allowances are zero on Creator. Existing subscriptions are changed through Manage billing. Upgrades are prorated after confirmation; price decreases take effect at renewal.</p><p class="portal-note">Annual plans are billed once per year. API allowances still reset every month.</p>
     <p class="portal-note">Cancel through Manage billing to stop future renewals. Your paid access continues until the end of the paid period. Cancellation does not issue a refund or prorated credit.</p>
   </section>
   <section id="pack-panel" class="portal-panel" hidden><h2>Your active call packs</h2><p>Each pack expires independently. Earliest-expiring calls are used first. No automatic renewal.</p><ul id="pack-list"></ul></section>
@@ -34,13 +34,13 @@ import AccountLayout from "../layouts/AccountLayout.astro";
     import { authFetch, requireUser, responseMessage } from "../scripts/auth-context";
     type Interval = "month" | "year";
     const prices = {
-      month: { STARTER: "$9.99/month", GROWTH: "$19.99/month" },
-      year: { STARTER: "$95.90/year", GROWTH: "$191.90/year" },
+      month: { CREATOR: "$4.99/month", STARTER: "$9.99/month", GROWTH: "$19.99/month" },
+      year: { CREATOR: "$4.99/month", STARTER: "$95.90/year", GROWTH: "$191.90/year" },
     } as const;
     const query = new URLSearchParams(location.search);
     const requestedPlan = query.get("plan");
     const requestedInterval: Interval = query.get("interval") === "year" ? "year" : "month";
-    if (requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
+    if (requestedPlan === "CREATOR" || requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
       sessionStorage.setItem("barcodenest_plan_intent", JSON.stringify({ plan: requestedPlan, interval: requestedInterval }));
     }
     let selectedInterval: Interval = "month";
@@ -53,8 +53,8 @@ import AccountLayout from "../layouts/AccountLayout.astro";
         button.setAttribute("aria-pressed", String(active));
       });
       document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => {
-        const plan = button.dataset.checkout as "STARTER" | "GROWTH";
-        const name = plan === "STARTER" ? "Starter" : "Growth";
+        const plan = button.dataset.checkout as "CREATOR" | "STARTER" | "GROWTH";
+        const name = plan === "CREATOR" ? "Creator" : plan === "STARTER" ? "Starter" : "Growth";
         button.textContent = `Choose ${name} · ${prices[interval][plan]}`;
       });
     }
@@ -71,7 +71,7 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       set("billing-renewal", data.plan === "FREE" || data.plan === "ONE_TIME" || !data.current_period_end ? "Not applicable" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.current_period_end)));
       if (data.cancel_at_period_end) set("billing-message", "Cancellation scheduled. Your paid access continues until the subscription end date.");
       set("billing-cadence", data.plan === "FREE" ? "Free" : data.plan === "ONE_TIME" ? "One-time; no renewal" : interval === "year" ? "Yearly" : "Monthly");
-      const paidPrices = data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
+      const paidPrices = data.plan === "CREATOR" ? prices.month.CREATOR : data.plan === "STARTER" ? prices[interval].STARTER : prices[interval].GROWTH;
       set("billing-price", data.plan === "FREE" ? "Free" : data.plan === "ONE_TIME" ? "$4.99 per pack" : paidPrices);
       set("billing-period", data.plan === "FREE" ? "One-off allowance — does not reset" : new Intl.DateTimeFormat("en", { dateStyle: "long" }).format(new Date(data.usage_period_end)));
       const packButton = document.querySelector<HTMLButtonElement>("#buy-pack");
@@ -81,23 +81,35 @@ import AccountLayout from "../layouts/AccountLayout.astro";
       const packPanel = document.getElementById("pack-panel"); if (packPanel) packPanel.hidden = !(data.call_packs?.length);
       if (data.plan === "ONE_TIME") { set("billing-renewal", "Does not renew"); }
       const portal = document.querySelector<HTMLButtonElement>("#billing-portal"); if (portal) portal.hidden = !data.provider_customer_id;
-      selectInterval(requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME" ? requestedInterval : interval);
-      if (requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
-        set("billing-message", `${requestedPlan === "ONE_TIME" ? "500-call one-time pack" : requestedPlan === "STARTER" ? "Starter" : "Growth"} selected. Review the allowance and billing cadence, then choose the plan below to continue to checkout.`);
+      if (data.plan === "CREATOR") set("billing-period", "Creation allowances reset on the first day of each month at 00:00 UTC");
+      selectInterval(requestedPlan === "CREATOR" || requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME" ? requestedInterval : interval);
+      if (requestedPlan === "CREATOR" || requestedPlan === "STARTER" || requestedPlan === "GROWTH" || requestedPlan === "ONE_TIME") {
+        set("billing-message", `${requestedPlan === "ONE_TIME" ? "500-call one-time pack" : requestedPlan === "CREATOR" ? "Creator" : requestedPlan === "STARTER" ? "Starter" : "Growth"} selected. Review the allowance and billing cadence, then choose the plan below to continue to checkout.`);
         const selected = document.querySelector<HTMLButtonElement>(requestedPlan === "ONE_TIME" ? "#buy-pack" : `[data-checkout="${requestedPlan}"]`);
         selected?.classList.add("button-signal");
         selected?.focus();
         sessionStorage.removeItem("barcodenest_plan_intent");
       }
     }
+    let openingBilling = false;
     async function redirect(path: string, body?: object) {
+      if (openingBilling) return;
+      openingBilling = true;
+      const billingButtons = document.querySelectorAll<HTMLButtonElement>("[data-checkout], #buy-pack, #billing-portal");
+      billingButtons.forEach((button) => button.disabled = true);
+      try {
       set("billing-message", "Opening secure billing…");
       const response = await authFetch(path, { method: "POST", headers: body ? { "Content-Type": "application/json" } : undefined, body: body ? JSON.stringify(body) : undefined });
-      if (!response.ok) { set("billing-message", await responseMessage(response)); return; }
+      if (!response.ok) throw new Error(await responseMessage(response));
       location.assign((await response.json()).url);
+      } catch (error) {
+        set("billing-message", error instanceof Error ? error.message : "Billing could not be opened. Try again.");
+        openingBilling = false;
+        billingButtons.forEach((button) => button.disabled = false);
+      }
     }
     document.querySelectorAll<HTMLButtonElement>("[data-billing-toggle]").forEach((button) => button.addEventListener("click", () => selectInterval(button.dataset.billingToggle as Interval)));
-    document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => button.addEventListener("click", () => redirect("/billing/checkout", { plan: button.dataset.checkout, billing_interval: selectedInterval })));
+    document.querySelectorAll<HTMLButtonElement>("[data-checkout]").forEach((button) => button.addEventListener("click", () => redirect("/billing/checkout", { plan: button.dataset.checkout, billing_interval: button.dataset.checkout === "CREATOR" ? "month" : selectedInterval })));
     document.querySelector("#buy-pack")?.addEventListener("click", () => redirect("/billing/checkout", {plan:"ONE_TIME"}));
     document.querySelector("#billing-portal")?.addEventListener("click", () => redirect("/billing/portal"));
     load();

@@ -13,7 +13,7 @@ const schema = {
   <header class="tool-hero container">
     <div class="eyebrow">Barcode generator</div>
     <h1>Create the barcodes your business needs.</h1>
-    <p class="lede">Generate an SVG or PNG from your identifier. Create a Free account for 100 images per month, or choose Starter or Growth to export batches as ZIP files.</p>
+    <p class="lede">Generate an SVG or PNG from your identifier. Create a Free account for 100 images per month, or choose Creator, Starter or Growth to export batches as ZIP files.</p>
   </header>
   <ToolAccessGate />
   <div class="tool-grid container">
@@ -43,7 +43,7 @@ const schema = {
     <div class="tool-grid">
       <section class="tool-card">
         <h2>Create a batch and download one ZIP</h2>
-        <p>Exclusive to Starter and Growth. Starter supports 25 images per request and 2,000 per month. Growth supports 100 per request and 10,000 per month.</p>
+        <p>Creator includes 1,000 images per month and up to 25 per ZIP request. Starter supports 25 images per request and 2,000 per month. Growth supports 100 per request and 10,000 per month.</p>
         <form id="batch-generator"><fieldset data-account-tool disabled>
           <label for="batch-values">One barcode value per line</label>
           <textarea id="batch-values" rows="5" maxlength="51000" required placeholder="3017620422003"></textarea>
@@ -55,11 +55,11 @@ const schema = {
         </fieldset></form>
         <p id="batch-status" class="tool-status" role="status" aria-live="polite"></p>
         <a id="download-batch" class="button button-secondary" hidden download="barcodes.zip">Download ZIP</a>
-        <p><a href="/pricing/">Compare paid plans →</a></p>
+        <p><a href="/billing/?plan=CREATOR&amp;interval=month">Choose Creator · $4.99/month</a></p><p><a href="/pricing/">Compare paid plans →</a></p>
       </section>
       <section class="tool-card">
         <h2>Choose an allowance that fits your workflow</h2>
-        <table class="tool-table"><caption>Barcode creation allowances</caption><thead><tr><th>Plan</th><th>Images / month</th><th>ZIP batch</th></tr></thead><tbody><tr><th>Free</th><td>100</td><td>Single images</td></tr><tr><th>Starter</th><td>2,000</td><td>25 / request</td></tr><tr><th>Growth</th><td>10,000</td><td>100 / request</td></tr></tbody></table>
+        <div class="comparison-scroll" role="region" aria-label="Service plan comparison" tabindex="0"><table class="tool-table"><caption>Barcode creation allowances</caption><thead><tr><th>Plan</th><th>Images / month</th><th>ZIP batch</th></tr></thead><tbody><tr><th>Free</th><td>100</td><td>Single images</td></tr><tr><th>Creator · $4.99/month</th><td>1,000</td><td>25 / request</td></tr><tr><th>Starter</th><td>2,000</td><td>25 / request</td></tr><tr><th>Growth</th><td>10,000</td><td>100 / request</td></tr></tbody></table></div>
         <p>Each image in a ZIP uses one image unit from the same monthly generation balance. Account keys and website generation share this balance. It resets on the first day of each month at 00:00 UTC.</p>
         <div class="tool-links"><a href="/barcode-labels/">Print product labels</a><a href="/csv-product-enrichment/">Enrich a product CSV</a><a href="/docs/barcode-tools/">Generation API docs</a></div>
       </section>
@@ -111,7 +111,7 @@ const schema = {
         : [document.querySelector<HTMLInputElement>("#barcode-value")!.value];
       if (batch) {
         await refreshBalance();
-        if (!batchMaximum) throw new Error("Choose Starter or Growth to unlock ZIP batch generation.");
+        if (!batchMaximum) throw new Error("Choose Creator, Starter or Growth to unlock ZIP batch generation.");
         if (!values.length || values.length > batchMaximum) throw new Error("Enter between 1 and " + batchMaximum + " values for this plan.");
       }
       currentStatus.textContent = batch ? "Generating " + values.length + " images…" : "Generating your barcode…";

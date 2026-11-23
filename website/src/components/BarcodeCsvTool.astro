@@ -21,7 +21,7 @@ const labels = category === "labels";
   <section class="tool-card"><h2>Your separate allowances</h2><p>Tool allowances are shared across the API keys in your account and reset on the first day of each month at 00:00 UTC.</p>
     <button id="load-balances" data-tool-button disabled type="button" class="button button-secondary">Check remaining units</button><dl id="service-balances" class="tool-balances"></dl>
     <p id="balance-status" class="tool-status" role="status" aria-live="polite"></p>
-    <table class="tool-table"><caption>Monthly units by plan</caption><thead><tr><th>Service</th><th>Free</th><th>Starter</th><th>Growth</th></tr></thead><tbody><tr><th>Images</th><td>100</td><td>2,000</td><td>10,000</td></tr><tr><th>Labels</th><td>25</td><td>500</td><td>2,500</td></tr><tr><th>Enrichment rows</th><td>250</td><td>2,000</td><td>5,000</td></tr></tbody></table>
+    <div class="comparison-scroll" role="region" aria-label="Service plan comparison" tabindex="0"><table class="tool-table"><caption>Monthly units by plan</caption><thead><tr><th>Service</th><th>Free</th><th>Creator</th><th>Starter</th><th>Growth</th></tr></thead><tbody><tr><th>Images</th><td>100</td><td>1,000</td><td>2,000</td><td>10,000</td></tr><tr><th>Labels</th><td>25</td><td>250</td><td>500</td><td>2,500</td></tr><tr><th>Enrichment rows</th><td>250</td><td>0</td><td>2,000</td><td>5,000</td></tr></tbody></table></div>
     <p class="tool-hint">Free and one-time lookup-pack accounts receive the Free tool allowances. Lookup packs add product lookup credits. Check your balance for the allowance applied to your account.</p><a href="/pricing/">Compare plans →</a>
   </section>
 </div>
