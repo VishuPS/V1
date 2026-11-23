@@ -65,7 +65,7 @@ def generate_barcode(payload: RenderRequest, session: DbSession, auth: Authentic
 def generate_batch(payload: BatchRenderRequest, session: DbSession, auth: Authenticated, settings: SettingsDep):
     maximum = limits_for(session, auth, settings).batch_generation_max
     if maximum == 0:
-        raise HTTPException(403, detail={"code": "paid_plan_required", "message": "ZIP batch generation requires a Starter or Growth plan"})
+        raise HTTPException(403, detail={"code": "paid_plan_required", "message": "ZIP batch generation requires Creator, Starter or Growth"})
     if len(payload.items) > maximum:
         raise HTTPException(422, detail={"code": "batch_generation_limit", "message": f"Your plan supports up to {maximum} images per ZIP request"})
     try:

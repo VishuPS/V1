@@ -19,6 +19,7 @@ class ServiceLimit(BaseModel):
 
 def default_service_limits() -> dict[str, ServiceLimit]:
     return {
+        "CREATOR": ServiceLimit(generation=1_000, labels=250, enrichment=0, batch_generation_max=25),
         "FREE": ServiceLimit(generation=100, labels=25, enrichment=250),
         "ONE_TIME": ServiceLimit(generation=100, labels=25, enrichment=250),
         "STARTER": ServiceLimit(generation=2_000, labels=500, enrichment=2_000, batch_generation_max=25),
@@ -28,6 +29,7 @@ def default_service_limits() -> dict[str, ServiceLimit]:
 
 def default_plan_limits() -> dict[str, PlanLimit]:
     return {
+        "CREATOR": PlanLimit(monthly_lookups=0, requests_per_minute=120),
         "FREE": PlanLimit(monthly_lookups=250, requests_per_minute=30),
         "ONE_TIME": PlanLimit(monthly_lookups=500, requests_per_minute=30),
         "STARTER": PlanLimit(monthly_lookups=2_000, requests_per_minute=300),
@@ -113,6 +115,7 @@ class Settings(BaseSettings):
     stripe_secret_key: str | None = None
     stripe_webhook_secret: str | None = None
     stripe_one_time_price_id: str | None = None
+    stripe_creator_price_id: str | None = None
     stripe_starter_price_id: str | None = None
     stripe_growth_price_id: str | None = None
     stripe_starter_annual_price_id: str | None = None
@@ -177,6 +180,7 @@ class Settings(BaseSettings):
         limits = {name.upper(): item for name, item in value.items()}
         if "FREE" in limits:
             limits.setdefault("ONE_TIME", limits["FREE"])
+        limits.setdefault("CREATOR", default_service_limits()["CREATOR"])
         return limits
 
     @field_validator("plan_limits")
@@ -184,7 +188,7 @@ class Settings(BaseSettings):
     def normalize_plan_names(
         cls, value: dict[str, PlanLimit]
     ) -> dict[str, PlanLimit]:
-        return {"ONE_TIME": PlanLimit(monthly_lookups=500, requests_per_minute=30), **{name.upper(): limits for name, limits in value.items()}}
+        return {"CREATOR": PlanLimit(monthly_lookups=0, requests_per_minute=120), "ONE_TIME": PlanLimit(monthly_lookups=500, requests_per_minute=30), **{name.upper(): limits for name, limits in value.items()}}
 
     @model_validator(mode="after")
     def validate_production_safety(self) -> "Settings":

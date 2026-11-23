@@ -62,6 +62,7 @@ class StripeClient:
 
     def checkout(self, user_id: str, email: str, plan: str, billing_interval: str, customer_id: str | None) -> str:
         prices = {
+            ("CREATOR", "month"): self.settings.stripe_creator_price_id,
             ("STARTER", "month"): self.settings.stripe_starter_price_id,
             ("GROWTH", "month"): self.settings.stripe_growth_price_id,
             ("STARTER", "year"): self.settings.stripe_starter_annual_price_id,
@@ -127,6 +128,7 @@ def _next_month(value: datetime) -> datetime:
 
 def _price_details(settings: Settings, price_id: str | None, price: dict, metadata: dict) -> tuple[str | None, str]:
     configured = {
+        settings.stripe_creator_price_id: ("CREATOR", "month"),
         settings.stripe_starter_price_id: ("STARTER", "month"),
         settings.stripe_growth_price_id: ("GROWTH", "month"),
         settings.stripe_starter_annual_price_id: ("STARTER", "year"),
@@ -134,10 +136,16 @@ def _price_details(settings: Settings, price_id: str | None, price: dict, metada
     }
     if price_id and price_id in configured:
         return configured[price_id]
-    interval = metadata.get("billing_interval") or (price.get("recurring") or {}).get("interval") or "month"
-    plan = metadata.get("plan")
-    if not plan and price.get("currency") == "usd":
-        plan = {999: "STARTER", 1999: "GROWTH", 9590: "STARTER", 19190: "GROWTH"}.get(price.get("unit_amount"))
+    interval = (price.get("recurring") or {}).get("interval") or metadata.get("billing_interval") or "month"
+    amount_plan = None
+    if price.get("currency") == "usd":
+        amount_plan = {499: "CREATOR", 999: "STARTER", 1999: "GROWTH", 9590: "STARTER", 19190: "GROWTH"}.get(price.get("unit_amount"))
+    # Portal plan changes can retain the original subscription metadata.
+    plan = (price.get("metadata") or {}).get("plan") or amount_plan or metadata.get("plan")
+    if plan not in {"CREATOR", "STARTER", "GROWTH"} or interval not in {"month", "year"}:
+        return None, interval
+    if plan == "CREATOR" and interval != "month":
+        return None, interval
     return plan, interval
 
 
@@ -184,7 +192,7 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     record.billing_interval = billing_interval
     record.current_period_start = period_start
     record.current_period_end = period_end
-    record.monthly_call_limit = 2_000 if plan == "STARTER" else 5_000
+    record.monthly_call_limit = settings.plan_limits[plan].monthly_lookups
     record.cancel_at_period_end = bool(obj.get("cancel_at_period_end"))
     if reset_usage:
         usage_start = max(period_start, now)

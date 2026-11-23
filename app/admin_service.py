@@ -206,7 +206,7 @@ def dashboard_summary(session: Session) -> AdminDashboardSummary:
         ) or 0,
         active_subscriptions=session.scalar(
             select(func.count()).select_from(Subscription).where(
-                Subscription.plan_code.in_(["STARTER", "GROWTH"]),
+                Subscription.plan_code.in_(["CREATOR", "STARTER", "GROWTH"]),
                 Subscription.status.in_(["active", "trialing"]),
             )
         ) or 0,

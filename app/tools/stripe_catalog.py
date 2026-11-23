@@ -6,6 +6,10 @@ from app.config import get_settings
 
 def main() -> None:
     client = StripeClient(get_settings())
+    if not client.settings.stripe_creator_price_id:
+        product_id = client.create_product("BarcodeNest Creator", "CREATOR")
+        creator_id = client.create_recurring_price(product_id, 499, "CREATOR", "month")
+        print(f"STRIPE_CREATOR_PRICE_ID={creator_id}")
     for plan, name, monthly_cents, annual_cents in (("STARTER", "BarcodeNest Starter", 999, 9590), ("GROWTH", "BarcodeNest Growth", 1999, 19190)):
         product_id = client.create_product(name, plan)
         monthly_id = client.create_recurring_price(product_id, monthly_cents, plan, "month")

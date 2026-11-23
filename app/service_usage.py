@@ -51,6 +51,11 @@ def consume_service_usage(session: Session, context: AuthContext, settings: Sett
     period = current_period(timestamp)
     limit = getattr(limits_for(session, context, settings), category)
     scope = account_scope(context)
+    if limit == 0:
+        raise HTTPException(403, detail={
+            "code": "service_not_included", "category": category,
+            "message": f"This plan provides no {category} units. Choose a plan with this service.",
+        }, headers=quota_headers(category, limit, 0, period))
     error = HTTPException(429, detail={
         "code": "service_quota_exceeded", "category": category,
         "message": f"The monthly {category} allowance is exhausted or too small for this request",

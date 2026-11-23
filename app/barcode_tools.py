@@ -13,6 +13,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen.canvas import Canvas
 
 from app.barcodes import parse_barcode
+from app.retail_barcodes import retail_png, retail_svg
 
 Symbology = Literal["ean13", "upca", "code128", "qr"]
 
@@ -51,16 +52,27 @@ def validate_symbol(value: str, symbology: Symbology) -> None:
 
 def render_symbol(request: RenderRequest) -> bytes:
     validate_symbol(request.value, request.symbology)
+    if request.symbology in {"ean13", "upca"}:
+        renderer = retail_svg if request.format == "svg" else retail_png
+        return renderer(request.value, request.symbology)
     output = BytesIO()
     if request.symbology == "qr":
-        factory = qrcode.image.svg.SvgPathImage if request.format == "svg" else None
+        factory = qrcode.image.svg.SvgPathFillImage if request.format == "svg" else None
         image = qrcode.make(request.value, image_factory=factory, box_size=8, border=4)
-        image.save(output)
+        if request.format == "png":
+            image.save(output, format="PNG", dpi=(300, 300))
+        else:
+            image.save(output)
     else:
         writer = SVGWriter() if request.format == "svg" else ImageWriter()
         symbol = barcode.get(request.symbology, request.value, writer=writer)
-        symbol.write(output, {"module_width": 0.33, "module_height": 22,
-                              "quiet_zone": 6.5, "font_size": 10, "dpi": 300})
+        module_width = 0.33 if request.format == "svg" else 4 * 25.4 / 300
+        options = {"module_width": module_width, "module_height": 22,
+                   "quiet_zone": 6.5, "font_size": 10, "dpi": 300}
+        if request.format == "png":
+            symbol.render(options).save(output, format="PNG", dpi=(300, 300))
+        else:
+            symbol.write(output, options)
     return output.getvalue()
 
 

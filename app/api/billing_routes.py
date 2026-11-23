@@ -30,6 +30,15 @@ def checkout(payload: CheckoutCreate, request: Request, context: CurrentUser, se
             from fastapi import HTTPException
             raise HTTPException(409, detail="Call packs are available to Free and one-time accounts; your recurring subscription is unchanged")
         return BillingRedirect(url=StripeClient(settings).call_pack_checkout(context.user.id, context.user.email, subscription.provider_customer_id))
+    if payload.plan == "CREATOR" and payload.billing_interval != "month":
+        from fastapi import HTTPException
+        raise HTTPException(422, detail={"code": "unsupported_billing_interval", "message": "Creator is available with monthly billing"})
+    if (subscription and subscription.plan_code in {"CREATOR", "STARTER", "GROWTH"}
+            and subscription.provider_subscription_id and subscription.status in {"active", "trialing", "past_due"}):
+        if not subscription.provider_customer_id:
+            from fastapi import HTTPException
+            raise HTTPException(409, detail={"code": "stripe_customer_required", "message": "The subscription has no linked billing customer"})
+        return BillingRedirect(url=StripeClient(settings).portal(subscription.provider_customer_id))
     url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan, payload.billing_interval)
     if not url:
         url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, payload.billing_interval, subscription.provider_customer_id if subscription else None)

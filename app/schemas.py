@@ -192,8 +192,8 @@ class CheckoutCreate(BaseModel):
     @classmethod
     def validate_plan(cls, value: str) -> str:
         normalized = value.strip().upper()
-        if normalized not in {"STARTER", "GROWTH", "ONE_TIME"}:
-            raise ValueError("Plan must be starter, growth or one_time")
+        if normalized not in {"CREATOR", "STARTER", "GROWTH", "ONE_TIME"}:
+            raise ValueError("Plan must be creator, starter, growth or one_time")
         return normalized
 
     @field_validator("billing_interval")

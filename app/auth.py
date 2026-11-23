@@ -265,6 +265,11 @@ def consume_usage(
 ) -> UsageResult:
     if lookup_units < 0 or (lookup_units == 0 and context.client.plan != "FREE"):
         raise ValueError("lookup_units must be positive except for a free batch with no matches")
+    if context.client.plan == "CREATOR":
+        raise HTTPException(403, detail={
+            "code": "product_lookup_not_included",
+            "message": "Creator provides barcode generation and labels. Choose Starter or Growth for product lookups.",
+        })
     timestamp = now or datetime.now(timezone.utc)
     period = current_period(timestamp)
     subscription = None
