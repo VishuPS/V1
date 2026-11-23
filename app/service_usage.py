@@ -10,7 +10,7 @@ from app.auth import AuthContext, current_period
 from app.config import Settings
 from app.models import ApiKey, ServiceUsage, Subscription, new_uuid
 
-CATEGORIES = ("generation", "labels", "enrichment")
+CATEGORIES = ("generation", "labels", "enrichment", "scans")
 
 
 def account_scope(context: AuthContext) -> str:

@@ -1,5 +1,6 @@
 import { staticPosts } from "../content/blog-posts.mjs";
 const pages = [
+  ["barcode-scanner/", "0.8", "monthly"],
   ["barcode-generator/", "0.8", "monthly"],
   ["barcode-labels/", "0.8", "monthly"],
   ["csv-product-enrichment/", "0.8", "monthly"],
@@ -57,6 +58,7 @@ export function GET() {
   dates.set("barcode-validator/", "2026-11-12");
   dates.set("", "2026-11-12");
   dates.set("blog/", "2026-11-19");
+  for (const path of ["barcode-scanner/", "barcode-generator/", "barcode-validator/", "pricing/", "docs/barcode-tools/", ""]) dates.set(path, "2026-11-23");
   const urls = pages.map(([page, priority, changefreq]) => {
     const lastmod = dates.get(page);
     return `<url><loc>https://barcodenest.com/${page}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;

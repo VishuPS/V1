@@ -11,6 +11,7 @@ class PlanLimit(BaseModel):
 
 
 class ServiceLimit(BaseModel):
+    scans: int = Field(default=50, ge=0)
     generation: int = Field(ge=0)
     labels: int = Field(ge=0)
     enrichment: int = Field(ge=0)
@@ -19,11 +20,11 @@ class ServiceLimit(BaseModel):
 
 def default_service_limits() -> dict[str, ServiceLimit]:
     return {
-        "CREATOR": ServiceLimit(generation=1_000, labels=250, enrichment=0, batch_generation_max=25),
+        "CREATOR": ServiceLimit(scans=500, generation=1_000, labels=250, enrichment=0, batch_generation_max=25),
         "FREE": ServiceLimit(generation=100, labels=25, enrichment=250),
         "ONE_TIME": ServiceLimit(generation=100, labels=25, enrichment=250),
-        "STARTER": ServiceLimit(generation=2_000, labels=500, enrichment=2_000, batch_generation_max=25),
-        "GROWTH": ServiceLimit(generation=10_000, labels=2_500, enrichment=5_000, batch_generation_max=100),
+        "STARTER": ServiceLimit(scans=2_000, generation=2_000, labels=500, enrichment=2_000, batch_generation_max=25),
+        "GROWTH": ServiceLimit(scans=5_000, generation=10_000, labels=2_500, enrichment=5_000, batch_generation_max=100),
     }
 
 
@@ -176,6 +177,10 @@ class Settings(BaseSettings):
     @classmethod
     def normalize_service_names(cls, value: dict[str, ServiceLimit]) -> dict[str, ServiceLimit]:
         limits = {name.upper(): item for name, item in value.items()}
+        defaults = default_service_limits()
+        for name, item in limits.items():
+            if "scans" not in item.model_fields_set and name in defaults:
+                limits[name] = item.model_copy(update={"scans": defaults[name].scans})
         if "FREE" in limits:
             limits.setdefault("ONE_TIME", limits["FREE"])
         limits.setdefault("CREATOR", default_service_limits()["CREATOR"])

@@ -2,7 +2,7 @@ import csv
 from typing import Annotated
 
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
@@ -18,6 +18,8 @@ from app.services import resolve_product
 from app.models import ApiKey
 from app.user_auth import UserContext, ensure_allowed_origin, get_current_user
 from app.api.auth_routes import account_client
+from app.barcode_scanner import ScanRequest, read_scan_image, decode_scan_image
+from app.api.routes import get_product
 
 router = APIRouter(tags=["barcode tools"])
 DbSession = Annotated[Session, Depends(get_db)]
@@ -43,6 +45,31 @@ AccountAuthenticated = Annotated[AuthContext, Depends(account_tool_context)]
 
 def invalid_tool_request(exc: ValueError) -> HTTPException:
     return HTTPException(422, detail={"code": "invalid_tool_request", "message": str(exc)})
+
+
+@router.post("/v1/barcodes/scan")
+def scan_barcode(payload: ScanRequest, session: DbSession, auth: Authenticated, settings: SettingsDep, response: Response):
+    try:
+        image = read_scan_image(payload)
+    except ValueError as exc:
+        raise invalid_tool_request(exc) from exc
+    # A valid image consumes one scan attempt, even if no barcode is readable.
+    try:
+        response.headers.update(consume_service_usage(session, auth, settings, "scans", 1))
+        return decode_scan_image(image)
+    finally:
+        image.close()
+
+
+@router.post("/v1/account/barcodes/scan")
+def account_scan_barcode(payload: ScanRequest, session: DbSession, auth: AccountAuthenticated, settings: SettingsDep, response: Response):
+    return scan_barcode(payload, session, auth, settings, response)
+
+
+@router.get("/v1/account/products/{barcode}")
+def account_lookup_product(barcode: str, session: DbSession, auth: AccountAuthenticated,
+                           settings: SettingsDep, response: Response, background_tasks: BackgroundTasks):
+    return get_product(barcode, session, auth, response, background_tasks, settings)
 
 
 @router.get("/v1/services/usage")

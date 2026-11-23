@@ -29,6 +29,6 @@ const next = encodeURIComponent(Astro.url.pathname);
       try { sessionStorage.removeItem("barcodenest_tool_intent"); } catch {}
     }
     status.textContent = signedIn ? "Signed in. Your plan allowances apply."
-      : auth.status === "error" ? auth.message : "Create a Free account to generate, validate and download barcodes.";
+      : auth.status === "error" ? auth.message : "Create a Free account to scan, generate, validate and download barcodes.";
   });
 </script>

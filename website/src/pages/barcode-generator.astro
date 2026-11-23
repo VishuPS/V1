@@ -71,6 +71,13 @@ const schema = {
 <script>
   import { authFetch, getAuthState, responseMessage } from "../scripts/auth-context";
   const form = document.querySelector<HTMLFormElement>("#generator")!;
+  const scanParams = new URLSearchParams(location.search);
+  const scannedType = scanParams.get("type");
+  if (scannedType && ["ean13", "upca", "code128", "qr"].includes(scannedType)) {
+    document.querySelector<HTMLSelectElement>("#symbology")!.value = scannedType;
+    document.querySelector<HTMLInputElement>("#barcode-value")!.value = (scanParams.get("value") || "").slice(0,500);
+    history.replaceState(null, "", location.pathname);
+  }
   const batchForm = document.querySelector<HTMLFormElement>("#batch-generator")!;
   const status = document.querySelector<HTMLElement>("#generator-status")!;
   const batchStatus = document.querySelector<HTMLElement>("#batch-status")!;
