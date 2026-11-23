@@ -14,14 +14,15 @@ class ServiceLimit(BaseModel):
     generation: int = Field(ge=0)
     labels: int = Field(ge=0)
     enrichment: int = Field(ge=0)
+    batch_generation_max: int = Field(default=0, ge=0, le=100)
 
 
 def default_service_limits() -> dict[str, ServiceLimit]:
     return {
         "FREE": ServiceLimit(generation=100, labels=25, enrichment=250),
         "ONE_TIME": ServiceLimit(generation=100, labels=25, enrichment=250),
-        "STARTER": ServiceLimit(generation=2_000, labels=500, enrichment=2_000),
-        "GROWTH": ServiceLimit(generation=10_000, labels=2_500, enrichment=5_000),
+        "STARTER": ServiceLimit(generation=2_000, labels=500, enrichment=2_000, batch_generation_max=25),
+        "GROWTH": ServiceLimit(generation=10_000, labels=2_500, enrichment=5_000, batch_generation_max=100),
     }
 
 

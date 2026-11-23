@@ -1,11 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ToolAccessGate from "../components/ToolAccessGate.astro";
 import BarcodeCsvTool from "../components/BarcodeCsvTool.astro";
 import CodeBlock from "../components/CodeBlock.astro";
 import "../styles/barcode-tools.css";
 ---
 <BaseLayout title="CSV Product Enrichment by UPC & EAN Barcode | BarcodeNest" description="Upload a CSV of UPC or EAN barcodes, preview local matches, and download names, brands and image URLs. Separate enrichment limits keep usage easy to track." current="tools">
   <header class="tool-hero container"><div class="eyebrow">Product enrichment</div><h1>Fill the gaps in your product spreadsheet.</h1><p class="lede">Preview a CSV of barcode numbers, then download available names, brands, quantities and image URLs alongside your original columns.</p></header>
+  <ToolAccessGate />
   <BarcodeCsvTool category="enrichment" />
   <section class="tool-reference narrow"><h2>Keep your identifiers as text</h2><CodeBlock label="Example product CSV" language="csv" code={'barcode,sku\n3017620422003,ITEM-001\n0036000291452,ITEM-002'} /><p>The output adds <code>lookup_status</code>, <code>lookup_name</code>, <code>lookup_brand</code>, <code>lookup_quantity</code> and <code>lookup_image_url</code>. Status is found, not_found or invalid. A match can have missing optional fields. Original input columns are retained. Cells that could be interpreted as spreadsheet formulas are prefixed with an apostrophe on export.</p><p>Preview checks the local catalog. Processing can also use configured fallback sources. Each submitted row uses one enrichment unit. Requests reserve units before processing, so check your balance before retrying an interrupted request.</p><div class="tool-links"><a href="/blog/enrich-barcode-csv-python/">Automate CSV enrichment with Python</a><a href="/barcode-labels/">Print barcode labels</a><a href="/docs/barcode-tools/">Enrichment API documentation</a></div></section>
 </BaseLayout>

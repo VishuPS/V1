@@ -1,23 +1,44 @@
 import csv
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from datetime import datetime, timezone
+from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 
-from app.auth import AuthContext, authenticate_api_key
-from app.barcode_tools import CsvRequest, LabelItem, LabelsRequest, RenderRequest, enriched_csv, parse_csv, render_labels, render_symbol
+from app.auth import AuthContext, authenticate_api_key, authorized_key_context
+from app.barcode_tools import BatchRenderRequest, CsvRequest, LabelItem, LabelsRequest, RenderRequest, ValidationRequest, enriched_csv, parse_csv, render_archive, render_labels, render_symbol
 from app.barcodes import BarcodeError, parse_barcode
 from app.config import Settings, get_settings
 from app.db import get_db
 from app.lookup_analytics import LookupOutcome, record_lookup_outcomes_safely
 from app.repositories import ProductRepository
-from app.service_usage import consume_service_usage, service_balances
+from app.service_usage import consume_service_usage, limits_for, service_balances
 from app.services import resolve_product
+from app.models import ApiKey
+from app.user_auth import UserContext, ensure_allowed_origin, get_current_user
+from app.api.auth_routes import account_client
 
 router = APIRouter(tags=["barcode tools"])
 DbSession = Annotated[Session, Depends(get_db)]
 Authenticated = Annotated[AuthContext, Depends(authenticate_api_key)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+
+
+def account_tool_context(request: Request, context: Annotated[UserContext, Depends(get_current_user)],
+                         session: DbSession, settings: SettingsDep) -> AuthContext:
+    ensure_allowed_origin(request, settings)
+    client = account_client(session, context.user)
+    key = session.scalar(select(ApiKey).where(
+        ApiKey.client_id == client.id, ApiKey.active.is_(True),
+        or_(ApiKey.expires_at.is_(None), ApiKey.expires_at > datetime.now(timezone.utc)),
+    ).order_by(ApiKey.created_at).limit(1))
+    if key is None:
+        raise HTTPException(409, detail={"code": "api_key_required", "message": "Create an active API key in your account to use barcode tools"})
+    return authorized_key_context(key, session, settings, request)
+
+
+AccountAuthenticated = Annotated[AuthContext, Depends(account_tool_context)]
 
 
 def invalid_tool_request(exc: ValueError) -> HTTPException:
@@ -38,6 +59,47 @@ def generate_barcode(payload: RenderRequest, session: DbSession, auth: Authentic
     headers = consume_service_usage(session, auth, settings, "generation", 1)
     headers["Content-Disposition"] = f'attachment; filename="barcode.{payload.format}"'
     return Response(data, media_type="image/svg+xml" if payload.format == "svg" else "image/png", headers=headers)
+
+
+@router.post("/v1/barcodes/batch-render", response_class=Response)
+def generate_batch(payload: BatchRenderRequest, session: DbSession, auth: Authenticated, settings: SettingsDep):
+    maximum = limits_for(session, auth, settings).batch_generation_max
+    if maximum == 0:
+        raise HTTPException(403, detail={"code": "paid_plan_required", "message": "ZIP batch generation requires a Starter or Growth plan"})
+    if len(payload.items) > maximum:
+        raise HTTPException(422, detail={"code": "batch_generation_limit", "message": f"Your plan supports up to {maximum} images per ZIP request"})
+    try:
+        data = render_archive(payload)
+    except ValueError as exc:
+        raise invalid_tool_request(exc) from exc
+    headers = consume_service_usage(session, auth, settings, "generation", len(payload.items))
+    headers["Content-Disposition"] = 'attachment; filename="barcodes.zip"'
+    return Response(data, media_type="application/zip", headers=headers)
+
+
+@router.post("/v1/account/barcodes/render", response_class=Response)
+def account_generate_barcode(payload: RenderRequest, session: DbSession, auth: AccountAuthenticated, settings: SettingsDep):
+    return generate_barcode(payload, session, auth, settings)
+
+
+@router.post("/v1/account/barcodes/batch-render", response_class=Response)
+def account_generate_batch(payload: BatchRenderRequest, session: DbSession, auth: AccountAuthenticated, settings: SettingsDep):
+    return generate_batch(payload, session, auth, settings)
+
+
+@router.get("/v1/account/services/usage")
+def account_tool_usage(session: DbSession, auth: AccountAuthenticated, settings: SettingsDep):
+    return service_balances(session, auth, settings)
+
+
+@router.post("/v1/account/barcodes/validate")
+def account_validate_barcode(payload: ValidationRequest, auth: AccountAuthenticated):
+    try:
+        parsed = parse_barcode(payload.value)
+    except BarcodeError as exc:
+        return {"valid": False, "error": str(exc)}
+    return {"valid": True, "value": parsed.value, "format": parsed.barcode_type,
+            "expected": parsed.value[-1], "gtin14": parsed.gtin14, "equivalents": parsed.equivalents}
 
 
 @router.post("/v1/labels/render", response_class=Response)

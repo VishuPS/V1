@@ -1,4 +1,5 @@
 import csv
+from zipfile import ZIP_DEFLATED, ZipFile
 from io import BytesIO, StringIO
 from typing import Literal
 
@@ -29,6 +30,14 @@ class RenderRequest(BaseModel):
         return value
 
 
+class BatchRenderRequest(BaseModel):
+    items: list[RenderRequest] = Field(min_length=1, max_length=100)
+
+
+class ValidationRequest(BaseModel):
+    value: str = Field(max_length=64)
+
+
 def validate_symbol(value: str, symbology: Symbology) -> None:
     if symbology in {"ean13", "upca"}:
         parsed = parse_barcode(value)
@@ -52,6 +61,14 @@ def render_symbol(request: RenderRequest) -> bytes:
         symbol = barcode.get(request.symbology, request.value, writer=writer)
         symbol.write(output, {"module_width": 0.33, "module_height": 22,
                               "quiet_zone": 6.5, "font_size": 10, "dpi": 300})
+    return output.getvalue()
+
+
+def render_archive(request: BatchRenderRequest) -> bytes:
+    output = BytesIO()
+    with ZipFile(output, "w", compression=ZIP_DEFLATED) as archive:
+        for index, item in enumerate(request.items, start=1):
+            archive.writestr(f"barcode-{index:03d}.{item.format}", render_symbol(item))
     return output.getvalue()
 
 

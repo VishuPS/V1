@@ -1,0 +1,34 @@
+---
+const { inline = false } = Astro.props;
+const next = encodeURIComponent(Astro.url.pathname);
+---
+<section class={inline ? "tool-access" : "container tool-access"} aria-label="Tool access">
+  <p id="tool-access-status" role="status" aria-live="polite">Sign in or create a Free account to use barcode tools.</p>
+  <div id="tool-access-links" class="tool-actions">
+    <a class="button button-signal" href={"/register/?next=" + next}>Sign up to use barcode tools</a>
+    <a class="button button-secondary" href={"/login/?next=" + next}>Sign in</a>
+  </div>
+</section>
+<script>
+  import { getAuthState } from "../scripts/auth-context";
+  const status = document.querySelector<HTMLElement>("#tool-access-status")!;
+  const links = document.querySelector<HTMLElement>("#tool-access-links")!;
+  const controls = document.querySelectorAll<HTMLFieldSetElement>("[data-account-tool]");
+  try { sessionStorage.setItem("barcodenest_tool_intent", location.pathname); } catch {}
+  for (const link of links.querySelectorAll<HTMLAnchorElement>("a")) {
+    link.addEventListener("click", () => {
+      try { sessionStorage.setItem("barcodenest_tool_intent", location.pathname); } catch {}
+    });
+  }
+  getAuthState().then((auth) => {
+    const signedIn = auth.status === "authenticated";
+    controls.forEach((fieldset) => fieldset.disabled = !signedIn);
+    document.querySelectorAll<HTMLButtonElement>("[data-tool-button]").forEach((button) => button.disabled = !signedIn);
+    links.hidden = signedIn;
+    if (signedIn) {
+      try { sessionStorage.removeItem("barcodenest_tool_intent"); } catch {}
+    }
+    status.textContent = signedIn ? "Signed in. Your plan allowances apply."
+      : auth.status === "error" ? auth.message : "Create a Free account to generate, validate and download barcodes.";
+  });
+</script>

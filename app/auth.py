@@ -173,19 +173,25 @@ def authenticate_api_key(
     valid_hash = hmac.compare_digest(candidate_hash, stored_hash)
     if record is None or not valid_hash:
         raise auth_error("invalid_api_key", "The API key is invalid")
+    return authorized_key_context(record, session, settings, request)
+
+
+def authorized_key_context(record: ApiKey, session: Session, settings: Settings,
+                           request: Request | None = None) -> AuthContext:
     if not record.active or not record.client.active:
         raise auth_error("revoked_api_key", "The API key is revoked")
     if record.expires_at and _aware_utc(record.expires_at) <= datetime.now(timezone.utc):
         raise auth_error("expired_api_key", "The API key has expired")
-    if record.owner_user_id and record.client.plan != "FREE":
+    owner_id = record.owner_user_id or record.client.owner_user_id
+    if owner_id and record.client.plan != "FREE":
         subscription = session.scalar(select(Subscription).where(
-            Subscription.user_id == record.owner_user_id
+            Subscription.user_id == owner_id
         ).order_by(Subscription.created_at.desc()))
         if subscription and subscription.status not in {"active", "trialing", "past_due"}:
             raise HTTPException(402, detail={"code": "subscription_payment_required", "message": "Your paid subscription is not active. Update your payment method in Billing."})
     if record.client.plan in {"FREE", "ONE_TIME"}:
         from app.call_packs import sync
-        subscription = session.scalar(select(Subscription).where(Subscription.user_id == record.owner_user_id).order_by(Subscription.created_at.desc()).with_for_update())
+        subscription = session.scalar(select(Subscription).where(Subscription.user_id == owner_id).order_by(Subscription.created_at.desc()).with_for_update())
         sync(session, subscription)
         session.commit()
     plan = settings.plan_limits.get(record.client.plan.upper())
@@ -199,12 +205,18 @@ def authenticate_api_key(
         )
     category = {
         "/v1/barcodes/render": "generation",
+        "/v1/barcodes/batch-render": "generation",
+        "/v1/barcodes/validate": "validation",
         "/v1/labels/render": "labels",
         "/v1/labels/from-csv": "labels",
         "/v1/products/enrich-csv": "enrichment",
         "/v1/products/enrichment-preview": "enrichment",
         "/v1/services/usage": "services",
-    }.get(request.url.path if request else "", "lookups")
+    }
+    path = request.url.path if request else ""
+    if path.startswith("/v1/account/"):
+        path = path.replace("/v1/account/", "/v1/", 1)
+    category = category.get(path, "lookups")
     scope = record.owner_user_id or record.client.owner_user_id or record.client_id
     rate_key = record.id if category == "lookups" else f"{scope}:{category}"
     rate = rate_limiter.check(rate_key, plan.requests_per_minute)

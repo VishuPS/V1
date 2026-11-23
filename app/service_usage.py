@@ -90,6 +90,7 @@ def service_balances(session: Session, context: AuthContext, settings: Settings)
         ServiceUsage.account_scope == account_scope(context), ServiceUsage.period_start == period,
     )).all())
     return {
+        "batch_generation_max": limits.batch_generation_max,
         "period_start": period, "reset": "First day of each month at 00:00 UTC",
         "categories": {category: {"limit": getattr(limits, category), "used": used.get(category, 0),
                                   "remaining": max(0, getattr(limits, category) - used.get(category, 0))}

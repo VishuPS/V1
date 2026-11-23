@@ -1,24 +1,26 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import ToolAccessGate from '../components/ToolAccessGate.astro';
 const schema = {'@context':'https://schema.org','@graph':[
   {'@type':'WebApplication',name:'BarcodeNest Barcode Validator',url:'https://barcodenest.com/barcode-validator/',applicationCategory:'DeveloperApplication',operatingSystem:'Any',isAccessibleForFree:true,description:'Check the length and check digit of EAN-8, UPC-A, EAN-13 and GTIN-14 barcode numbers in your browser.'},
   {'@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://barcodenest.com/'},{'@type':'ListItem',position:2,name:'Barcode validator',item:'https://barcodenest.com/barcode-validator/'}]}
 ]};
 ---
-<BaseLayout title="Free Barcode Validator | Check UPC, EAN & GTIN | BarcodeNest" description="Validate UPC, EAN and GTIN barcodes for free. Check barcode length and check digit, preserve leading zeros, and see the canonical GTIN-14. No account required." structuredData={schema}>
+<BaseLayout title="Free Barcode Validator | Check UPC, EAN & GTIN | BarcodeNest" description="Validate UPC, EAN and GTIN barcodes for free. Check barcode length and check digit, preserve leading zeros, and see the canonical GTIN-14. Free account required." structuredData={schema}>
   <section class="validator-hero"><div class="container">
     <nav class="validator-crumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Barcode validator</span></nav>
     <div class="eyebrow">Free barcode tool</div><h1>Free online barcode validator</h1><p class="lede">Paste a barcode number into BarcodeNest to check its length and check digit. It supports UPC-A, EAN-8, EAN-13, and GTIN-14 and shows the 14-digit GTIN used for matching.</p>
+    <ToolAccessGate inline />
     <div class="validator-panel">
-      <form id="barcode-validator" novalidate>
+      <form id="barcode-validator" novalidate><fieldset data-account-tool disabled style="border:0;margin:0;padding:0;min-width:0">
         <label for="barcode-input">Barcode number</label>
         <p id="barcode-hint" class="validator-hint">Enter 8, 12, 13 or 14 digits, including the final check digit. Keep any leading zeros.</p>
         <div class="validator-controls"><input id="barcode-input" name="barcode" type="text" inputmode="numeric" autocomplete="off" spellcheck="false" maxlength="64" aria-describedby="barcode-hint" placeholder="e.g. 3017620422003" /><button class="button button-signal" type="submit">Validate barcode</button></div>
-      </form>
-      <p class="validator-examples">Try an example: <button type="button" data-barcode="3017620422003">EAN-13</button><button type="button" data-barcode="012345678905">UPC-A</button><button type="button" data-barcode="3017620422004">Incorrect check digit</button></p>
+      </fieldset></form>
+      <p class="validator-examples">Try an example: <button type="button" data-tool-button disabled data-barcode="3017620422003">EAN-13</button><button type="button" data-tool-button disabled data-barcode="012345678905">UPC-A</button><button type="button" data-tool-button disabled data-barcode="3017620422004">Incorrect check digit</button></p>
       <noscript><p>This interactive tool needs JavaScript. You can still read the validation method below.</p></noscript>
       <section id="validation-result" class="validator-result" aria-live="polite" aria-atomic="true" tabindex="-1" hidden><h2 id="result-title"></h2><p id="result-message"></p><dl id="result-details"></dl></section>
-      <p class="validator-hint validator-privacy">Free to use. No account needed. The number you enter is checked in your browser and is not submitted to our API.</p>
+      <p class="validator-hint validator-privacy">Free with an account. The identifier is sent to BarcodeNest for validation. Sign in to check a barcode.</p>
     </div>
   </div></section>
   <section class="section"><div class="container validator-columns">
@@ -29,7 +31,7 @@ const schema = {'@context':'https://schema.org','@graph':[
   <section class="section"><div class="narrow"><h2>Common barcode questions</h2><p>For implementation examples, read <a href="/blog/barcode-check-digit-javascript/">JavaScript check-digit validation</a> and <a href="/blog/keep-leading-zeros-barcodes-excel/">keeping barcode leading zeros in Excel</a>.</p><h3>Why keep leading zeros?</h3><p>Barcodes are identifiers, not quantities. Store them as text. Converting a barcode to a number can remove leading zeros and change its length.</p><h3>Why is a valid barcode not found?</h3><p>Validation and product lookup answer different questions. A barcode can pass its checksum while being absent from a particular catalog. <a href="/docs/errors/">Read the API error reference</a> to handle unsuccessful lookups.</p><h3>Can this check a barcode image?</h3><p>This tool checks the digits you enter. It does not scan a camera feed or decode an uploaded image.</p><h3>Can I use validation in an integration?</h3><p>The BarcodeNest API validates supported identifiers before lookup and returns their canonical GTIN. See the <a href="/docs/barcode-lookup/">lookup documentation</a> and <a href="/docs/rate-limits/">usage limits</a>.</p><a class="button button-signal" href="/register/">Try the product lookup API</a></div></section>
 <p><a href="/barcode-generator/">Generate an SVG or PNG barcode</a> after validating the identifier.</p></BaseLayout>
 <script>
-  import { validateBarcode } from '../lib/barcode-validator.mjs';
+  import { authFetch, responseMessage } from '../scripts/auth-context';
   const form=document.querySelector<HTMLFormElement>('#barcode-validator')!;
   const input=document.querySelector<HTMLInputElement>('#barcode-input')!;
   const result=document.querySelector<HTMLElement>('#validation-result')!;
@@ -37,14 +39,31 @@ const schema = {'@context':'https://schema.org','@graph':[
   const message=document.querySelector<HTMLElement>('#result-message')!;
   const details=document.querySelector<HTMLElement>('#result-details')!;
   function addDetail(label:string,value:string) { const row=document.createElement('div'); const dt=document.createElement('dt'); const dd=document.createElement('dd'); dt.textContent=label;dd.textContent=value;row.append(dt,dd);details.append(row); }
-  form.addEventListener('submit',event=>{
-    event.preventDefault(); const checked=validateBarcode(input.value); details.replaceChildren(); result.hidden=false;
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const button = form.querySelector<HTMLButtonElement>('button[type="submit"]')!;
+    if (button.disabled) return;
+    button.disabled = true;
+    try {
+    const response = await authFetch("/account/barcodes/validate", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: input.value }),
+    });
+    if (!response.ok) throw new Error(await responseMessage(response));
+    const checked = await response.json();
+    details.replaceChildren(); result.hidden=false;
     input.setAttribute('aria-invalid',String(!checked.valid)); result.dataset.valid=String(checked.valid);
     title.textContent=checked.valid?'Valid format and check digit':'Barcode needs attention';
     message.textContent=checked.valid?'The length and check digit pass. This does not confirm GS1 assignment or product availability.':checked.error;
     if(checked.format) addDetail('Detected format',checked.format);
     if(checked.valid) { addDetail('Barcode',checked.value);addDetail('Check digit',checked.expected);addDetail('Canonical GTIN-14',checked.gtin14);addDetail('Equivalent representations',checked.equivalents.join(', ')); }
     result.focus({preventScroll:true});
+    } catch (error) {
+      result.hidden = false;
+      title.textContent = "Validation unavailable";
+      message.textContent = error instanceof Error ? error.message : "Please sign in and try again.";
+      details.replaceChildren();
+    } finally { button.disabled = false; }
   });
   input.addEventListener('input',()=>{result.hidden=true;input.removeAttribute('aria-invalid');});
   document.querySelectorAll<HTMLButtonElement>('[data-barcode]').forEach(button=>button.addEventListener('click',()=>{input.value=button.dataset.barcode!;form.requestSubmit();}));
