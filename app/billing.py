@@ -20,8 +20,6 @@ def payment_link_checkout(settings: Settings, user_id: str, email: str, plan: st
     links = {
         ("STARTER", "month"): settings.stripe_starter_payment_link,
         ("GROWTH", "month"): settings.stripe_growth_payment_link,
-        ("STARTER", "year"): settings.stripe_starter_annual_payment_link,
-        ("GROWTH", "year"): settings.stripe_growth_annual_payment_link,
     }
     link = links.get((plan, billing_interval))
     if not link:

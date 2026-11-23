@@ -8,7 +8,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import select
 
-from app.billing import payment_link_checkout, process_stripe_event, verified_reference, verify_stripe_event
+from app.billing import StripeClient, payment_link_checkout, process_stripe_event, verified_reference, verify_stripe_event
 from app.config import get_settings
 from app.email_service import ResendEmailProvider, UsageLimitReached, UsageWarning
 from app.models import ApiClient, ApiKey, StripeWebhookEvent, Subscription
@@ -194,12 +194,31 @@ def test_payment_link_contains_verified_account_reference():
 def test_annual_checkout_does_not_fall_back_to_monthly_payment_link():
     settings = get_settings().model_copy(update={
         "stripe_starter_payment_link": "https://buy.stripe.com/starter-monthly",
-        "stripe_starter_annual_payment_link": "https://buy.stripe.com/starter-annual",
     })
     monthly = payment_link_checkout(settings, "user-123", "owner@example.com", "STARTER", "month")
     annual = payment_link_checkout(settings, "user-123", "owner@example.com", "STARTER", "year")
     assert monthly.startswith("https://buy.stripe.com/starter-monthly?")
-    assert annual.startswith("https://buy.stripe.com/starter-annual?")
+    assert annual is None
+    assert payment_link_checkout(settings, "user-123", "owner@example.com", "GROWTH", "year") is None
+
+
+@pytest.mark.parametrize("plan", ["STARTER", "GROWTH"])
+def test_annual_checkout_creates_subscription_with_annual_price(monkeypatch, plan):
+    settings = get_settings().model_copy(update={
+        "stripe_secret_key": "sk_test_fixture",
+        f"stripe_{plan.lower()}_annual_price_id": "price_yearly",
+    })
+    stripe = StripeClient(settings)
+    captured = {}
+    def capture(path, data):
+        captured.update(dict(data))
+        return {"url": "https://checkout.stripe.com/test"}
+    monkeypatch.setattr(stripe, "_post", capture)
+    stripe.checkout("user", "owner@example.com", plan, "year", None)
+    assert captured["mode"] == "subscription"
+    assert captured["line_items[0][price]"] == "price_yearly"
+    assert captured["metadata[billing_interval]"] == "year"
+    assert captured["subscription_data[metadata][plan]"] == plan
 
 
 def test_annual_subscription_keeps_monthly_usage_window(session_factory):
