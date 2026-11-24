@@ -140,6 +140,11 @@ def generate_labels(payload: LabelsRequest, session: DbSession, auth: Authentica
     return Response(data, media_type="application/pdf", headers=headers)
 
 
+@router.post("/v1/account/labels/render", response_class=Response)
+def account_generate_labels(payload: LabelsRequest, session: DbSession, auth: AccountAuthenticated, settings: SettingsDep):
+    return generate_labels(payload, session, auth, settings)
+
+
 @router.post("/v1/labels/from-csv", response_class=Response)
 def labels_from_csv(payload: CsvRequest, session: DbSession, auth: Authenticated, settings: SettingsDep):
     _, rows = read_csv(payload)

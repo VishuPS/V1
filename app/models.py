@@ -604,6 +604,32 @@ class ProviderCooldown(Base):
     detail: Mapped[str | None] = mapped_column(String(128))
 
 
+class VaultProduct(Base):
+    __tablename__ = "vault_products"
+    __table_args__ = (
+        UniqueConstraint("user_id", "identity_key", name="uq_vault_user_identity"),
+        Index("ix_vault_user_updated", "user_id", "updated_at"),
+    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    identity_key: Mapped[str] = mapped_column(String(64), nullable=False)
+    barcode: Mapped[str] = mapped_column(String(500), nullable=False)
+    barcode_type: Mapped[str] = mapped_column(String(20), nullable=False)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    sku: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    brand: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    category: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    collection: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    image_url: Mapped[str] = mapped_column(String(2048), nullable=False, default="")
+    price_minor: Mapped[int | None] = mapped_column(BigInteger)
+    currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
+    custom_fields: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False, default=dict)
+    revision: Mapped[int] = mapped_column(nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
 class ServiceUsage(Base):
     __tablename__ = "service_usage"
     __table_args__ = (

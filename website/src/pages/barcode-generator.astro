@@ -34,7 +34,7 @@ const schema = {
     </section>
     <section class="tool-card" aria-label="Barcode preview">
       <div class="tool-preview"><img id="barcode-image" alt="Generated barcode preview" hidden /><p id="preview-empty">Your barcode will appear here after generation.</p></div>
-      <div class="tool-actions"><a id="download-image" class="button button-secondary" hidden>Download barcode</a></div>
+      <div class="tool-actions"><a id="download-image" class="button button-secondary" hidden>Download barcode</a><button type="button" id="save-generated" class="button button-secondary" hidden>Save to Vault</button><a href="/vault/">Open My Vault</a></div>
       <p id="generation-balance" class="tool-status" role="status" aria-live="polite">Sign in to see your remaining image allowance.</p>
       <p class="tool-hint">Keep the white margins when printing. Test the printed barcode with your scanner before use.</p>
     </section>
@@ -70,6 +70,10 @@ const schema = {
 </BaseLayout>
 <script>
   import { authFetch, getAuthState, responseMessage } from "../scripts/auth-context";
+  import { saveToVault } from "../scripts/vault-client";
+  let generated: {barcode:string;barcode_type:string;name:string}|null=null;
+  const saveGenerated=document.querySelector<HTMLButtonElement>("#save-generated")!;
+  saveGenerated.addEventListener("click",async()=>{if(!generated)return;saveGenerated.disabled=true;try{const result=await saveToVault(generated);document.querySelector<HTMLElement>("#generator-status")!.textContent=result.created?"Saved to your private Vault. Open My Vault to add product details.":"Already in your Vault. Existing details were kept.";saveGenerated.textContent="Saved to Vault";}catch(error){document.querySelector<HTMLElement>("#generator-status")!.textContent=error instanceof Error?error.message:"Save unavailable.";saveGenerated.disabled=false;}});
   const form = document.querySelector<HTMLFormElement>("#generator")!;
   const scanParams = new URLSearchParams(location.search);
   const scannedType = scanParams.get("type");
@@ -135,6 +139,8 @@ const schema = {
       } else {
         if (imageUrl) URL.revokeObjectURL(imageUrl);
         imageUrl = url; download.download = "barcode." + format;
+        generated={barcode:values[0],barcode_type:symbology,name:("Barcode "+values[0]).slice(0,200)};
+        saveGenerated.hidden=false;saveGenerated.disabled=false;saveGenerated.textContent="Save to Vault";
         const image = document.querySelector<HTMLImageElement>("#barcode-image")!;
         image.src = url; image.hidden = false;
         document.querySelector<HTMLElement>("#preview-empty")!.hidden = true;

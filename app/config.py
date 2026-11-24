@@ -39,6 +39,7 @@ def default_plan_limits() -> dict[str, PlanLimit]:
 
 
 class Settings(BaseSettings):
+    vault_limits: dict[str, int] = {"FREE":25,"ONE_TIME":25,"CREATOR":250,"STARTER":2000,"GROWTH":10000}
     service_limits: dict[str, ServiceLimit] = Field(default_factory=default_service_limits)
     app_name: str = "Grocery & Retail Product Barcode API"
     app_env: str = "development"

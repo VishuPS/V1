@@ -9,17 +9,17 @@ const features = [
   ["02", "4.35 million searchable products", "Query a multi-source index spanning food, beauty, pet food, and general packaged products."],
   ["03", "Developer-friendly REST API", "Predictable endpoints and structured JSON designed for straightforward integration."],
   ["04", "Secure API authentication", "Authenticate requests with user-owned API keys stored as cryptographic digests."],
-  ["05", "User dashboard", "Manage credentials, subscription details, and current usage from one account."],
-  ["06", "API key management", "Create, regenerate, and revoke keys without exposing stored credentials."],
+  ["05", "Your private Barcode Vault", "Save product records, notes, prices and custom fields. Organize collections and reuse your data."],
+  ["06", "Scan, generate and save", "Read a barcode photo or create a barcode image, then give the result a home in your Vault."],
   ["07", "Monthly usage tracking", "See barcode lookup consumption and remaining monthly quota at a glance."],
-  ["08", "Production-ready infrastructure", "Built on FastAPI, PostgreSQL, Neon, and quota-aware authentication."],
-  ["09", "Fast global delivery", "A static Cloudflare-delivered website paired with a focused production API."],
+  ["08", "Collections and exports", "Keep products together and export CSV or JSON collections on paid plans."],
+  ["09", "Labels from saved products", "Select products in your Vault to create a printable PDF using your label allowance."],
 ];
 const softwareSchema = {
   "@context": "https://schema.org", "@type": "SoftwareApplication", "@id": "https://barcodenest.com/#software",
-  name: "BarcodeNest Barcode Lookup API", url: "https://barcodenest.com/",
-  applicationCategory: "DeveloperApplication", applicationSubCategory: "Barcode API", operatingSystem: "Any",
-  description: "A REST barcode lookup API for retrieving structured product data from UPC, EAN, and GTIN codes.",
+  name: "BarcodeNest Barcode and Product Workspace", url: "https://barcodenest.com/",
+  applicationCategory: "BusinessApplication", applicationSubCategory: "Barcode and Product Management", operatingSystem: "Any",
+  description: "A barcode and product workspace with private saved records, lookup, scanning, generation, printable labels and APIs.",
   featureList: ["EAN-8, EAN-13, UPC-A and GTIN-14 lookup", "Structured JSON responses", "API key authentication", "Usage dashboard"],
   provider: { "@id": "https://barcodenest.com/#organization" },
   offers: [
@@ -31,15 +31,15 @@ const softwareSchema = {
   ],
 };
 ---
-<BaseLayout title="Barcode Lookup API | UPC, EAN & GTIN Product Database | BarcodeNest" description="Use BarcodeNest's REST API to look up UPC, EAN and GTIN barcodes across 4.35M+ food, beauty, pet food and general products." structuredData={softwareSchema}>
+<BaseLayout title="Barcode & Product Data Management Platform | BarcodeNest" description="Look up, scan, generate and organize barcodes. Save private product records in your Vault, export collections and print labels in one BarcodeNest workspace." structuredData={softwareSchema}>
   <section class="hero launch-hero">
     <div class="container hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Production barcode lookup infrastructure</div>
-        <h1>Fast Barcode Lookup API for UPC, EAN &amp; GTIN</h1>
-        <p class="lede">Search over 4.35 million food, beauty, pet food, and general products with a fast API for UPC, EAN, and GTIN lookups. Create a free account and receive your API key in under one minute.</p>
-        <div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button button-secondary" href="/pricing/">500 calls · $4.99 once</a></div>
-        <p class="hero-note">Free tier includes 250 lifetime successful-result credits. No payment details required.</p>
+        <div class="eyebrow">Your barcode and product workspace</div>
+        <h1>Everything Barcode. One Platform.</h1>
+        <p class="lede">Look up, scan, generate and organize your barcodes. Save product details in your private Vault, print labels and keep your next task moving—all in one nest.</p>
+        <div class="hero-actions"><a class="button button-signal" href="/register/?next=%2Fvault%2F">Start your Free Vault</a><a class="button button-secondary" href="/barcode-scanner/">Scan a barcode</a></div>
+        <p class="hero-note">Start with 25 saved products, 250 lifetime successful lookup credits and monthly tool allowances. No payment details required.</p>
         <p class="hero-note"><a href="/barcode-scanner/"><u>Scan a barcode photo</u></a> or <a href="/barcode-validator/"><u>check a barcode number</u></a>. Free account required.</p>
       </div>
       <div class="api-window" aria-label="Illustrative BarcodeNest API response">

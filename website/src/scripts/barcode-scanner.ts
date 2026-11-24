@@ -1,4 +1,5 @@
 import { authFetch, getAuthState, responseMessage } from "./auth-context";
+import { saveToVault } from "./vault-client";
 
 const form = document.querySelector<HTMLFormElement>("#scanner-form")!;
 const fieldset = form.querySelector<HTMLFieldSetElement>("fieldset")!;
@@ -79,6 +80,15 @@ function showResults(items: Array<{value:string;format:string;gtin14:string|null
       create.href = "/barcode-generator/?"+new URLSearchParams({value:item.value,type}); actions.append(create);
     }
     const product = document.createElement("p"); product.className = "scan-product"; product.hidden = true;
+    let productDetails: {name?:string;brand?:string;image_url?:string} = {};
+    if(item.value.length<=500){
+      const save=document.createElement("button");save.type="button";save.className="button button-secondary";save.textContent="Save to Vault";
+      save.addEventListener("click",async()=>{save.disabled=true;try{
+        const kind:Record<string,string>={"EAN-13":"ean13","UPC-A":"upca","EAN-8":"ean8","Code 128":"code128","QR Code":"qr","Data Matrix":"datamatrix"};
+        const result=await saveToVault({barcode:item.value,barcode_type:kind[item.format]||"auto",name:(productDetails.name||`Barcode ${item.value}`).slice(0,200),brand:productDetails.brand||"",image_url:productDetails.image_url?.startsWith("https://")?productDetails.image_url:""});
+        save.textContent="Saved to Vault";status.textContent=result.created?"Saved. Open My Vault to organize this product.":"Already saved. Your existing product details were kept.";
+      }catch(error){status.textContent=error instanceof Error?error.message:"Save unavailable.";save.disabled=false;}});actions.append(save);
+    }
     if (item.gtin14) {
       const lookup = document.createElement("button"); lookup.type = "button"; lookup.className = "button button-signal"; lookup.textContent = "Look up product · lookup allowance";
       lookup.addEventListener("click", async () => {
@@ -87,6 +97,7 @@ function showResults(items: Array<{value:string;format:string;gtin14:string|null
           const response = await authFetch("/account/products/"+encodeURIComponent(item.value));
           if (!response.ok) throw new Error(await responseMessage(response));
           const data = await response.json();
+          productDetails=data.product||{};
           product.textContent = [data.product?.name, data.product?.brand, data.product?.quantity].filter(Boolean).join(" · ") || "Product found; no display details available.";
         } catch (error) { product.textContent = error instanceof Error ? error.message : "Product lookup unavailable."; }
         finally { lookup.disabled = false; }
