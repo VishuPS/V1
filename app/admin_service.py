@@ -19,9 +19,11 @@ from app.admin_schemas import (
     AdminUserDetails,
     AdminUserList,
     AdminUserListItem,
+    AdminWorkspaceUsage,
+    AdminToolUsage,
 )
 from app.auth import current_period, issue_api_key
-from app.config import Settings
+from app.config import Settings, get_settings
 from app.models import (
     ApiClient,
     ApiKey,
@@ -33,6 +35,8 @@ from app.models import (
     Product,
     Subscription,
     User,
+    ServiceUsage,
+    VaultProduct,
 )
 
 
@@ -177,11 +181,38 @@ def _start_of_today() -> datetime:
     return datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
 
+TOOL_CATEGORIES=("generation","scans","labels","enrichment","validation","vault_exports")
+
+
+def workspace_usage(session: Session, plans: dict[str,str]) -> dict[str,AdminWorkspaceUsage]:
+    settings=get_settings();period=current_period()
+    result={uid:AdminWorkspaceUsage(period_start=period,tools={
+        category:AdminToolUsage(limit=getattr(settings.service_limits.get(plan),category,None),
+            remaining=getattr(settings.service_limits.get(plan),category,None)) for category in TOOL_CATEGORIES},
+        vault_capacity=settings.vault_limits.get(plan,0)) for uid,plan in plans.items()}
+    if not plans:
+        return result
+    scopes={"user:"+uid:uid for uid in plans}
+    for usage in session.scalars(select(ServiceUsage).where(ServiceUsage.account_scope.in_(scopes),ServiceUsage.period_start==period)):
+        if usage.category in TOOL_CATEGORIES:
+            item=result[scopes[usage.account_scope]].tools[usage.category]
+            item.used=usage.units;item.last_used_at=usage.updated_at
+            item.remaining=max(0,item.limit-item.used) if item.limit is not None else None
+    for uid,count,last in session.execute(select(VaultProduct.user_id,func.count(),func.max(VaultProduct.updated_at)).where(VaultProduct.user_id.in_(plans)).group_by(VaultProduct.user_id)):
+        result[uid].vault_products=count;result[uid].vault_last_updated_at=last
+    for uid,count in session.execute(select(VaultProduct.user_id,func.count()).where(VaultProduct.user_id.in_(plans),VaultProduct.created_at>=datetime(period.year,period.month,1,tzinfo=timezone.utc)).group_by(VaultProduct.user_id)):
+        result[uid].vault_created_this_month=count
+    return result
+
+
 def dashboard_summary(session: Session) -> AdminDashboardSummary:
     today = _start_of_today()
     month = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
     usage_month = current_period(today)
     return AdminDashboardSummary(
+        tool_units_month={category:count for category,count in session.execute(select(ServiceUsage.category,func.sum(ServiceUsage.units)).where(ServiceUsage.period_start==usage_month,ServiceUsage.category.in_(TOOL_CATEGORIES)).group_by(ServiceUsage.category))},
+        vault_products=session.scalar(select(func.count()).select_from(VaultProduct)) or 0,
+        vault_accounts=session.scalar(select(func.count(func.distinct(VaultProduct.user_id)))) or 0,
         active_call_packs=session.scalar(select(func.count()).select_from(CallPack).where(CallPack.expires_at > datetime.now(timezone.utc), CallPack.used < CallPack.calls)) or 0,
         total_users=session.scalar(select(func.count()).select_from(User)) or 0,
         new_users_today=session.scalar(
@@ -243,6 +274,7 @@ def list_users(
     if where is not None:
         query = query.where(where)
     rows = session.execute(query).unique().all()
+    workspaces=workspace_usage(session,{user.id:subscription.plan_code if subscription else client.plan if client else "FREE" for user,client,subscription in rows})
     items = []
     for user, client, subscription in rows:
         active_keys = session.scalar(
@@ -256,12 +288,13 @@ def list_users(
         key_status = "active" if active_keys else ("revoked" if total_keys else "none")
         items.append(
             AdminUserListItem(
+                workspace_usage=workspaces[user.id],
                 id=user.id,
                 display_name=user.display_name,
                 email=user.email,
                 organization=user.organization,
                 created_at=user.created_at,
-                plan=client.plan if client else "—",
+                plan=subscription.plan_code if subscription else client.plan if client else "—",
                 api_key_status=key_status,
                 is_admin=user.is_admin,
                 active=user.active,
@@ -320,8 +353,15 @@ def user_details(session: Session, user_id: str) -> AdminUserDetails:
         activity.append(AdminActivity(kind="api_key", label=f"API key {key.key_prefix} created", occurred_at=key.created_at))
         if key.last_used_at:
             activity.append(AdminActivity(kind="request", label=f"API key {key.key_prefix} used", occurred_at=key.last_used_at))
+    workspace=workspace_usage(session,{user.id:subscription.plan_code if subscription else client.plan if client else "FREE"})[user.id]
+    for category,usage in workspace.tools.items():
+        if usage.last_used_at:
+            activity.append(AdminActivity(kind="tool_usage",label=f"{category.replace('_',' ').title()}: {usage.used} units this month (latest activity)",occurred_at=usage.last_used_at))
+    if workspace.vault_last_updated_at:
+        activity.append(AdminActivity(kind="vault",label="Saved product last created or edited",occurred_at=workspace.vault_last_updated_at))
     activity.sort(key=lambda item: item.occurred_at, reverse=True)
     return AdminUserDetails(
+        workspace_usage=workspace,
         id=user.id,
         display_name=user.display_name,
         email=user.email,

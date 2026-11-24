@@ -13,7 +13,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.lookup_analytics import LookupOutcome, record_lookup_outcomes_safely
 from app.repositories import ProductRepository
-from app.service_usage import consume_service_usage, limits_for, service_balances
+from app.service_usage import consume_service_usage, limits_for, service_balances, record_activity, account_scope
 from app.services import resolve_product
 from app.models import ApiKey
 from app.user_auth import UserContext, ensure_allowed_origin, get_current_user
@@ -120,7 +120,8 @@ def account_tool_usage(session: DbSession, auth: AccountAuthenticated, settings:
 
 
 @router.post("/v1/account/barcodes/validate")
-def account_validate_barcode(payload: ValidationRequest, auth: AccountAuthenticated):
+def account_validate_barcode(payload: ValidationRequest, auth: AccountAuthenticated, session: DbSession):
+    record_activity(session,account_scope(auth),"validation")
     try:
         parsed = parse_barcode(payload.value)
     except BarcodeError as exc:

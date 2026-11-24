@@ -356,7 +356,7 @@ h3 { font-size: 21px; font-weight: 600; letter-spacing: -.025em; }
 .admin-start h2 { margin:10px 0; font-size:30px; }.admin-start p { max-width:600px; margin:0; color:var(--muted); }
 .admin-search { max-width:640px; padding:30px 0; }.admin-search label { display:block; margin-bottom:7px; font-weight:600; }.admin-search > div { display:flex; gap:8px; }
 .admin-search input { width:100%; min-height:48px; padding:10px 13px; border:1px solid #b9bbb2; border-radius:6px; background:var(--white); color:var(--ink); font:inherit; }
-.admin-table-wrap { overflow-x:auto; border:1px solid var(--line); background:rgba(255,255,255,.18); }
+.admin-table-wrap { position:relative; overflow-x:auto; max-width:100%; border:1px solid var(--line); background:rgba(255,255,255,.18); }
 .admin-table { width:100%; min-width:950px; border-collapse:collapse; font-size:13px; }
 .admin-table th,.admin-table td { padding:14px 13px; border-bottom:1px solid var(--line); text-align:left; vertical-align:middle; }
 .admin-table tr:last-child td { border-bottom:0; }.admin-table th { color:var(--muted); font:10px "Geist Mono"; letter-spacing:.05em; text-transform:uppercase; }

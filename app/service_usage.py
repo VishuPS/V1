@@ -13,6 +13,25 @@ from app.models import ApiKey, ServiceUsage, Subscription, new_uuid
 CATEGORIES = ("generation", "labels", "enrichment", "scans")
 
 
+def record_activity(session: Session, scope: str, category: str) -> None:
+    """Track unmetered actions without changing quotas or the caller's transaction."""
+    import logging
+    if category not in {"validation", "vault_exports"}:
+        raise ValueError("Unknown activity category")
+    timestamp=datetime.now(timezone.utc)
+    try:
+        with Session(bind=session.get_bind()) as activity_session:
+            insert=postgres_insert if activity_session.get_bind().dialect.name=="postgresql" else sqlite_insert
+            statement=insert(ServiceUsage).values(id=new_uuid(),account_scope=scope,category=category,
+                period_start=current_period(timestamp),units=1,updated_at=timestamp)
+            activity_session.execute(statement.on_conflict_do_update(
+                index_elements=[ServiceUsage.account_scope,ServiceUsage.category,ServiceUsage.period_start],
+                set_={"units":ServiceUsage.units+1,"updated_at":timestamp}))
+            activity_session.commit()
+    except Exception:
+        logging.getLogger(__name__).exception("Tool activity counter could not be recorded")
+
+
 def account_scope(context: AuthContext) -> str:
     owner = context.api_key.owner_user_id or context.client.owner_user_id
     return f"user:{owner}" if owner else f"client:{context.client.id}"

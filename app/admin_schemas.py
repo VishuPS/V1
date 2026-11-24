@@ -4,6 +4,9 @@ from pydantic import BaseModel, Field
 
 
 class AdminDashboardSummary(BaseModel):
+    tool_units_month: dict[str,int] = Field(default_factory=dict)
+    vault_products: int = 0
+    vault_accounts: int = 0
     active_call_packs: int = 0
     total_users: int
     new_users_today: int
@@ -55,7 +58,24 @@ class LookupMissList(BaseModel):
     total: int = 0
 
 
+class AdminToolUsage(BaseModel):
+    used: int = 0
+    limit: int | None = None
+    remaining: int | None = None
+    last_used_at: datetime | None = None
+
+
+class AdminWorkspaceUsage(BaseModel):
+    period_start: date
+    tools: dict[str,AdminToolUsage]
+    vault_products: int = 0
+    vault_capacity: int = 0
+    vault_created_this_month: int = 0
+    vault_last_updated_at: datetime | None = None
+
+
 class AdminUserListItem(BaseModel):
+    workspace_usage: AdminWorkspaceUsage | None = None
     id: str
     display_name: str
     email: str
@@ -111,6 +131,7 @@ class AdminActivity(BaseModel):
 
 
 class AdminUserDetails(BaseModel):
+    workspace_usage: AdminWorkspaceUsage | None = None
     id: str
     display_name: str
     email: str

@@ -17,6 +17,7 @@ from app.config import Settings, get_settings
 from app.db import get_db
 from app.models import Subscription, User, VaultProduct, utcnow
 from app.user_auth import UserContext, get_current_user, ensure_allowed_origin
+from app.service_usage import record_activity
 
 router = APIRouter(prefix="/v1/account/vault", tags=["private product vault"])
 Db = Annotated[Session, Depends(get_db)]
@@ -146,7 +147,9 @@ def export_products(session:Db,owner:Owner,settings:Config,format:Literal["csv",
         raise HTTPException(422,detail={"code":"export_too_large","message":"Export a collection with at most 10,000 products"})
     headers={"Content-Disposition":f'attachment; filename="barcodenest-vault.{format}"',"Cache-Control":"no-store"}
     if format=="json":
-        return Response(json.dumps([serialize(r) for r in records],default=lambda v:v.isoformat(),ensure_ascii=False),media_type="application/json",headers=headers)
+        content=json.dumps([serialize(r) for r in records],default=lambda v:v.isoformat(),ensure_ascii=False)
+        record_activity(session,"user:"+owner.user.id,"vault_exports")
+        return Response(content,media_type="application/json",headers=headers)
     fields=["barcode","barcode_type","name","sku","brand","category","collection","price_minor","currency","image_url","notes","custom_fields"]
     output=StringIO();writer=csv.DictWriter(output,fieldnames=fields);writer.writeheader()
     for record in records:
@@ -156,7 +159,9 @@ def export_products(session:Db,owner:Owner,settings:Config,format:Literal["csv",
             if isinstance(value,str) and value.lstrip().startswith(("=","+","-","@")):
                 row[key]="'"+value
         writer.writerow(row)
-    return Response(output.getvalue().encode("utf-8-sig"),media_type="text/csv",headers=headers)
+    content=output.getvalue().encode("utf-8-sig")
+    record_activity(session,"user:"+owner.user.id,"vault_exports")
+    return Response(content,media_type="text/csv",headers=headers)
 
 
 @router.post("")
