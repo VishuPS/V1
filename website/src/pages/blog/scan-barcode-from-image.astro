@@ -1,0 +1,37 @@
+---
+import BlogPostLayout from "../../layouts/BlogPostLayout.astro";
+import CodeBlock from "../../components/CodeBlock.astro";
+const python = `import base64
+import os
+from pathlib import Path
+import httpx
+
+image = Path("barcode-photo.jpg").read_bytes()
+if len(image) > 4 * 1024 * 1024:
+    raise ValueError("Use an image no larger than 4 MiB")
+response = httpx.post(
+    "https://api.barcodenest.com/v1/barcodes/scan",
+    headers={"X-API-Key": os.environ["BARCODENEST_API_KEY"]},
+    json={"image_base64": base64.b64encode(image).decode("ascii")},
+    timeout=30,
+)
+response.raise_for_status()
+for barcode in response.json()["barcodes"]:
+    print(barcode["format"], barcode["value"], barcode["gtin14"])
+`;
+---
+<BlogPostLayout title="Scan a Barcode from an Image or Phone Camera | BarcodeNest" heading="How to scan a barcode from an image or phone camera" description="Read UPC, EAN, QR and inventory barcodes from a photo. Learn how image decoding differs from product lookup, fix unreadable photos and use the scanner API." author="BarcodeNest Editorial Team" published="2026-11-24" readingTime="5 min read">
+<div class="article-shell container"><aside class="article-toc" aria-label="On this page"><strong>On this page</strong><a href="#photo">Scan a photo</a><a href="#lookup">Find product details</a><a href="#troubleshooting">Fix unreadable images</a><a href="#api">Use the API</a></aside><div class="article-body">
+<p>You can read a barcode from a saved photo without typing the digits below it. A barcode image reader decodes the bars or modules into text. For a retail UPC or EAN, that text is usually the product identifier; retrieving a name or brand is a separate product lookup.</p>
+<p>The <a href="/barcode-scanner/">BarcodeNest barcode scanner</a> accepts image uploads and camera captures after sign-in. It reads EAN-13, EAN-8, UPC-A, Code 128, QR and Data Matrix. Use it for a supplier photo, an inventory label or a barcode on packaging you have in front of you.</p>
+<h2 id="photo">How to scan a barcode photo online</h2><ol><li><a href="/register/?next=%2Fbarcode-scanner%2F">Create a Free account</a> or sign in, then open the scanner.</li><li>Choose a PNG, JPEG or WebP image. The website accepts files up to 12 MiB and resizes large photos before sending them.</li><li>Select <strong>Read image</strong>. Keep the complete symbol and its surrounding white space visible.</li><li>Review the decoded value and format. Select <strong>Copy value</strong> to reuse the identifier.</li></ol>
+<p>To use a phone camera, select <strong>Use camera</strong>, allow camera access, position the barcode and select <strong>Capture &amp; read</strong>. Only the captured frame is sent for decoding. If camera access is blocked or unavailable, take a photo with your phone and upload it instead. Stop the preview when finished.</p>
+<h2 id="lookup">Scanning a barcode vs. looking up a product</h2><p>A scanner answers “what does this symbol encode?” A product lookup answers “what product record matches this identifier?” You can successfully scan a number even when no matching product exists in a particular catalog.</p>
+<p>For decoded UPC or EAN results, select <strong>Look up product</strong> to request available names, brands and quantities. This uses your separate lookup allowance. Creator includes scanning and barcode creation but no product lookup units. Free accounts can use their available lifetime lookup credits; see <a href="/pricing/">current plan allowances</a>.</p>
+<p>QR and Data Matrix codes can contain text rather than a retail GTIN. The scanner displays their content as text for review. It does not automatically open a decoded URL. A scan also does not prove a product is authentic or that a number belongs to its seller: read <a href="/blog/can-a-barcode-prove-a-product-is-real/">what barcode checks can establish</a>.</p>
+<h2 id="troubleshooting">Why a barcode image will not scan</h2><ul><li><strong>Blur:</strong> refocus the camera and hold it steady. Enlarging an already blurred photo cannot restore the missing bar edges.</li><li><strong>Missing margins:</strong> include clear space around the entire symbol. Avoid cropping tightly against the first and last bars.</li><li><strong>Glare or curves:</strong> change the lighting angle and flatten the label where possible.</li><li><strong>A distant barcode:</strong> move closer while keeping the whole symbol visible.</li><li><strong>Unsupported content:</strong> a format outside the supported list, or a damaged code, may return no result.</li></ul>
+<p>An accepted image uses one scan attempt even if nothing is decoded. Free and One-time accounts include 50 scans per month, Creator 500, Starter 2,000 and Growth 5,000. Website and API requests share that balance. Scanning does not consume image-generation units.</p>
+<h2 id="api">Read a barcode image with the Python API</h2><p>Install <code>httpx</code>, set <code>BARCODENEST_API_KEY</code> in your environment, and send raw base64 image bytes in the JSON field <code>image_base64</code>. Do not include a data URL prefix. Direct API images must be PNG, JPEG or WebP, no larger than 4 MiB and 12 megapixels.</p><CodeBlock label="Decode a barcode photo" language="python" code={python} />
+<p>The response includes a <code>barcodes</code> array, with up to 20 distinct decoded results. Each item has <code>value</code>, <code>format</code> and <code>gtin14</code>; non-retail symbols have a null GTIN. Preserve decoded identifiers as strings so leading zeros survive. Review <a href="/docs/barcode-tools/#scan-images">scanner API limits and error handling</a> before adding retries, since a processed request may already have consumed a scan.</p>
+<h2>What happens after decoding?</h2><p>Use <strong>Create barcode</strong> on supported results to carry the value into the <a href="/barcode-generator/">barcode generator</a>. For a product list, prepare a CSV and <a href="/blog/print-barcode-labels-from-csv/">print barcode labels</a>. Scanner photos are processed in memory and are not saved to your account.</p><p><a class="button button-signal" href="/barcode-scanner/">Scan your first barcode image</a></p>
+</div></div></BlogPostLayout>

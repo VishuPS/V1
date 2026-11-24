@@ -1,4 +1,7 @@
 export const staticPosts = [
+  {slug:"scan-barcode-from-image",title:"How to scan a barcode from an image or phone camera",published:"2026-11-24T00:00:00Z"},
+  {slug:"create-barcode-svg-png",title:"How to create barcode images in SVG or PNG",published:"2026-11-24T00:00:00Z"},
+  {slug:"print-barcode-labels-from-csv",title:"How to print barcode labels from a CSV spreadsheet",published:"2026-11-24T00:00:00Z"},
   {
     "slug": "enrich-barcode-csv-python",
     "title": "How to enrich a CSV of UPC and EAN barcodes with product data",

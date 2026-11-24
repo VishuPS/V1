@@ -1,5 +1,8 @@
 import { staticPosts } from "../content/blog-posts.mjs";
 const pages = [
+  ["blog/scan-barcode-from-image/", "0.8", "monthly"],
+  ["blog/create-barcode-svg-png/", "0.8", "monthly"],
+  ["blog/print-barcode-labels-from-csv/", "0.8", "monthly"],
   ["barcode-scanner/", "0.8", "monthly"],
   ["barcode-generator/", "0.8", "monthly"],
   ["barcode-labels/", "0.8", "monthly"],
@@ -57,7 +60,7 @@ export function GET() {
   for (const path of ["", "pricing/", "docs/rate-limits/", "blog/", "barcode-api-for-inventory/", "docs/errors/"]) dates.set(path, "2026-11-04");
   dates.set("barcode-validator/", "2026-11-12");
   dates.set("", "2026-11-12");
-  dates.set("blog/", "2026-11-19");
+  dates.set("blog/", "2026-11-24");
   for (const path of ["barcode-scanner/", "barcode-generator/", "barcode-validator/", "pricing/", "docs/barcode-tools/", ""]) dates.set(path, "2026-11-23");
   const urls = pages.map(([page, priority, changefreq]) => {
     const lastmod = dates.get(page);

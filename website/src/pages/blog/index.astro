@@ -10,6 +10,9 @@ const collectionSchema = {
   description,
   url: "https://barcodenest.com/blog/",
   hasPart: [
+    {"@type":"Article","headline":"How to scan a barcode from an image or phone camera","url":"https://barcodenest.com/blog/scan-barcode-from-image/","datePublished":"2026-11-24"},
+    {"@type":"Article","headline":"How to create barcode images in SVG or PNG","url":"https://barcodenest.com/blog/create-barcode-svg-png/","datePublished":"2026-11-24"},
+    {"@type":"Article","headline":"How to print barcode labels from a CSV spreadsheet","url":"https://barcodenest.com/blog/print-barcode-labels-from-csv/","datePublished":"2026-11-24"},
     {"@type": "Article", "headline": "How to enrich a CSV of UPC and EAN barcodes with product data", "url": "https://barcodenest.com/blog/enrich-barcode-csv-python/", "datePublished": "2026-11-19"},
     {"@type": "Article", "headline": "How to look up barcode product data in PHP with cURL", "url": "https://barcodenest.com/blog/barcode-lookup-php/", "datePublished": "2026-11-19"},
 
@@ -66,6 +69,11 @@ const collectionSchema = {
     </div>
   </section>
 
+<section class="container blog-archive" aria-labelledby="tool-guides"><div class="blog-archive-head"><div><div class="eyebrow">Scanner, generator and labels</div><h2 id="tool-guides">Put your barcodes to work</h2></div></div>{[
+  ["scan-barcode-from-image","How to scan a barcode from an image or phone camera"],
+  ["create-barcode-svg-png","How to create barcode images in SVG or PNG"],
+  ["print-barcode-labels-from-csv","How to print barcode labels from a CSV spreadsheet"],
+].map(([slug,heading])=><a class="blog-archive-row" href={`/blog/${slug}/`}><div class="article-card-meta"><span>Practical tool guide</span><time datetime="2026-11-24">Nov 24, 2026</time></div><h3>{heading}</h3><span class="archive-arrow" aria-hidden="true">→</span></a>)}</section>
 <section class="container blog-archive" aria-labelledby="integration-guides-nov19"><div class="blog-archive-head"><h2 id="integration-guides-nov19">Build your product lookup integration</h2></div><a class="blog-archive-row" href="/blog/enrich-barcode-csv-python/"><div class="article-card-meta"><span>Integration guide</span><time datetime="2026-11-19">Nov 19, 2026</time></div><h3>How to enrich a CSV of UPC and EAN barcodes with product data</h3><span class="archive-arrow" aria-hidden="true">→</span></a><a class="blog-archive-row" href="/blog/barcode-lookup-php/"><div class="article-card-meta"><span>Integration guide</span><time datetime="2026-11-19">Nov 19, 2026</time></div><h3>How to look up barcode product data in PHP with cURL</h3><span class="archive-arrow" aria-hidden="true">→</span></a></section>
   <section class="container blog-archive" aria-labelledby="barcode-data-workflows"><div class="blog-archive-head"><div><div class="eyebrow">New practical guides</div><h2 id="barcode-data-workflows">Get your barcode data right</h2></div></div>
     <a class="blog-archive-row" href="/blog/can-a-barcode-prove-a-product-is-real/"><div class="article-card-meta"><span>Barcode guide</span><time datetime="2026-11-12">Nov 12, 2026</time></div><h3>Can a barcode tell you if a product is real?</h3><span class="archive-arrow" aria-hidden="true">→</span></a>
