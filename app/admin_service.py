@@ -24,6 +24,7 @@ from app.admin_schemas import (
 )
 from app.auth import current_period, issue_api_key
 from app.config import Settings, get_settings
+from app.entitlements import capacity_for
 from app.models import (
     ApiClient,
     ApiKey,
@@ -192,6 +193,8 @@ def workspace_usage(session: Session, plans: dict[str,str]) -> dict[str,AdminWor
         vault_capacity=settings.vault_limits.get(plan,0)) for uid,plan in plans.items()}
     if not plans:
         return result
+    for user in session.scalars(select(User).where(User.id.in_(plans))):
+        result[user.id].vault_capacity=capacity_for(user,plans[user.id],settings)
     scopes={"user:"+uid:uid for uid in plans}
     for usage in session.scalars(select(ServiceUsage).where(ServiceUsage.account_scope.in_(scopes),ServiceUsage.period_start==period)):
         if usage.category in TOOL_CATEGORIES:

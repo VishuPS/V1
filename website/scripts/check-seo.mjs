@@ -21,7 +21,7 @@ walk(dist);
 const failures = [];
 const titles = new Map();
 const descriptions = new Map();
-const privatePrefixes = ["vault/", "admin/", "account/", "api-keys/", "billing/", "contributions/", "dashboard/", "login/", "oauth-complete/", "onboarding/", "profile/", "register/", "settings/"];
+const privatePrefixes = ["workspace/","vault/", "admin/", "account/", "api-keys/", "billing/", "contributions/", "dashboard/", "login/", "oauth-complete/", "onboarding/", "profile/", "register/", "settings/"];
 const value = (html, pattern) => html.match(pattern)?.[1]?.trim();
 
 const documents = htmlFiles.map(file => ({route:relative(dist,file).split(sep).join('/').replace(/index\.html$/,''), html:readFileSync(file,'utf8')}));

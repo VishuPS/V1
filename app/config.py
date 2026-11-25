@@ -39,6 +39,9 @@ def default_plan_limits() -> dict[str, PlanLimit]:
 
 
 class Settings(BaseSettings):
+    new_customer_vault_limits: dict[str,int] = {"FREE":25,"ONE_TIME":25,"CREATOR":500,"STARTER":2000,"GROWTH":10000}
+    workspace_batch_limit: int = Field(default=100,ge=1,le=1000)
+    workspace_upload_bytes: int = Field(default=5_000_000,ge=1000,le=20_000_000)
     vault_limits: dict[str, int] = {"FREE":25,"ONE_TIME":25,"CREATOR":250,"STARTER":2000,"GROWTH":10000}
     service_limits: dict[str, ServiceLimit] = Field(default_factory=default_service_limits)
     app_name: str = "Grocery & Retail Product Barcode API"

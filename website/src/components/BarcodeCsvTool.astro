@@ -5,8 +5,7 @@ const labels = category === "labels";
 <div class="tool-grid container" data-csv-tool={category}>
   <section class="tool-card"><h2>{labels ? "Create a label sheet" : "Preview and enrich your CSV"}</h2>
     <form id="csv-tool-form"><fieldset data-account-tool disabled>
-      <label for="tool-key">BarcodeNest API key</label><input id="tool-key" type="password" autocomplete="off" required aria-describedby="key-hint" />
-      <p id="key-hint" class="tool-hint">Use a key from <a href="/api-keys/">your account</a>. It stays in this page's memory and is sent directly to the BarcodeNest API.</p>
+      <p class="tool-hint">Uses your signed-in account and its shared service allowances.</p>
       <label for="csv-file">CSV file</label><input id="csv-file" type="file" accept=".csv,text/csv" required aria-describedby="csv-hint" />
       <p id="csv-hint" class="tool-hint">{labels ? "Required column: barcode. Optional columns: symbology, title, detail, copies. A4 sheets contain 10 labels. Up to 100 labels including copies." : "Required column: barcode. Up to 100 data rows and a 500 KB file. Keep leading zeros when exporting."}</p>
       <div class="tool-actions">
@@ -26,21 +25,18 @@ const labels = category === "labels";
   </section>
 </div>
 <script>
-  import { API, getAuthState, responseMessage } from "../scripts/auth-context";
+  import { authFetch, getAuthState, responseMessage } from "../scripts/auth-context";
   const root = document.querySelector<HTMLElement>("[data-csv-tool]")!;
   const labels = root.dataset.csvTool === "labels";
-  const key = document.querySelector<HTMLInputElement>("#tool-key")!;
   const status = document.querySelector<HTMLElement>("#csv-status")!;
   const result = document.querySelector<HTMLAnchorElement>("#csv-result")!;
   const form = document.querySelector<HTMLFormElement>("#csv-tool-form")!;
-  let downloadUrl = "", previewedText = "", previewedKey = "";
+  let downloadUrl = "", previewedText = "";
   let busy = false;
   async function request(path: string, body?: unknown) {
     if ((await getAuthState()).status !== "authenticated") throw new Error("Sign in to use barcode tools.");
-    if (!key.value.trim()) throw new Error("Enter your API key first.");
-    const response = await fetch(API + path, { method: body ? "POST" : "GET",
-      headers: { "X-API-Key": key.value.trim(), ...(body ? { "Content-Type": "application/json" } : {}) },
-      ...(body ? { body: JSON.stringify(body) } : {}) });
+    const response = await authFetch('/account'+path, {method:body?'POST':'GET',
+      ...(body?{headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{})});
     if (!response.ok) throw new Error(await responseMessage(response));
     return response;
   }
@@ -71,12 +67,12 @@ const labels = category === "labels";
     try {
       if (file.size > 500_000) throw new Error("Choose a CSV smaller than 500 KB.");
       const csvText = await file.text();
-      if (!labels && !preview && (csvText !== previewedText || key.value.trim() !== previewedKey)) throw new Error("Preview this CSV with the current key before spending enrichment units.");
+      if (!labels && !preview && (csvText !== previewedText)) throw new Error("Preview this CSV before spending enrichment units.");
       const path = labels ? "/labels/from-csv" : preview ? "/products/enrichment-preview" : "/products/enrich-csv";
       const response = await request(path, { csv_text: csvText });
       if (preview) {
         const data = await response.json();
-        previewedText = csvText; previewedKey = key.value.trim();
+        previewedText = csvText;
         status.textContent = data.rows + " rows. " + data.local_matches + " local matches, " + data.local_unmatched + " local misses, " + data.invalid_rows + " invalid rows. Processing costs " + data.units_required + " enrichment units. " + data.balance.remaining + " remaining.";
       } else {
         if (downloadUrl) URL.revokeObjectURL(downloadUrl);

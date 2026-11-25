@@ -1,4 +1,4 @@
-export const API_ORIGIN = "https://api.barcodenest.com";
+export const API_ORIGIN = (import.meta.env.PUBLIC_API_ORIGIN || "https://api.barcodenest.com").replace(/\/$/, "");
 export const API = `${API_ORIGIN}/v1`;
 
 export type AuthUser = {

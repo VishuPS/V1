@@ -2,12 +2,17 @@
 import BaseLayout from "./BaseLayout.astro";
 const { title, current = "dashboard" } = Astro.props;
 const links = [
-  ["Dashboard", "/dashboard/", "dashboard"],
+  ["Overview", "/workspace/", "workspace"],
   ["My Barcode Vault", "/vault/", "vault"],
+  ["Barcode Lookup", "/barcode-lookup/", "lookup"],
+  ["Generator", "/barcode-generator/", "generator"],
+  ["Scanner", "/barcode-scanner/", "scanner"],
+  ["Barcode Labels", "/barcode-labels/", "labels"],
+  ["CSV Enrichment", "/csv-product-enrichment/", "enrichment"],
   ["Profile", "/profile/", "profile"],
   ["Account", "/account/", "account"],
-  ["API keys", "/api-keys/", "api-keys"],
-  ["Billing", "/billing/", "billing"],
+  ["API Management", "/api-keys/", "api-keys"],
+  ["Subscription", "/billing/", "billing"],
   ["Contributions", "/contributions/", "contributions"],
   ["Settings", "/settings/", "settings"],
 ];

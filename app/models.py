@@ -281,6 +281,7 @@ class RegistrationRequest(Base):
 
 class User(Base):
     __tablename__ = "users"
+    workspace_policy: Mapped[str] = mapped_column(String(24),nullable=False,default="platform_v1",server_default="platform_v1")
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     email: Mapped[str] = mapped_column(String(320), unique=True, nullable=False, index=True)
@@ -628,6 +629,14 @@ class VaultProduct(Base):
     revision: Mapped[int] = mapped_column(nullable=False, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class PlatformStatistic(Base):
+    __tablename__ = "platform_statistics"
+    key: Mapped[str] = mapped_column(String(64),primary_key=True)
+    value: Mapped[int] = mapped_column(BigInteger,nullable=False)
+    verified_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False)
+    method: Mapped[str] = mapped_column(String(32),nullable=False)
 
 
 class ServiceUsage(Base):

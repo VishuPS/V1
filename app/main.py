@@ -20,6 +20,7 @@ from app.api.admin_routes import router as admin_router
 from app.api.billing_routes import router as billing_router
 from app.api.tool_routes import router as tool_router
 from app.api.vault_routes import router as vault_router
+from app.api.workspace_routes import router as workspace_router
 from app.api.contribution_routes import admin_router as contribution_admin_router
 from app.api.contribution_routes import router as contribution_router
 from app.config import get_settings
@@ -103,6 +104,7 @@ app.include_router(mail_router)
 app.include_router(billing_router)
 app.include_router(tool_router)
 app.include_router(vault_router)
+app.include_router(workspace_router)
 app.include_router(contribution_router)
 app.include_router(contribution_admin_router)
 

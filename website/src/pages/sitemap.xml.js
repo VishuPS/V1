@@ -1,5 +1,9 @@
 import { staticPosts } from "../content/blog-posts.mjs";
 const pages = [
+  ["tools/", "0.9", "monthly"],
+  ["barcode-lookup/", "0.8", "monthly"],
+  ["barcode-converter/", "0.8", "monthly"],
+  ...["retail","warehouses","ecommerce","assets","developers"].map(key=>[`solutions/${key}/`, "0.7", "monthly"]),
   ["docs/vault/", "0.8", "monthly"],
   ["blog/scan-barcode-from-image/", "0.8", "monthly"],
   ["blog/create-barcode-svg-png/", "0.8", "monthly"],

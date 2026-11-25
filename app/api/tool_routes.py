@@ -161,6 +161,11 @@ def labels_from_csv(payload: CsvRequest, session: DbSession, auth: Authenticated
     return generate_labels(request, session, auth, settings)
 
 
+@router.post("/v1/account/labels/from-csv",response_class=Response)
+def account_labels_from_csv(payload:CsvRequest,session:DbSession,auth:AccountAuthenticated,settings:SettingsDep):
+    return labels_from_csv(payload,session,auth,settings)
+
+
 def read_csv(payload: CsvRequest):
     try:
         return parse_csv(payload.csv_text)
@@ -204,3 +209,13 @@ def enrich_products(payload: CsvRequest, session: DbSession, auth: Authenticated
     headers["Content-Disposition"] = 'attachment; filename="enriched-products.csv"'
     headers["X-Enrichment-Matched"] = str(sum(item.found for item in results))
     return Response(output.encode("utf-8-sig"), media_type="text/csv", headers=headers)
+
+
+@router.post("/v1/account/products/enrichment-preview")
+def account_preview_enrichment(payload:CsvRequest,session:DbSession,auth:AccountAuthenticated,settings:SettingsDep):
+    return preview_enrichment(payload,session,auth,settings)
+
+
+@router.post("/v1/account/products/enrich-csv",response_class=Response)
+def account_enrich_products(payload:CsvRequest,session:DbSession,auth:AccountAuthenticated,settings:SettingsDep):
+    return enrich_products(payload,session,auth,settings)

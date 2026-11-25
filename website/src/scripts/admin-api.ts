@@ -1,5 +1,6 @@
-export const ADMIN_API = "https://api.barcodenest.com/v1/admin";
-const AUTH_API = "https://api.barcodenest.com/v1/auth";
+import {API} from "./auth-context";
+export const ADMIN_API = `${API}/admin`;
+const AUTH_API = `${API}/auth`;
 
 async function refreshSession(): Promise<boolean> {
   const response = await fetch(`${AUTH_API}/refresh`, {

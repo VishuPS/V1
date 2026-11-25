@@ -1,12 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CodeBlock from "../components/CodeBlock.astro";
+import ToolGrid from "../components/ToolGrid.astro";
 import ComparisonSection from "../components/ComparisonSection.astro";
 const curl = `curl "https://api.barcodenest.com/v1/products/3017620422003" \\
   -H "X-API-Key: YOUR_API_KEY"`;
 const features = [
   ["01", "Instant barcode lookup", "Retrieve indexed product information from EAN and GTIN codes with one request."],
-  ["02", "4.35 million searchable products", "Query a multi-source index spanning food, beauty, pet food, and general packaged products."],
+  ["02", "A searchable product database", "Query a multi-source index spanning food, beauty, pet food, and general packaged products."],
   ["03", "Developer-friendly REST API", "Predictable endpoints and structured JSON designed for straightforward integration."],
   ["04", "Secure API authentication", "Authenticate requests with user-owned API keys stored as cryptographic digests."],
   ["05", "Your private Barcode Vault", "Save product records, notes, prices and custom fields. Organize collections and reuse your data."],
@@ -37,35 +38,21 @@ const softwareSchema = {
       <div class="hero-copy">
         <div class="eyebrow">Your barcode and product workspace</div>
         <h1>Everything Barcode. One Platform.</h1>
-        <p class="lede">Look up, scan, generate and organize your barcodes. Save product details in your private Vault, print labels and keep your next task moving—all in one nest.</p>
-        <div class="hero-actions"><a class="button button-signal" href="/register/?next=%2Fvault%2F">Start your Free Vault</a><a class="button button-secondary" href="/barcode-scanner/">Scan a barcode</a></div>
+        <p class="lede">Search, generate, scan, validate, organise, print and manage your barcodes — all in one powerful workspace.</p>
+        <div class="hero-actions"><a class="button button-signal" href="/register/?next=%2Fvault%2F">Get Started Free</a><a class="button button-secondary" href="/tools/">Explore Tools</a></div>
         <p class="hero-note">Start with 25 saved products, 250 lifetime successful lookup credits and monthly tool allowances. No payment details required.</p>
         <p class="hero-note"><a href="/barcode-scanner/"><u>Scan a barcode photo</u></a> or <a href="/barcode-validator/"><u>check a barcode number</u></a>. Free account required.</p>
       </div>
-      <div class="api-window" aria-label="Illustrative BarcodeNest API response">
-        <div class="window-bar"><i></i><i></i><i></i><span>api.barcodenest.com</span></div>
-        <div class="request-line"><span class="method">GET</span> /v1/products/3017620422003<br><span class="header-key">X-API-Key:</span> &bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;</div>
-        <pre><code>&#123;
-  <span class="json-key">"barcode"</span>: <span class="json-string">"3017620422003"</span>,
-  <span class="json-key">"barcode_type"</span>: <span class="json-string">"EAN-13"</span>,
-  <span class="json-key">"canonical_gtin"</span>: <span class="json-string">"03017620422003"</span>,
-  <span class="json-key">"found"</span>: <span class="json-bool">true</span>,
-  <span class="json-key">"product"</span>: &#123;
-    <span class="json-key">"name"</span>: <span class="json-string">"Nutella"</span>,
-    <span class="json-key">"brand"</span>: <span class="json-string">"Ferrero"</span>,
-    <span class="json-key">"quantity"</span>: <span class="json-string">"400 g"</span>,
-    <span class="json-key">"allergens"</span>: [<span class="json-string">"milk"</span>, <span class="json-string">"nuts"</span>]
-  &#125;
-&#125;</code></pre>
-      </div>
+      <div class="workspace-preview" aria-label="Illustrative workspace preview"><div class="preview-top"><strong>My Workspace</strong><span>Illustrative view</span></div><div class="preview-layout"><div class="preview-nav"><span>Overview</span><strong>My Vault</strong><span>Barcode tools</span><span>Labels</span></div><div class="preview-products"><p class="eyebrow">Your private collection</p><h2>Everything has a home.</h2><article><span class="preview-code" aria-hidden="true">▥</span><div><strong>Blue storage box</strong><small>SKU-BOX-001 · Stockroom</small></div><span>Saved</span></article><article><span class="preview-code" aria-hidden="true">▥</span><div><strong>Desk organiser</strong><small>SKU-DESK-002 · Office</small></div><span>Saved</span></article><a href="/vault/">Open your real Vault →</a><p class="tool-hint">Example products shown for illustration.</p></div></div></div>
     </div>
   </section>
 
-  <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong>4.35M+</strong><span>Products</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Developer Tier</span></div><div><strong>API Key</strong><span>In Under 1 Minute</span></div></div></section>
+  <section class="launch-metrics" aria-label="BarcodeNest service highlights"><div class="container metrics-grid"><div><strong data-public-count>—</strong><span>Verified public product records</span></div><div><strong>REST</strong><span>API</span></div><div><strong>Free</strong><span>Workspace entry plan</span></div><div><strong>Private</strong><span>Product workspace</span></div></div></section>
 
   <section class="section"><div class="narrow"><div class="eyebrow">Barcode lookup API</div><h2>Turn a UPC, EAN, or GTIN into structured product data.</h2><p class="lede">A barcode lookup API lets an application submit a product identifier and receive machine-readable information such as a product name, brand, quantity, categories, ingredients, allergens, nutrition, countries, and images where those fields are available.</p><p>BarcodeNest combines a grocery barcode database with a documented REST API and structured JSON responses. It supports UPC lookup, EAN lookup, and GTIN lookup with API-key authentication and monthly usage tracking.</p><p>Explore the <a href="/barcode-api/"><u>barcode API</u></a>, <a href="/upc-api/"><u>UPC lookup API</u></a>, <a href="/ean-api/"><u>EAN product lookup</u></a>, and <a href="/gtin-api/"><u>GTIN lookup API</u></a>. You can also <a href="/docs/"><u>read the product database API documentation</u></a> or <a href="/pricing/"><u>compare barcode API pricing</u></a>.</p></div></section>
 
-  <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Everything needed for reliable barcode lookups.</h2><p class="lede">A focused API and account experience built for real developer workflows.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
+  <section class="section" id="all-tools"><div class="container"><div class="eyebrow">Discover your next workflow</div><h2>All your available tools.</h2><ToolGrid /></div></section>
+  <section class="section" id="features"><div class="container"><div class="section-head"><div class="eyebrow">Features</div><h2>Your product work, connected.</h2><p class="lede">Save once, reuse your product details and choose the tools that fit your task.</p></div><div class="launch-feature-grid">{features.map(([index, title, copy]) => <article class="launch-feature"><span>{index}</span><h3>{title}</h3><p>{copy}</p></article>)}</div></div></section>
 
   <section class="section" aria-labelledby="coverage-heading"><div class="container"><div class="section-head"><div class="eyebrow">Product coverage</div><h2 id="coverage-heading">More than groceries.</h2><p class="lede">BarcodeNest combines multiple open product datasets into one canonical GTIN index. Coverage currently includes these broad product groups.</p></div><div class="content-grid">
     <article class="content-block"><h3>Food &amp; beverages</h3><p>Packaged groceries, drinks, ingredients, nutrition products, and branded foods from global markets.</p></article>
@@ -74,11 +61,11 @@ const softwareSchema = {
     <article class="content-block"><h3>General products</h3><p>A growing selection of household and other packaged retail products outside the food categories.</p></article>
   </div><p class="coverage-note">Coverage is not universal. Product availability and field completeness vary by source, barcode, market, and geography. <a href="/data/"><u>See data coverage and sources</u></a>.</p></div></section>
 
-  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Shortest path to production</div><h2>Your first barcode lookup in six clear steps.</h2></div><ol class="journey"><li><span>01</span>Register</li><li><span>02</span>Automatic login</li><li><span>03</span>Open onboarding</li><li><span>04</span>Copy API key</li><li><span>05</span>Send request</li><li><span>06</span>Receive product data</li></ol></div></section>
+  <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">Shortest path to production</div><h2>From an identifier to a reusable product record.</h2></div><ol class="journey"><li><span>01</span>Register</li><li><span>02</span>Open workspace</li><li><span>03</span>Scan or look up</li><li><span>04</span>Save to Vault</li><li><span>05</span>Create labels</li><li><span>06</span>Reuse your data</li></ol></div></section>
 
-  <section class="section"><div class="container examples-layout"><div><div class="eyebrow">One authenticated barcode lookup</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
+  <section class="section"><div class="container examples-layout"><div><div class="eyebrow">Developer tools</div><h2>Start building immediately.</h2><p class="lede">Copy the key created during onboarding, send it in the <code class="inline-code">X-API-Key</code> header, and receive structured JSON.</p><a href="/docs" class="button button-secondary">Documentation</a></div><CodeBlock label="cURL" code={curl} language="bash" /></div></section>
 
-  <section class="section"><div class="container metric-row"><div class="big-metric">4.35M<span>+</span></div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
+  <section class="section"><div class="container metric-row"><div class="big-metric" data-public-count>—</div><div><div class="eyebrow">Searchable index</div><h2>Broad reach. Honest limits.</h2><p class="lede">Coverage and field completeness vary by product, source, market, and geography. Fields such as images, ingredients, allergens, and nutrition are returned where available.</p><p id="public-count-verified" class="tool-hint">Verified database statistics are loading.</p><a href="/data/" class="button button-secondary">Explore Data Coverage</a></div></div></section>
 
   <section class="section"><div class="container"><h2>Build product lookup into your business workflow.</h2><div class="content-grid"><article class="content-block"><h3><a href="/barcode-api-for-inventory/">Barcode API for inventory software</a></h3><p>Prefill product records during receiving, scanning, and catalog imports. Plan usage around actual lookup demand.</p></article><article class="content-block"><h3><a href="/product-data-api/">Product data for catalog enrichment</a></h3><p>Map names, brands, quantities, and images where available into your application. Evaluate required fields before upgrading.</p></article></div></div></section>
   <ComparisonSection />
@@ -87,3 +74,6 @@ const softwareSchema = {
 
   <section class="cta-band"><div class="container cta-grid"><div><div class="eyebrow">Ready to build?</div><h2>Run your first barcode lookup.</h2></div><div class="hero-actions"><a class="button button-signal" href="/register">Get Free API Key</a><a class="button" href="/docs">Documentation</a></div></div></section>
 </BaseLayout>
+
+<script>import{API}from'../scripts/auth-context';fetch(API+'/public/statistics').then(r=>r.ok?r.json():null).then(data=>{document.querySelectorAll<HTMLElement>('[data-public-count]').forEach(node=>{node.textContent=typeof data?.product_count==='number'?data.product_count.toLocaleString():'Count unavailable';if(data?.verified_at)node.title='Verified '+new Date(data.verified_at).toLocaleString();});document.getElementById('public-count-verified')!.textContent=data?.verified_at?'Exact count verified '+new Date(data.verified_at).toLocaleString(): 'A verified database count is not currently available.';}).catch(()=>{document.getElementById('public-count-verified')!.textContent='Verified database statistics are temporarily unavailable.';document.querySelectorAll('[data-public-count]').forEach(node=>node.textContent='Count unavailable');});</script>
+<style>[data-public-count]{overflow-wrap:anywhere}.launch-metrics [data-public-count]{font-size:clamp(18px,3vw,34px)}.workspace-preview{border:1px solid var(--line);border-radius:12px;background:var(--white);overflow:hidden;box-shadow:0 16px 48px #171a160d}.preview-top{display:flex;justify-content:space-between;gap:12px;padding:18px;border-bottom:1px solid var(--line)}.preview-top span{color:var(--muted);font-size:12px}.preview-layout{display:grid;grid-template-columns:120px 1fr;min-height:330px}.preview-nav{padding:20px 14px;background:var(--paper-2);font-size:12px;display:flex;flex-direction:column;gap:20px}.preview-nav strong{background:var(--signal);padding:8px;border-radius:4px}.preview-products{padding:24px;min-width:0}.preview-products h2{font-size:24px;line-height:1.2}.preview-products article{display:flex;align-items:center;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}.preview-products small{display:block;font-size:11px;color:var(--muted)}.preview-products article>span:last-child{font-size:11px;color:var(--muted);margin-left:auto}.preview-code{font-size:28px}.preview-products>a{display:block;margin-top:20px;text-decoration:underline}.preview-products .tool-hint{font-size:11px;color:var(--muted)}@media(max-width:540px){.preview-layout{grid-template-columns:85px 1fr}.preview-nav{padding:16px 8px}.preview-products{padding:16px}.preview-products article>span:last-child{display:none}.preview-products h2{font-size:22px}.preview-products strong{font-size:13px}.big-metric[data-public-count]{font-size:42px;overflow-wrap:anywhere}}</style>

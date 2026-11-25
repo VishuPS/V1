@@ -1,20 +1,21 @@
 ---
 const { current = "" } = Astro.props;
-const links = [
-  ["My Vault", "/vault/", "vault"],
-  ["Pricing", "/pricing/", "pricing"],
-  ["Barcode generator", "/barcode-generator/", "tools"],
-  ["Barcode scanner", "/barcode-scanner/", "scanner"],
-  ["Blog", "/blog/", "blog"],
-  ["Documentation", "/docs/", "docs"],
-];
+import {tools,toolGroups} from "../content/tools.mjs";
+const solutions=[["Retail and Small Businesses","retail"],["Warehouses and Inventory","warehouses"],["E-commerce Businesses","ecommerce"],["Asset Management","assets"],["Developers","developers"]];
 ---
 <header class="site-header">
   <div class="container nav-wrap">
     <a class="brand" href="/" aria-label="BarcodeNest home"><img src="/logo-mark.svg" width="32" height="32" alt="" /><span>BarcodeNest</span></a>
     <button class="menu-button" type="button" aria-expanded="false" aria-controls="primary-nav"><span class="sr-only">Open navigation</span><span></span><span></span></button>
     <nav id="primary-nav" aria-label="Primary navigation">
-      <div class="nav-links">{links.map(([label, href, key]) => <a href={href} aria-current={current === key ? "page" : undefined}>{label}</a>)}</div>
+      <div class="nav-links">
+        <a href="/" aria-current={current===""?"page":undefined}>Home</a>
+        <details class="nav-dropdown"><summary>All Tools</summary><div class="nav-dropdown-panel tool-menu">{toolGroups.map(group=><div><strong>{group}</strong>{tools.filter(tool=>tool.group===group).map(tool=><a href={tool.href}>{tool.name}</a>)}</div>)}<a href="/tools/">Explore all tools →</a></div></details>
+        <details class="nav-dropdown"><summary>Solutions</summary><div class="nav-dropdown-panel">{solutions.map(([name,slug])=><a href={`/solutions/${slug}/`}>{name}</a>)}</div></details>
+        <details class="nav-dropdown"><summary>Developers</summary><div class="nav-dropdown-panel"><a href="/barcode-api/">Barcode API</a><a href="/docs/">Documentation</a><a href="/api-keys/">API keys</a><a href="/blog/">Guides and blog</a></div></details>
+        <a href="/pricing/" aria-current={current==="pricing"?"page":undefined}>Pricing</a>
+        <a href="/workspace/">My Workspace</a>
+      </div>
       <div class="nav-auth-check" id="auth-navigation-loading" aria-hidden="true"></div>
       <div class="nav-account" id="guest-navigation" hidden><a class="login-link" href="/login/">Login</a><a class="button button-small button-signal" href="/register/">Register</a></div>
       <div class="authenticated-navigation" id="authenticated-navigation" hidden><button class="button button-small button-secondary" id="header-signout" type="button">Sign out</button></div>
@@ -27,5 +28,12 @@ const links = [
   import { getAuthState, signOut } from "../scripts/auth-context";
   async function syncNavigation() { const result = await getAuthState(); if (result.status === "authenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const authenticated = document.querySelector<HTMLElement>("#authenticated-navigation"); if (authenticated) authenticated.hidden = false; } else if (result.status === "unauthenticated") { document.querySelector<HTMLElement>("#auth-navigation-loading")?.setAttribute("hidden", ""); const guest = document.querySelector<HTMLElement>("#guest-navigation"); if (guest) guest.hidden = false; } }
   document.querySelector<HTMLButtonElement>("#header-signout")?.addEventListener("click", async (event) => { const signout = event.currentTarget as HTMLButtonElement; signout.disabled = true; signout.textContent = "Signing out..."; try { await signOut(); } catch (error) { signout.disabled = false; signout.textContent = error instanceof Error ? error.message : "Try sign out again"; } });
+  document.querySelectorAll<HTMLDetailsElement>('.nav-dropdown').forEach(details=>{
+    details.addEventListener('toggle',()=>{if(details.open)document.querySelectorAll<HTMLDetailsElement>('.nav-dropdown').forEach(other=>{if(other!==details)other.open=false;});});
+    details.addEventListener('keydown',event=>{if(event.key==='Escape'){details.open=false;details.querySelector('summary')?.focus();}});
+  });
+  document.addEventListener('click',event=>{document.querySelectorAll<HTMLDetailsElement>('.nav-dropdown').forEach(details=>{if(!details.contains(event.target as Node))details.open=false;});});
   syncNavigation();
 </script>
+
+<style>.nav-dropdown{position:relative}.nav-dropdown summary{cursor:pointer;font-size:14px;color:var(--muted);padding:10px 0;min-height:44px;white-space:nowrap}.nav-dropdown summary:focus-visible{outline:2px solid var(--ink);outline-offset:4px}.nav-dropdown-panel{position:absolute;top:100%;left:0;z-index:50;min-width:240px;padding:20px;border:1px solid var(--line);border-radius:var(--radius);background:var(--paper);box-shadow:0 8px 24px #171a1615}.nav-dropdown-panel a{display:block;min-height:44px;padding:8px 0;white-space:normal}.tool-menu{display:grid;grid-template-columns:repeat(4,minmax(140px,1fr));gap:20px;width:min(850px,calc(100vw - 80px));left:-150px}.tool-menu strong{display:block;font-size:12px;margin-bottom:8px}.tool-menu>a{grid-column:1/-1}@media(max-width:1100px){.nav-dropdown{width:100%}.nav-dropdown summary{border-bottom:1px solid var(--line)}.nav-dropdown-panel{position:static;min-width:0;width:100%;box-shadow:none;border:0;padding:12px}.tool-menu{grid-template-columns:1fr 1fr;gap:16px}#primary-nav.is-open{max-height:calc(100dvh - 80px);overflow-y:auto}}@media(max-width:540px){.tool-menu{grid-template-columns:1fr}}</style>

@@ -1,0 +1,6 @@
+---
+import AccountLayout from "../layouts/AccountLayout.astro";
+import ToolGrid from "../components/ToolGrid.astro";
+---
+<AccountLayout title="My Workspace" current="workspace"><header class="portal-header"><div><div class="eyebrow">Everything in your nest</div><h1>My Workspace</h1><p>Move from an identifier to a saved product, an export or a printed label.</p></div><a class="button button-signal" href="/vault/">Open My Vault</a></header><section class="portal-panel"><h2>Your plan and workspace</h2><p id="workspace-plan" role="status">Loading your entitlements…</p><a href="/billing/">Manage subscription</a><p>Saved products → Generate a barcode → Print labels → Export a collection.</p></section><ToolGrid /><p id="workspace-error" role="status"></p></AccountLayout>
+<script>import {requireUser,authFetch,responseMessage} from '../scripts/auth-context';requireUser().then(async user=>{if(!user)return;const response=await authFetch('/account/entitlements');if(!response.ok)throw new Error(await responseMessage(response));const data=await response.json();document.getElementById('workspace-plan')!.textContent=`${data.plan} · ${data.vault_capacity.toLocaleString()} saved-product capacity${data.read_only?' · Read-only access; review your subscription.':''}`;}).catch(error=>{document.getElementById('workspace-error')!.textContent=error.message;});</script>

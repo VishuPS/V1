@@ -18,6 +18,7 @@ from app.db import get_db
 from app.models import Subscription, User, VaultProduct, utcnow
 from app.user_auth import UserContext, get_current_user, ensure_allowed_origin
 from app.service_usage import record_activity
+from app.entitlements import account_entitlements, require_feature
 
 router = APIRouter(prefix="/v1/account/vault", tags=["private product vault"])
 Db = Annotated[Session, Depends(get_db)]
@@ -104,9 +105,10 @@ def plan_for(session,owner):
 
 
 def summary(session,owner,settings):
-    plan=plan_for(session,owner)
+    entitlements=account_entitlements(session,owner.user,settings)
+    plan=entitlements["plan"]
     used=session.scalar(select(func.count()).select_from(VaultProduct).where(VaultProduct.user_id==owner.user.id))
-    return {"plan":plan,"used":used,"capacity":settings.vault_limits.get(plan,0),"export_included":plan in {"CREATOR","STARTER","GROWTH"}}
+    return {"plan":plan,"used":used,"capacity":entitlements["vault_capacity"],"export_included":entitlements["features"]["advanced_exports"]}
 
 
 def serialize(item):
@@ -166,6 +168,7 @@ def export_products(session:Db,owner:Owner,settings:Config,format:Literal["csv",
 
 @router.post("")
 def save_product(payload:VaultInput,session:Db,owner:Owner,settings:Config):
+    require_feature(session,owner.user,settings,"vault")
     kind,key=identity(payload)
     # Serialize account capacity checks across concurrent creates and deletes.
     session.scalar(select(User).where(User.id==owner.user.id).with_for_update())
@@ -187,7 +190,8 @@ def get_saved_product(item_id:str,session:Db,owner:Owner):
 
 
 @router.put("/{item_id}")
-def update_product(item_id:str,payload:VaultUpdate,session:Db,owner:Owner):
+def update_product(item_id:str,payload:VaultUpdate,session:Db,owner:Owner,settings:Config):
+    require_feature(session,owner.user,settings,"vault")
     item=owned(session,owner,item_id,lock=True)
     if payload.revision!=item.revision:
         raise HTTPException(409,detail={"code":"vault_edit_conflict","message":"This product changed since you opened it. Reopen it before editing again."})
