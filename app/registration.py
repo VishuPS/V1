@@ -242,6 +242,8 @@ def provision_free_account(
         now = datetime.now(timezone.utc)
         period_end = now.replace(day=monthrange(now.year, now.month)[1], hour=23, minute=59, second=59, microsecond=999999)
         session.add(Subscription(user_id=user.id, plan_code="FREE", status="active", monthly_call_limit=250, monthly_calls_used=0, usage_period_start=now, usage_period_end=period_end))
+        from app.funnel import record_event_safely
+        record_event_safely(session,"user_registered",user_id=user.id,dedupe_key="registered:"+user.id)
         session.commit()
     except IntegrityError as exc:
         session.rollback()

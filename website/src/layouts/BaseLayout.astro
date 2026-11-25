@@ -4,7 +4,7 @@ import Footer from "../components/Footer.astro";
 import "../styles/global.css";
 const {
   title = "BarcodeNest | Barcode Lookup API for Developers",
-  description = "Access over 4.35 million products through BarcodeNest's REST API. Create a free account, generate an API key, and start building today.",
+  description = "Search, generate, scan and manage barcodes and private product records with BarcodeNest's connected workspace and API.",
   current = "",
   noindex = false,
   structuredData = null,
@@ -66,5 +66,6 @@ const schemaGraph = structuredData ? [websiteSchema, organizationSchema, structu
     <Header current={current} />
     <main id="main"><slot /></main>
     <Footer />
+    <script src="../scripts/platform-analytics.ts"></script>
   </body>
 </html>

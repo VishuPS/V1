@@ -163,6 +163,7 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     if not period_end: return
     record = session.scalar(select(Subscription).where(Subscription.user_id == user_id).order_by(Subscription.created_at.desc()).with_for_update())
     if not record: return
+    was_active_paid=record.plan_code in {"CREATOR","STARTER","GROWTH"} and record.status=="active"
     if obj.get("status") not in {"active", "trialing", "past_due"}:
         # An incomplete checkout must not grant paid access.
         if record.provider_subscription_id == obj.get("id"):
@@ -183,6 +184,9 @@ def _apply_subscription(session: Session, settings: Settings, obj: dict, fallbac
     )
     record.plan_code = plan
     record.status = obj.get("status") or "active"
+    if not was_active_paid and record.status=="active":
+        from app.funnel import record_event_safely
+        record_event_safely(session,"subscription_activated",user_id=user_id,tool="billing",dedupe_key="activated:"+str(obj.get("id")))
     record.provider = "stripe"
     record.provider_customer_id = obj.get("customer") or record.provider_customer_id
     record.provider_subscription_id = obj.get("id") or record.provider_subscription_id

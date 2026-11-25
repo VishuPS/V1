@@ -15,7 +15,7 @@ from app.barcodes import BarcodeError, parse_barcode
 from app.barcode_tools import validate_symbol
 from app.config import Settings, get_settings
 from app.db import get_db
-from app.models import Subscription, User, VaultProduct, ProductIdentifier, SkuAllocation, utcnow
+from app.models import Subscription, User, VaultProduct, ProductIdentifier, SkuAllocation, InventoryItem, utcnow
 from app.auth import rate_limiter
 from app.user_auth import UserContext, get_current_user, ensure_allowed_origin
 from app.service_usage import record_activity
@@ -222,30 +222,14 @@ def list_products(session:Db,owner:Owner,settings:Config,q:str=Query(default="",
 def export_products(session:Db,owner:Owner,settings:Config,format:Literal["csv","json"]="csv",collection:str=Query(default="",max_length=100)):
     if not summary(session,owner,settings)["export_included"]:
         raise HTTPException(403,detail={"code":"paid_plan_required","message":"Vault export is included in Creator, Starter and Growth"})
-    query=select(VaultProduct).where(VaultProduct.user_id==owner.user.id)
-    if collection:
-        query=query.where(VaultProduct.collection==collection)
-    # Bound memory even if an operator configures a much larger storage plan.
-    records=session.scalars(query.order_by(VaultProduct.name,VaultProduct.id).limit(10001)).all()
-    if len(records)>10000:
-        raise HTTPException(422,detail={"code":"export_too_large","message":"Export a collection with at most 10,000 products"})
-    headers={"Content-Disposition":f'attachment; filename="barcodenest-vault.{format}"',"Cache-Control":"no-store"}
-    if format=="json":
-        content=json.dumps([serialize(r) for r in records],default=lambda v:v.isoformat(),ensure_ascii=False)
-        record_activity(session,"user:"+owner.user.id,"vault_exports")
-        return Response(content,media_type="application/json",headers=headers)
+    from app.processing import processing_slot
+    from app.workspace_export import product_rows
+    from app.workspace_io import table_response
     fields=["barcode","barcode_type","name","sku","brand","category","collection","price_minor","currency","image_url","notes","custom_fields"]
-    output=StringIO();writer=csv.DictWriter(output,fieldnames=fields);writer.writeheader()
-    for record in records:
-        values=serialize(record);values["custom_fields"]=json.dumps(values["custom_fields"],ensure_ascii=False)
-        row={key:values[key] for key in fields}
-        for key,value in row.items():
-            if isinstance(value,str) and value.lstrip().startswith(("=","+","-","@")):
-                row[key]="'"+value
-        writer.writerow(row)
-    content=output.getvalue().encode("utf-8-sig")
+    with processing_slot():
+        response=table_response(product_rows(session,owner.user.id,serialize,collection=collection),fields,format,"barcodenest-vault")
     record_activity(session,"user:"+owner.user.id,"vault_exports")
-    return Response(content,media_type="text/csv",headers=headers)
+    return response
 
 
 @router.post("")
@@ -313,5 +297,7 @@ def update_product(item_id:str,payload:VaultUpdate,session:Db,owner:Owner,settin
 @router.delete("/{item_id}",status_code=204)
 def delete_product(item_id:str,session:Db,owner:Owner):
     session.scalar(select(User).where(User.id==owner.user.id).with_for_update())
+    if session.scalar(select(InventoryItem.id).where(InventoryItem.user_id==owner.user.id,InventoryItem.product_id==item_id).limit(1)):
+        raise HTTPException(409,detail="This product has an inventory register. Archive its inventory record to preserve stock history.")
     session.delete(owned(session,owner,item_id));session.commit()
     return Response(status_code=204)

@@ -18,3 +18,10 @@ Disallow: /workspace/
 Disallow: /catalogue/
 Disallow: /sku-manager/
 Disallow: /label-studio/
+
+Disallow: /inventory/
+
+Disallow: /bulk-studio/
+Disallow: /catalogue-auditor/
+
+Disallow: /assets/

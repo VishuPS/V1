@@ -46,13 +46,21 @@ export async function authFetch(path: string, options: RequestInit = {}): Promis
   if (response.status === 401 && !path.startsWith("/auth/") && await refreshSession()) {
     response = await fetch(`${API}${path}`, { ...options, credentials: "include" });
   }
+  if(response.ok){
+    let event='',tool='';
+    if(/^\/account\/barcodes\/(?:render|batch-render)$/.test(path)){event='barcode_generated';tool='generator';}
+    else if(/^\/account\/products\/[^/]+$/.test(path)&&(!options.method||options.method==='GET')){event='barcode_looked_up';tool='lookup';}
+    else if(/^\/account\/vault(?:\/[^/]+)?$/.test(path)&&['POST','PUT'].includes(options.method||'')){event='product_saved';tool='vault';}
+    else if(/^\/account\/(?:label-studio\/render|labels\/render|assets\/[^/]+\/label)$/.test(path)){event='label_exported';tool='label_studio';}
+    if(event)window.dispatchEvent(new CustomEvent('barcodenest:tool-action',{detail:{event,tool}}));
+  }
   return response;
 }
 
 export async function responseMessage(response: Response): Promise<string> {
   try {
     const body = await response.json();
-    return body?.error?.message || body?.detail?.message || body?.message || "The request could not be completed.";
+    return body?.error?.message || body?.detail?.message || (typeof body?.detail === "string" ? body.detail : null) || body?.message || "The request could not be completed.";
   } catch { return "The request could not be completed."; }
 }
 

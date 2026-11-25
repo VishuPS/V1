@@ -4,6 +4,10 @@ from pydantic import BaseModel, Field
 
 
 class AdminDashboardSummary(BaseModel):
+    asset_records:int=0
+    asset_events:int=0
+    inventory_records:int=0
+    stock_movements:int=0
     sku_allocations:int=0
     label_templates:int=0
     tool_units_month: dict[str,int] = Field(default_factory=dict)
@@ -68,6 +72,10 @@ class AdminToolUsage(BaseModel):
 
 
 class AdminWorkspaceUsage(BaseModel):
+    asset_records:int=0
+    asset_events:int=0
+    inventory_records:int=0
+    stock_movements:int=0
     sku_allocations:int=0
     sku_capacity:int=0
     label_templates:int=0

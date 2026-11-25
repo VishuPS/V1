@@ -214,11 +214,15 @@ def authorized_key_context(record: ApiKey, session: Session, settings: Settings,
         "/v1/products/enrich-csv": "enrichment",
         "/v1/products/enrichment-preview": "enrichment",
         "/v1/services/usage": "services",
+        "/v1/bulk/reserve": "bulk",
+        "/v1/bulk/enrich": "enrichment",
     }
     path = request.url.path if request else ""
     if path.startswith("/v1/account/"):
         path = path.replace("/v1/account/", "/v1/", 1)
     category = category.get(path, "lookups")
+    if path.startswith("/v1/assets/") and path.endswith("/label"):
+        category="labels"
     scope = record.owner_user_id or record.client.owner_user_id or record.client_id
     rate_key = record.id if category == "lookups" else f"{scope}:{category}"
     rate = rate_limiter.check(rate_key, plan.requests_per_minute)

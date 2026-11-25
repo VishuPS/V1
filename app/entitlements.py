@@ -38,6 +38,7 @@ def account_entitlements(session,user:User,settings)->dict:
         "monthly_workspace_limits":settings.workspace_monthly_limits.get(plan,{}),
         "workspace_usage":{key:{"used":used.get(key,0),"limit":limit,"remaining":max(0,limit-used.get(key,0))} for key,limit in limits.items()},
         "sku_capacity":settings.sku_record_limits.get(plan,0),
+        "asset_capacity":settings.asset_record_limits.get(plan,0),
         "label_template_capacity":settings.label_template_limits.get(plan,0),
         "service_limits":settings.service_limits[plan].model_dump() if plan in settings.service_limits else {},
         "upgrade_url":"/pricing/"}

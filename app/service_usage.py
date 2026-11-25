@@ -63,7 +63,7 @@ def quota_headers(category: str, limit: int, used: int, period) -> dict[str, str
 
 
 def consume_service_usage(session: Session, context: AuthContext, settings: Settings,
-                          category: str, units: int, *, now: datetime | None = None) -> dict[str, str]:
+                          category: str, units: int, *, now: datetime | None = None, commit: bool = True) -> dict[str, str]:
     if category not in CATEGORIES or units < 1:
         raise ValueError("Invalid service usage")
     timestamp = now or datetime.now(timezone.utc)
@@ -103,7 +103,8 @@ def consume_service_usage(session: Session, context: AuthContext, settings: Sett
         session.rollback()
         raise error
     session.execute(update(ApiKey).where(ApiKey.id == context.api_key.id).values(last_used_at=timestamp))
-    session.commit()
+    if commit:
+        session.commit()
     return quota_headers(category, limit, updated, period)
 
 

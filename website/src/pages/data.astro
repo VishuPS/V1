@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
-<BaseLayout title="Barcode Product Database Coverage | BarcodeNest" description="Explore BarcodeNest coverage across 4.35M+ food, beauty, pet food and general products, with transparent source attribution and coverage limits." current="data">
+<BaseLayout title="Barcode Product Database Coverage | BarcodeNest" description="Explore BarcodeNest coverage across food, beauty, pet food and general products, with transparent source attribution and coverage limits." current="data">
   <header class="page-hero"><div class="container"><div class="eyebrow">About the data</div><h1>One barcode index across multiple product categories.</h1><p class="lede">BarcodeNest validates identifiers, indexes product records, normalises selected fields, and exposes consistent API responses—with provenance kept visible.</p></div></header>
 
   <section class="section"><div class="container"><div class="content-grid">
@@ -11,7 +11,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <article class="content-block"><h3>Visible provenance</h3><p>Contributing sources remain separately recorded. BarcodeNest does not claim ownership of third-party product data.</p></article>
   </div></div></section>
 
-  <section class="section"><div class="container metric-row"><div class="big-metric">4.35M<span>+</span></div><div><div class="eyebrow">Current coverage</div><h2>A multi-source product index.</h2><p class="lede">The production database contains more than 4.35 million canonical products. Coverage is global, with especially strong grocery depth in Europe and growing US and non-food coverage.</p></div></div></section>
+  <section class="section"><div class="container metric-row"><div class="big-metric"><span data-public-count>—</span></div><div><div class="eyebrow">Current coverage</div><h2>A multi-source product index.</h2><p class="lede">The production database contains indexed canonical products. Coverage is global, with especially strong grocery depth in Europe and growing US and non-food coverage.</p></div></div></section>
 
   <section class="section"><div class="container"><div class="section-head"><div class="eyebrow">What is covered</div><h2>A practical cross-section of packaged products.</h2><p class="lede">These are broad coverage categories, not guarantees that every product or barcode in each category is present.</p></div><div class="content-grid">
     <article class="content-block"><h3>Food &amp; beverages</h3><p>Packaged groceries, beverages, branded foods, ingredients, snacks, pantry products, and nutrition-related products.</p></article>
@@ -24,4 +24,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   <section class="section"><div class="narrow"><div class="eyebrow">Coverage limits</div><h2>What to expect.</h2><p class="lede">Coverage is not universal. Field completeness varies by product, source, market, and geography. Names and brands are more common than ingredients, allergens, nutrition, or images, and data can be incomplete or out of date.</p><p>Evaluate the API with barcodes representative of your users, regions, and categories. For questions about a particular use case, email <a href="mailto:support@barcodenest.com"><u>support@barcodenest.com</u></a>.</p></div></section>
 <section class="section"><div class="narrow"><h2>Browse sourced product records</h2><p>Explore the <a href="/products/"><u>public product directory</u></a> for barcode identities, available pack details and links to source records.</p></div></section>
-</BaseLayout>
+<p id="public-count-verified" class="container tool-hint">Verified database statistics are loading.</p></BaseLayout>
+<script>import{API}from'../scripts/auth-context';fetch(API+'/public/statistics').then(r=>r.ok?r.json():null).then(data=>{document.querySelectorAll<HTMLElement>('[data-public-count]').forEach(node=>{node.textContent=typeof data?.product_count==='number'?data.product_count.toLocaleString():'Count unavailable';if(data?.verified_at)node.title='Verified '+new Date(data.verified_at).toLocaleString();});document.getElementById('public-count-verified')!.textContent=data?.verified_at?'Exact count verified '+new Date(data.verified_at).toLocaleString(): 'A verified database count is not currently available.';}).catch(()=>{document.getElementById('public-count-verified')!.textContent='Verified database statistics are temporarily unavailable.';document.querySelectorAll('[data-public-count]').forEach(node=>node.textContent='Count unavailable');});</script>
+<style>[data-public-count]{font-size:clamp(22px,5vw,64px);overflow-wrap:anywhere}</style>

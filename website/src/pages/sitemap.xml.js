@@ -1,5 +1,7 @@
 import { staticPosts } from "../content/blog-posts.mjs";
+import { platformLandings } from "../content/platform-landings.mjs";
 const pages = [
+  ...platformLandings.map(tool=>[`tools/${tool.slug}/`, "0.8", "monthly"]),
   ["tools/", "0.9", "monthly"],
   ["barcode-lookup/", "0.8", "monthly"],
   ["barcode-converter/", "0.8", "monthly"],

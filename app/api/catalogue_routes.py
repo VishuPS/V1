@@ -107,16 +107,8 @@ def bulk_edit(payload:BulkEdit,session:Db,owner:Owner,settings:Config):
 @router.get("/export")
 def export_catalogue(session:Db,owner:ProcessingOwner,settings:Config,format:Literal["csv","xlsx","json"]="csv",collection:str=Query(default="",max_length=100)):
     require_feature(session,owner.user,settings,"advanced_exports")
-    query=select(VaultProduct).where(VaultProduct.user_id==owner.user.id)
-    if collection:
-        query=query.where(VaultProduct.collection==collection)
-    items=session.scalars(query.order_by(VaultProduct.name,VaultProduct.id).limit(10001)).all()
-    if len(items)>10000:
-        raise HTTPException(422,detail="Choose a collection containing at most 10,000 products")
-    aliases={}
-    for identifier in session.scalars(select(ProductIdentifier).where(ProductIdentifier.user_id==owner.user.id,ProductIdentifier.product_id.in_([item.id for item in items]))):
-        aliases.setdefault(identifier.product_id,[]).append({"value":identifier.value,"kind":identifier.kind})
-    rows=[{**serialize(item),"identifiers":aliases.get(item.id,[])} for item in items]
+    from app.workspace_export import product_rows
+    rows=product_rows(session,owner.user.id,serialize,collection=collection,include_aliases=True)
     return table_response(rows,["id",*VaultInput.model_fields,"identifiers"],format,"barcodenest-catalogue")
 
 

@@ -17,6 +17,9 @@ importers:
       astro:
         specifier: ^5.12.4
         version: 5.18.2(rollup@4.62.3)(typescript@5.9.3)(yaml@2.9.0)
+      fflate:
+        specifier: 0.8.2
+        version: 0.8.2
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -1097,6 +1100,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
 
   flattie@1.1.1:
     resolution: {integrity: sha512-9UbaD6XdAL97+k/n+N7JwX46K/M6Zc6KcFYskrYL8wbBV/Uyk0CTAMY0VT+qiK5PM7AIc9aTWYtq65U7T+aCNQ==}
@@ -2955,6 +2961,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.5):
     optionalDependencies:
       picomatch: 4.0.5
+
+  fflate@0.8.2: {}
 
   flattie@1.1.1: {}
 

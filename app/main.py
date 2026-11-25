@@ -62,6 +62,19 @@ async def supervise_recovery():
         await asyncio.sleep(10800)
 
 
+async def maintain_funnel_retention():
+    from datetime import timedelta
+    from app.db import SessionLocal
+    from app.models import utcnow
+    from app.funnel import prune_expired_events
+    def prune():
+        with SessionLocal() as session:prune_expired_events(session,utcnow()-timedelta(days=90))
+    while True:
+        try:await asyncio.to_thread(prune)
+        except Exception:logger.warning("Aggregate analytics retention pass failed")
+        await asyncio.sleep(21600)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     if settings.auto_create_tables:
@@ -70,9 +83,13 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         asyncio.create_task(supervise_recovery())
         if settings.recovery_enabled and settings.recovery_worker_enabled else None
     )
+    retention_task=asyncio.create_task(maintain_funnel_retention()) if settings.app_env!="test" else None
     try:
         yield
     finally:
+        if retention_task is not None:
+            retention_task.cancel()
+            with suppress(asyncio.CancelledError):await retention_task
         if recovery_task is not None:
             recovery_task.cancel()
             with suppress(asyncio.CancelledError):
@@ -90,11 +107,13 @@ app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=settings.trusted_hosts,
 )
+from app.workspace_body_limit import WorkspaceBodyLimitMiddleware
+app.add_middleware(WorkspaceBodyLimitMiddleware,max_bytes=(settings.workspace_upload_bytes*4//3)+1_000_000)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.effective_cors_allowed_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization", "X-API-Key"],
     expose_headers=["X-Service-Category", "X-Service-Quota-Limit", "X-Service-Quota-Remaining", "X-Service-Quota-Period", "X-Enrichment-Matched", "Content-Disposition"],
 )
@@ -111,6 +130,16 @@ app.include_router(workspace_router)
 app.include_router(sku_router)
 app.include_router(catalogue_router)
 app.include_router(label_studio_router)
+from app.api.inventory_routes import router as inventory_router
+app.include_router(inventory_router)
+from app.api.auditor_routes import router as auditor_router
+app.include_router(auditor_router)
+from app.api.bulk_routes import router as bulk_router
+app.include_router(bulk_router)
+from app.api.asset_routes import router as asset_router
+app.include_router(asset_router)
+from app.api.funnel_routes import router as funnel_router
+app.include_router(funnel_router)
 app.include_router(contribution_router)
 app.include_router(contribution_admin_router)
 

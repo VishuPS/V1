@@ -95,16 +95,28 @@ def read_table(payload:TableUpload,*,max_bytes:int=5_000_000,max_rows:int=1000,m
     return result
 
 
-def table_response(rows:list[dict],fields:list[str],format:str,filename:str)->Response:
-    if len(rows)>10000:
-        raise ValueError("Export at most 10,000 rows at once")
+def table_response(rows,fields:list[str],format:str,filename:str)->Response:
+    bounded=[];size=0
+    for row in rows:
+        size+=len(json.dumps(row,ensure_ascii=False,default=lambda value:value.isoformat()).encode('utf-8'))
+        if len(bounded)>=10000 or size>12_000_000:
+            raise HTTPException(422,detail="Export exceeds 10,000 rows or 12 MB of data. Choose a smaller collection or selection.")
+        if format=='xlsx' and any(isinstance(value,str) and any(ord(char)<32 and char not in '\t\r\n' for char in value) for value in row.values()):
+            raise HTTPException(422,detail="A field contains control characters unsupported by XLSX. Use JSON or correct the record before exporting.")
+        bounded.append(row)
+    rows=bounded
     if format=="json":
         content=json.dumps(rows,ensure_ascii=False,default=lambda value:value.isoformat())
         media="application/json"
     elif format=="xlsx":
         book=Workbook(write_only=True);sheet=book.create_sheet("Data")
-        sheet.append(fields)
         from openpyxl.cell import WriteOnlyCell
+        header=[]
+        for field in fields:
+            if any(ord(char)<32 and char not in '\t\r\n' for char in field):
+                raise HTTPException(422,detail="Remove unsupported control characters from column names")
+            cell=WriteOnlyCell(sheet,value=field);cell.data_type='s';cell.number_format='@';header.append(cell)
+        sheet.append(header)
         for row in rows:
             cells=[]
             for field in fields:
@@ -125,7 +137,8 @@ def table_response(rows:list[dict],fields:list[str],format:str,filename:str)->Re
         output=BytesIO();book.save(output);content=output.getvalue()
         media="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     elif format=="csv":
-        output=StringIO();writer=csv.DictWriter(output,fieldnames=fields);writer.writeheader()
+        output=StringIO();writer=csv.DictWriter(output,fieldnames=fields)
+        writer.writerow({field:("'"+field if field.lstrip("".join(chr(index) for index in range(33))+"\ufeff").startswith(("=","+","-","@")) else field) for field in fields})
         for row in rows:
             values={key:row.get(key,"") for key in fields}
             for key,value in values.items():

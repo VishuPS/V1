@@ -10,11 +10,13 @@ from app.entitlements import require_feature,reserve_workspace_units
 from app.models import User,VaultProduct,SkuSequence,SkuAllocation,utcnow
 from app.workspace_io import TableUpload,read_table,table_response
 from app.api.workspace_dependencies import ProcessingOwner
+from app.workspace_receipts import fingerprint,replay,remember
 
 router=APIRouter(prefix="/v1/account/skus",tags=["SKU manager"])
 
 
 class SkuRequest(BaseModel):
+    request_id:str|None=Field(default=None,min_length=16,max_length=64,pattern=r"^[A-Za-z0-9_-]+$")
     prefix:str=Field(default="SKU",max_length=20,pattern=r"^[A-Z0-9_-]*$")
     category_code:str=Field(default="",max_length=20,pattern=r"^[A-Z0-9_-]*$")
     pattern:str=Field(default="{prefix}-{number:06}",max_length=100)
@@ -30,7 +32,7 @@ class SkuRequest(BaseModel):
             for literal,field,spec,conversion in Formatter().parse(value):
                 if not re.fullmatch(r"[A-Z0-9_.-]*",literal) or conversion:
                     raise ValueError("Use uppercase letters, numbers, dots, dashes and underscores")
-                if field:
+                if field is not None:
                     if field not in {"prefix","category","number"}:
                         raise ValueError("Pattern tokens are {prefix}, {category} and {number:06}")
                     if field=="number":
@@ -76,6 +78,9 @@ def generate_skus(payload:SkuRequest,session:Db,owner:Owner,settings:Config):
     if payload.product_ids and (len(set(payload.product_ids))!=len(payload.product_ids) or len(payload.product_ids)!=payload.quantity):
         raise HTTPException(422,detail={"code":"invalid_products","message":"Choose one distinct product per generated SKU"})
     session.scalar(select(User).where(User.id==owner.user.id).with_for_update())
+    digest=fingerprint(payload.model_dump(exclude={"request_id"}))
+    previous=replay(session,owner.user.id,payload.request_id,"sku",digest)
+    if previous is not None:return previous
     ledger_limit=settings.sku_record_limits.get(require_feature(session,owner.user,settings,"sku_management")["plan"],0)
     count=session.scalar(select(func.count()).select_from(SkuAllocation).where(SkuAllocation.user_id==owner.user.id))
     if count+payload.quantity>ledger_limit:
@@ -107,8 +112,12 @@ def generate_skus(payload:SkuRequest,session:Db,owner:Owner,settings:Config):
         if product:
             product.sku=code;product.revision+=1;product.updated_at=utcnow()
     reserve_workspace_units(session,owner.user,settings,"sku_generation",len(generated))
+    session.flush()
+    from fastapi.encoders import jsonable_encoder
+    result=jsonable_encoder({"items":[sku_json(item) for item in generated],"count":len(generated),"next_value":sequence.next_value})
+    remember(session,owner.user.id,payload.request_id,"sku",digest,result)
     session.commit()
-    return {"items":[sku_json(item) for item in generated],"count":len(generated),"next_value":sequence.next_value}
+    return result
 
 
 @router.put("/{sku_id}/product")

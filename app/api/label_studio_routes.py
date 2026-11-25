@@ -1,6 +1,6 @@
 from typing import Literal
 from fastapi import APIRouter,HTTPException,Response
-from pydantic import BaseModel,Field
+from pydantic import BaseModel,Field,field_validator
 from sqlalchemy import select,func
 from sqlalchemy.exc import IntegrityError
 from app.api.vault_routes import Db,Owner,Config,owned_many,serialize
@@ -22,6 +22,12 @@ AccountTool=Annotated[AuthContext,Depends(account_tool_context)]
 class TemplateInput(BaseModel):
     name:str=Field(min_length=1,max_length=100)
     definition:LabelDefinition
+
+    @field_validator("name")
+    @classmethod
+    def valid_name(cls,value):
+        from app.api.vault_routes import VaultInput
+        return VaultInput.safe_unicode(value)
 
 
 class TemplateUpdate(TemplateInput):

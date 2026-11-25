@@ -1,3 +1,4 @@
+from app.models import InventoryItem,StockMovement,AssetRecord,AssetEvent
 from app import allowances
 from app.call_packs import details as pack_details
 from app.models import CallPack
@@ -184,7 +185,7 @@ def _start_of_today() -> datetime:
     return datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
 
-TOOL_CATEGORIES=("generation","scans","labels","enrichment","validation","vault_exports","sku_generation","bulk_rows")
+TOOL_CATEGORIES=("generation","scans","labels","enrichment","validation","vault_exports","sku_generation","bulk_rows","audit_rows")
 
 
 def workspace_usage(session: Session, plans: dict[str,str]) -> dict[str,AdminWorkspaceUsage]:
@@ -197,7 +198,7 @@ def workspace_usage(session: Session, plans: dict[str,str]) -> dict[str,AdminWor
         return result
     for user in session.scalars(select(User).where(User.id.in_(plans))):
         result[user.id].vault_capacity=capacity_for(user,plans[user.id],settings)
-    for model,field in [(SkuAllocation,"sku_allocations"),(LabelTemplate,"label_templates")]:
+    for model,field in [(AssetRecord,"asset_records"),(AssetEvent,"asset_events"),(InventoryItem,"inventory_records"),(StockMovement,"stock_movements"),(SkuAllocation,"sku_allocations"),(LabelTemplate,"label_templates")]:
         for uid,count in session.execute(select(model.user_id,func.count()).where(model.user_id.in_(plans)).group_by(model.user_id)):
             setattr(result[uid],field,count)
     scopes={"user:"+uid:uid for uid in plans}
@@ -218,6 +219,10 @@ def dashboard_summary(session: Session) -> AdminDashboardSummary:
     month = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
     usage_month = current_period(today)
     return AdminDashboardSummary(
+        asset_records=session.scalar(select(func.count()).select_from(AssetRecord)) or 0,
+        asset_events=session.scalar(select(func.count()).select_from(AssetEvent)) or 0,
+        inventory_records=session.scalar(select(func.count()).select_from(InventoryItem)) or 0,
+        stock_movements=session.scalar(select(func.count()).select_from(StockMovement)) or 0,
         sku_allocations=session.scalar(select(func.count()).select_from(SkuAllocation)) or 0,
         label_templates=session.scalar(select(func.count()).select_from(LabelTemplate)) or 0,
         tool_units_month={category:count for category,count in session.execute(select(ServiceUsage.category,func.sum(ServiceUsage.units)).where(ServiceUsage.period_start==usage_month,ServiceUsage.category.in_(TOOL_CATEGORIES)).group_by(ServiceUsage.category))},

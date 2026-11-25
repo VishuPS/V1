@@ -174,7 +174,7 @@ def render_svg(definition:LabelDefinition,product:dict)->bytes:
     fonts={element.font for element in definition.elements if element.kind not in {"barcode","qr","logo"}}
     if fonts:
         style=SubElement(root,"style")
-        style.text="\n".join("@font-face{font-family:'Nest-"+font+"';src:url(data:font/ttf;base64,"+base64.b64encode((FONT_ROOT/FONTS[font]).read_bytes()).decode("ascii")+") format('truetype');}" for font in fonts)
+        style.text="\n".join("@font-face{font-family:'Nest-"+font+"';font-weight:"+('bold' if font=='bold' else 'normal')+";font-style:"+('italic' if font=='italic' else 'normal')+";src:url(data:font/ttf;base64,"+base64.b64encode((FONT_ROOT/FONTS[font]).read_bytes()).decode("ascii")+") format('truetype');}" for font in fonts)
     SubElement(root,"rect",{"width":"100%","height":"100%","fill":"white"})
     for element in definition.elements:
         if element.kind in {"barcode","qr"}:

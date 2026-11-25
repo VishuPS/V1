@@ -682,6 +682,95 @@ class LabelTemplate(Base):
     updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),nullable=False,default=utcnow)
 
 
+class InventoryItem(Base):
+    __tablename__="inventory_items"
+    __table_args__=(UniqueConstraint("user_id","product_id",name="uq_inventory_product"),CheckConstraint("quantity >= 0 AND quantity <= 1000000000",name="ck_inventory_quantity"),Index("ix_inventory_owner","user_id","updated_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    product_id: Mapped[str]=mapped_column(ForeignKey("vault_products.id",ondelete="RESTRICT"),nullable=False)
+    quantity: Mapped[int]=mapped_column(BigInteger,nullable=False,default=0)
+    low_stock_threshold: Mapped[int]=mapped_column(BigInteger,nullable=False,default=0)
+    location: Mapped[str]=mapped_column(String(200),nullable=False,default="")
+    purchase_minor: Mapped[int | None]=mapped_column(BigInteger)
+    currency: Mapped[str]=mapped_column(String(3),nullable=False,default="USD")
+    revision: Mapped[int]=mapped_column(nullable=False,default=1)
+    archived: Mapped[bool]=mapped_column(Boolean,nullable=False,default=False)
+    updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class StockMovement(Base):
+    __tablename__="stock_movements"
+    __table_args__=(UniqueConstraint("user_id","request_id",name="uq_stock_request"),Index("ix_stock_owner_created","user_id","created_at"),Index("ix_stock_item","inventory_id","created_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    inventory_id: Mapped[str]=mapped_column(ForeignKey("inventory_items.id",ondelete="RESTRICT"),nullable=False)
+    request_id: Mapped[str]=mapped_column(String(64),nullable=False)
+    delta: Mapped[int]=mapped_column(BigInteger,nullable=False)
+    balance: Mapped[int]=mapped_column(BigInteger,nullable=False)
+    reason: Mapped[str]=mapped_column(String(500),nullable=False)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class AssetRecord(Base):
+    __tablename__="asset_records"
+    __table_args__=(UniqueConstraint("user_id","asset_code",name="uq_asset_owner_code"),Index("ix_asset_owner_updated","user_id","updated_at"),Index("ix_asset_product","product_id"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    product_id: Mapped[str|None]=mapped_column(ForeignKey("vault_products.id",ondelete="SET NULL"))
+    asset_code: Mapped[str]=mapped_column(String(80),nullable=False)
+    name: Mapped[str]=mapped_column(String(200),nullable=False)
+    description: Mapped[str]=mapped_column(String(4000),nullable=False,default="")
+    location: Mapped[str]=mapped_column(String(200),nullable=False,default="")
+    assigned_person: Mapped[str]=mapped_column(String(200),nullable=False,default="")
+    acquired_on: Mapped[date|None]=mapped_column(Date)
+    purchase_minor: Mapped[int|None]=mapped_column(BigInteger)
+    currency: Mapped[str]=mapped_column(String(3),nullable=False,default="USD")
+    condition: Mapped[str]=mapped_column(String(20),nullable=False,default="good")
+    status: Mapped[str]=mapped_column(String(20),nullable=False,default="available")
+    checked_out_to: Mapped[str]=mapped_column(String(200),nullable=False,default="")
+    revision: Mapped[int]=mapped_column(nullable=False,default=1)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+    updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class AssetEvent(Base):
+    __tablename__="asset_events"
+    __table_args__=(Index("ix_asset_event_owner_created","user_id","created_at"),Index("ix_asset_event_record","asset_id","created_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    asset_id: Mapped[str]=mapped_column(ForeignKey("asset_records.id",ondelete="RESTRICT"),nullable=False)
+    kind: Mapped[str]=mapped_column(String(20),nullable=False)
+    note: Mapped[str]=mapped_column(String(1000),nullable=False,default="")
+    event_date: Mapped[date|None]=mapped_column(Date)
+    before: Mapped[dict]=mapped_column(JSON,nullable=False)
+    after: Mapped[dict]=mapped_column(JSON,nullable=False)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class FunnelEvent(Base):
+    __tablename__="funnel_events"
+    __table_args__=(UniqueConstraint("dedupe_key",name="uq_funnel_dedupe"),Index("ix_funnel_created_event","created_at","event"),Index("ix_funnel_user_created","user_id","created_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str|None]=mapped_column(ForeignKey("users.id",ondelete="SET NULL"))
+    visit_hash: Mapped[str|None]=mapped_column(String(64))
+    event: Mapped[str]=mapped_column(String(32),nullable=False)
+    tool: Mapped[str]=mapped_column(String(32),nullable=False,default="platform")
+    dedupe_key: Mapped[str|None]=mapped_column(String(160))
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class WorkspaceReceipt(Base):
+    __tablename__="workspace_receipts"
+    __table_args__=(UniqueConstraint("user_id","request_id",name="uq_workspace_receipt"),Index("ix_receipt_created","created_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    request_id: Mapped[str]=mapped_column(String(64),nullable=False)
+    operation: Mapped[str]=mapped_column(String(20),nullable=False)
+    digest: Mapped[str]=mapped_column(String(64),nullable=False)
+    result: Mapped[dict]=mapped_column(JSON,nullable=False)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
 class PlatformStatistic(Base):
     __tablename__ = "platform_statistics"
     key: Mapped[str] = mapped_column(String(64),primary_key=True)

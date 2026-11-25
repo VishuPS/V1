@@ -42,6 +42,9 @@ def checkout(payload: CheckoutCreate, request: Request, context: CurrentUser, se
     url = payment_link_checkout(settings, context.user.id, context.user.email, payload.plan, payload.billing_interval)
     if not url:
         url = StripeClient(settings).checkout(context.user.id, context.user.email, payload.plan, payload.billing_interval, subscription.provider_customer_id if subscription else None)
+    from app.funnel import record_event_safely
+    record_event_safely(session,"checkout_initiated",user_id=context.user.id,tool="billing")
+    session.commit()
     return BillingRedirect(url=url)
 
 
