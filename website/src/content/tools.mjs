@@ -1,6 +1,9 @@
 export const toolGroups=["Discover & Create","Organise & Manage","Design & Process","Developer Tools"];
 // Only working tools belong here. Later phases add entries after acceptance tests.
 export const tools=[
+ {id:"catalogue",name:"Product Catalogue",group:toolGroups[1],href:"/catalogue/",description:"Manage variants, additional identifiers, suppliers and bulk product edits.",tier:"Free / premium workflows"},
+ {id:"skus",name:"SKU Manager",group:toolGroups[1],href:"/sku-manager/",description:"Allocate unique internal SKUs, associate products and import or export a register.",tier:"Creator and above"},
+ {id:"studio",name:"Label Studio",group:toolGroups[2],href:"/label-studio/",description:"Design reusable A4 or thermal labels and export PDF, SVG or PNG.",tier:"Creator and above"},
  {id:"lookup",name:"Barcode Lookup",group:toolGroups[0],href:"/barcode-lookup/",description:"Find available product details from a UPC, EAN or GTIN.",tier:"Free lookup credits"},
  {id:"generator",name:"Barcode Generator",group:toolGroups[0],href:"/barcode-generator/",description:"Create SVG and PNG barcodes; paid plans add ZIP batches.",tier:"Free / paid batches"},
  {id:"scanner",name:"Barcode Scanner",group:toolGroups[0],href:"/barcode-scanner/",description:"Read a photo or captured frame and save its identifier.",tier:"Free allowance"},

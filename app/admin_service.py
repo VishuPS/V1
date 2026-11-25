@@ -38,6 +38,8 @@ from app.models import (
     User,
     ServiceUsage,
     VaultProduct,
+    SkuAllocation,
+    LabelTemplate,
 )
 
 
@@ -182,19 +184,22 @@ def _start_of_today() -> datetime:
     return datetime(now.year, now.month, now.day, tzinfo=timezone.utc)
 
 
-TOOL_CATEGORIES=("generation","scans","labels","enrichment","validation","vault_exports")
+TOOL_CATEGORIES=("generation","scans","labels","enrichment","validation","vault_exports","sku_generation","bulk_rows")
 
 
 def workspace_usage(session: Session, plans: dict[str,str]) -> dict[str,AdminWorkspaceUsage]:
     settings=get_settings();period=current_period()
     result={uid:AdminWorkspaceUsage(period_start=period,tools={
-        category:AdminToolUsage(limit=getattr(settings.service_limits.get(plan),category,None),
-            remaining=getattr(settings.service_limits.get(plan),category,None)) for category in TOOL_CATEGORIES},
-        vault_capacity=settings.vault_limits.get(plan,0)) for uid,plan in plans.items()}
+        category:AdminToolUsage(limit=getattr(settings.service_limits.get(plan),category,settings.workspace_monthly_limits.get(plan,{}).get(category)),
+            remaining=getattr(settings.service_limits.get(plan),category,settings.workspace_monthly_limits.get(plan,{}).get(category))) for category in TOOL_CATEGORIES},
+        vault_capacity=settings.vault_limits.get(plan,0),sku_capacity=settings.sku_record_limits.get(plan,0),label_template_capacity=settings.label_template_limits.get(plan,0)) for uid,plan in plans.items()}
     if not plans:
         return result
     for user in session.scalars(select(User).where(User.id.in_(plans))):
         result[user.id].vault_capacity=capacity_for(user,plans[user.id],settings)
+    for model,field in [(SkuAllocation,"sku_allocations"),(LabelTemplate,"label_templates")]:
+        for uid,count in session.execute(select(model.user_id,func.count()).where(model.user_id.in_(plans)).group_by(model.user_id)):
+            setattr(result[uid],field,count)
     scopes={"user:"+uid:uid for uid in plans}
     for usage in session.scalars(select(ServiceUsage).where(ServiceUsage.account_scope.in_(scopes),ServiceUsage.period_start==period)):
         if usage.category in TOOL_CATEGORIES:
@@ -213,6 +218,8 @@ def dashboard_summary(session: Session) -> AdminDashboardSummary:
     month = datetime(today.year, today.month, 1, tzinfo=timezone.utc)
     usage_month = current_period(today)
     return AdminDashboardSummary(
+        sku_allocations=session.scalar(select(func.count()).select_from(SkuAllocation)) or 0,
+        label_templates=session.scalar(select(func.count()).select_from(LabelTemplate)) or 0,
         tool_units_month={category:count for category,count in session.execute(select(ServiceUsage.category,func.sum(ServiceUsage.units)).where(ServiceUsage.period_start==usage_month,ServiceUsage.category.in_(TOOL_CATEGORIES)).group_by(ServiceUsage.category))},
         vault_products=session.scalar(select(func.count()).select_from(VaultProduct)) or 0,
         vault_accounts=session.scalar(select(func.count(func.distinct(VaultProduct.user_id)))) or 0,

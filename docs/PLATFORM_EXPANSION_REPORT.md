@@ -39,10 +39,35 @@ build; rebuilding locally outside the sandbox succeeded.
 future users is platform_v1. Upgrade/downgrade tests verified that existing user
 rows survive. No production migration has been run.
 
+## Phase 2 — catalogue, SKUs and labels
+
+Implemented private variants, owner-unique identifiers, supplier/tags, optimistic
+revisions, advanced filtering, bulk edits and bounded CSV/XLSX imports/exports.
+SKU Manager reserves unique internal codes with configurable patterns and
+sequences, product associations, duplicate reports and separate monthly quotas.
+Label Studio provides drag/keyboard editing, millimetre dimensions, logos, four
+fonts, A4/thermal layouts, reusable templates and PDF/PNG/SVG exports. It supports
+EAN-13, EAN-8, UPC-A, Code 128, Code 39 and QR, preserving quiet zones and whole
+modules. Existing basic label printing remains available.
+
+Migration `20261125_0025_catalogue_sku_labels` adds private product metadata,
+identifier aliases, SKU sequences/allocations and label templates. Existing Vault
+rows and billing are preserved. Formula cells, external workbook links, macros,
+oversized archives and unsafe CSV exports are rejected or neutralised. Premium
+checks and all ownership checks run on the server; expired accounts retain reads.
+Heavy processing has a two-operation per-process bound and per-account rate limits.
+
+Validation: the complete API regression suite passed (one opt-in PostgreSQL test
+skipped in SQLite); that PostgreSQL test passed separately against an isolated
+loopback container, including 20 concurrent allocations and quota rollback.
+Browser workflow checks passed at 390/768/1280px. Six barcode formats were decoded
+from generated PNGs; the 50×25mm thermal output also decoded. PDF output was
+rendered and visually inspected. Added local dependencies openpyxl/defusedxml and
+the MIT browser BWIP preview library; no paid service or production writes.
+
 ## Next phases
 
-Phase 2 (SKU manager, catalogue extensions, Label Studio), Phase 3 (inventory,
-bulk studio, auditing), Phase 4 (assets, landing pages, privacy-safe funnels) and
+Phase 3 (inventory, bulk studio, auditing), Phase 4 (assets, landing pages, privacy-safe funnels) and
 Phase 5 final acceptance/security/performance review remain in progress/not yet
 implemented at this checkpoint. This report will be updated after each phase.
 

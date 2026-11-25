@@ -204,6 +204,7 @@ def authorized_key_context(record: ApiKey, session: Session, settings: Settings,
             },
         )
     category = {
+        "/v1/label-studio/render": "labels",
         "/v1/barcodes/scan": "scans",
         "/v1/barcodes/render": "generation",
         "/v1/barcodes/batch-render": "generation",

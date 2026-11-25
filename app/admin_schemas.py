@@ -4,6 +4,8 @@ from pydantic import BaseModel, Field
 
 
 class AdminDashboardSummary(BaseModel):
+    sku_allocations:int=0
+    label_templates:int=0
     tool_units_month: dict[str,int] = Field(default_factory=dict)
     vault_products: int = 0
     vault_accounts: int = 0
@@ -66,6 +68,10 @@ class AdminToolUsage(BaseModel):
 
 
 class AdminWorkspaceUsage(BaseModel):
+    sku_allocations:int=0
+    sku_capacity:int=0
+    label_templates:int=0
+    label_template_capacity:int=0
     period_start: date
     tools: dict[str,AdminToolUsage]
     vault_products: int = 0

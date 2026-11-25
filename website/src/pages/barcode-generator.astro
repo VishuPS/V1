@@ -21,7 +21,7 @@ const schema = {
       <h2>Create a barcode</h2>
       <form id="generator"><fieldset data-account-tool disabled>
         <label for="symbology">Barcode type</label>
-        <select id="symbology"><option value="ean13">EAN-13</option><option value="upca">UPC-A</option><option value="code128">Code 128</option><option value="qr">QR code</option></select>
+        <select id="symbology"><option value="ean13">EAN-13</option><option value="ean8">EAN-8</option><option value="upca">UPC-A</option><option value="code128">Code 128</option><option value="code39">Code 39</option><option value="qr">QR code</option></select>
         <label for="barcode-value">Barcode value</label>
         <input id="barcode-value" placeholder="e.g. 3017620422003" maxlength="500" required autocomplete="off" aria-describedby="generator-hint" />
         <p class="tool-hint" id="generator-hint">Enter the complete assigned number for UPC or EAN, including its check digit. Use Code 128 for internal identifiers.</p>
@@ -48,7 +48,7 @@ const schema = {
           <label for="batch-values">One barcode value per line</label>
           <textarea id="batch-values" rows="5" maxlength="51000" required placeholder="3017620422003"></textarea>
           <label for="batch-type">Barcode type</label>
-          <select id="batch-type"><option value="ean13">EAN-13</option><option value="upca">UPC-A</option><option value="code128">Code 128</option><option value="qr">QR code</option></select>
+          <select id="batch-type"><option value="ean13">EAN-13</option><option value="ean8">EAN-8</option><option value="upca">UPC-A</option><option value="code128">Code 128</option><option value="code39">Code 39</option><option value="qr">QR code</option></select>
           <label for="batch-format">Image format</label>
           <select id="batch-format"><option value="png">PNG</option><option value="svg">SVG</option></select>
           <div class="tool-actions"><button class="button button-signal" type="submit">Generate ZIP batch</button></div>
@@ -77,7 +77,7 @@ const schema = {
   const form = document.querySelector<HTMLFormElement>("#generator")!;
   const scanParams = new URLSearchParams(location.search);
   const scannedType = scanParams.get("type");
-  if (scannedType && ["ean13", "upca", "code128", "qr"].includes(scannedType)) {
+  if (scannedType && ["ean13", "ean8", "upca", "code128", "code39", "qr"].includes(scannedType)) {
     document.querySelector<HTMLSelectElement>("#symbology")!.value = scannedType;
     document.querySelector<HTMLInputElement>("#barcode-value")!.value = (scanParams.get("value") || "").slice(0,500);
     history.replaceState(null, "", location.pathname);

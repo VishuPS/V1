@@ -14,3 +14,7 @@ Sitemap: https://barcodenest.com/sitemap-index.xml
 
 # Authenticated workspace
 Disallow: /workspace/
+
+Disallow: /catalogue/
+Disallow: /sku-manager/
+Disallow: /label-studio/

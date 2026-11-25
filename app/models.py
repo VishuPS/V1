@@ -610,6 +610,7 @@ class VaultProduct(Base):
     __table_args__ = (
         UniqueConstraint("user_id", "identity_key", name="uq_vault_user_identity"),
         Index("ix_vault_user_updated", "user_id", "updated_at"),
+        Index("ix_vault_variant_parent","variant_of"),
     )
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     user_id: Mapped[str] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
@@ -627,8 +628,58 @@ class VaultProduct(Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False, default="USD")
     custom_fields: Mapped[dict[str, str]] = mapped_column(JSON, nullable=False, default=dict)
     revision: Mapped[int] = mapped_column(nullable=False, default=1)
+    supplier: Mapped[str] = mapped_column(String(200),nullable=False,default="",server_default="")
+    tags: Mapped[list[str]] = mapped_column(JSON,nullable=False,default=list,server_default="[]")
+    variant_of: Mapped[str | None] = mapped_column(ForeignKey("vault_products.id",ondelete="SET NULL",name="fk_vault_variant_parent"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, nullable=False)
+
+
+class ProductIdentifier(Base):
+    __tablename__="product_identifiers"
+    __table_args__=(UniqueConstraint("user_id","identity_key",name="uq_identifier_owner_identity"),Index("ix_identifier_owner_product","user_id","product_id"),Index("ix_identifier_product","product_id"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    product_id: Mapped[str]=mapped_column(ForeignKey("vault_products.id",ondelete="CASCADE"),nullable=False)
+    identity_key: Mapped[str]=mapped_column(String(64),nullable=False)
+    value: Mapped[str]=mapped_column(String(500),nullable=False)
+    kind: Mapped[str]=mapped_column(String(20),nullable=False)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class SkuSequence(Base):
+    __tablename__="sku_sequences"
+    __table_args__=(UniqueConstraint("user_id","sequence_key",name="uq_sku_owner_sequence"),)
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    sequence_key: Mapped[str]=mapped_column(String(64),nullable=False)
+    prefix: Mapped[str]=mapped_column(String(20),nullable=False)
+    category_code: Mapped[str]=mapped_column(String(20),nullable=False)
+    pattern: Mapped[str]=mapped_column(String(100),nullable=False)
+    next_value: Mapped[int]=mapped_column(BigInteger,nullable=False)
+
+
+class SkuAllocation(Base):
+    __tablename__="sku_allocations"
+    __table_args__=(UniqueConstraint("user_id","code",name="uq_sku_owner_code"),Index("ix_sku_owner_created","user_id","created_at"),Index("ix_sku_product","product_id"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    product_id: Mapped[str | None]=mapped_column(ForeignKey("vault_products.id",ondelete="SET NULL"))
+    code: Mapped[str]=mapped_column(String(80),nullable=False)
+    category: Mapped[str]=mapped_column(String(100),nullable=False,default="")
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),default=utcnow,nullable=False)
+
+
+class LabelTemplate(Base):
+    __tablename__="label_templates"
+    __table_args__=(UniqueConstraint("user_id","name",name="uq_label_owner_name"),Index("ix_label_owner_updated","user_id","updated_at"))
+    id: Mapped[str]=mapped_column(String(36),primary_key=True,default=new_uuid)
+    user_id: Mapped[str]=mapped_column(ForeignKey("users.id",ondelete="CASCADE"),nullable=False)
+    name: Mapped[str]=mapped_column(String(100),nullable=False)
+    definition: Mapped[dict]=mapped_column(JSON,nullable=False)
+    revision: Mapped[int]=mapped_column(nullable=False,default=1)
+    created_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),nullable=False,default=utcnow)
+    updated_at: Mapped[datetime]=mapped_column(DateTime(timezone=True),nullable=False,default=utcnow)
 
 
 class PlatformStatistic(Base):

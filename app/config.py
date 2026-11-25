@@ -42,6 +42,13 @@ class Settings(BaseSettings):
     new_customer_vault_limits: dict[str,int] = {"FREE":25,"ONE_TIME":25,"CREATOR":500,"STARTER":2000,"GROWTH":10000}
     workspace_batch_limit: int = Field(default=100,ge=1,le=1000)
     workspace_upload_bytes: int = Field(default=5_000_000,ge=1000,le=20_000_000)
+    workspace_requests_per_minute: int = Field(default=120,ge=10,le=1200)
+    workspace_monthly_limits: dict[str,dict[str,int]] = {
+        "CREATOR":{"sku_generation":1000,"bulk_rows":1000},
+        "STARTER":{"sku_generation":5000,"bulk_rows":5000},
+        "GROWTH":{"sku_generation":20000,"bulk_rows":20000}}
+    label_template_limits: dict[str,int] = {"CREATOR":10,"STARTER":25,"GROWTH":100}
+    sku_record_limits: dict[str,int] = {"CREATOR":2000,"STARTER":20000,"GROWTH":100000}
     vault_limits: dict[str, int] = {"FREE":25,"ONE_TIME":25,"CREATOR":250,"STARTER":2000,"GROWTH":10000}
     service_limits: dict[str, ServiceLimit] = Field(default_factory=default_service_limits)
     app_name: str = "Grocery & Retail Product Barcode API"

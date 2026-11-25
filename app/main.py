@@ -21,6 +21,9 @@ from app.api.billing_routes import router as billing_router
 from app.api.tool_routes import router as tool_router
 from app.api.vault_routes import router as vault_router
 from app.api.workspace_routes import router as workspace_router
+from app.api.sku_routes import router as sku_router
+from app.api.catalogue_routes import router as catalogue_router
+from app.api.label_studio_routes import router as label_studio_router
 from app.api.contribution_routes import admin_router as contribution_admin_router
 from app.api.contribution_routes import router as contribution_router
 from app.config import get_settings
@@ -105,6 +108,9 @@ app.include_router(billing_router)
 app.include_router(tool_router)
 app.include_router(vault_router)
 app.include_router(workspace_router)
+app.include_router(sku_router)
+app.include_router(catalogue_router)
+app.include_router(label_studio_router)
 app.include_router(contribution_router)
 app.include_router(contribution_admin_router)
 

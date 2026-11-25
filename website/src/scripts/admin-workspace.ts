@@ -1,6 +1,6 @@
 import {formatDate} from "./admin-api";
-export const toolNames:Record<string,string>={generation:"Generated images",scans:"Scan attempts",labels:"Printed labels",enrichment:"Enrichment rows",validation:"Validation checks",vault_exports:"Vault exports prepared"};
-export type WorkspaceUsage={period_start:string;tools:Record<string,{used:number;limit:number|null;remaining:number|null;last_used_at:string|null}>;vault_products:number;vault_capacity:number;vault_created_this_month:number;vault_last_updated_at:string|null};
+export const toolNames:Record<string,string>={sku_generation:"Generated SKUs",bulk_rows:"Bulk processing rows",generation:"Generated images",scans:"Scan attempts",labels:"Printed labels",enrichment:"Enrichment rows",validation:"Validation checks",vault_exports:"Vault exports prepared"};
+export type WorkspaceUsage={sku_allocations?:number;sku_capacity?:number;label_templates?:number;label_template_capacity?:number;period_start:string;tools:Record<string,{used:number;limit:number|null;remaining:number|null;last_used_at:string|null}>;vault_products:number;vault_capacity:number;vault_created_this_month:number;vault_last_updated_at:string|null};
 const n=(value:number)=>new Intl.NumberFormat().format(value);
 export function usageCell(data:WorkspaceUsage|null|undefined){
  const cell=document.createElement("td");if(!data){cell.textContent="Unavailable";return cell;}
@@ -16,5 +16,6 @@ export function renderWorkspace(root:HTMLElement,data:WorkspaceUsage|null|undefi
  const body=document.createElement("tbody");for(const [key,label]of Object.entries(toolNames)){const item=data.tools[key]||{used:0,limit:null,remaining:null,last_used_at:null};const row=document.createElement("tr");for(const text of [label,n(item.used),item.limit===null?"Not quota-metered":n(item.limit),item.remaining===null?"—":n(item.remaining),formatDate(item.last_used_at,true)]){const td=document.createElement("td");td.textContent=text;row.append(td);}body.append(row);}table.append(body);wrapper.append(table);
  const vault=document.createElement("p");vault.textContent=`Vault storage: ${n(data.vault_products)} / ${n(data.vault_capacity)} records. ${n(data.vault_created_this_month)} currently saved records were created this month. Last saved-product update: ${formatDate(data.vault_last_updated_at,true)}. Storage does not reset monthly.`;
  const note=document.createElement("p");note.className="portal-note";note.textContent="Scans count accepted images, including no-match results; labels include copies; enrichment counts input rows. Validation and export tracking starts with this release. These are usage statistics, not private product contents or a complete event log.";
- root.append(period,wrapper,vault,note);
+ const premium=document.createElement("p");premium.textContent=`SKU register: ${n(data.sku_allocations||0)} / ${n(data.sku_capacity||0)} · Label templates: ${n(data.label_templates||0)} / ${n(data.label_template_capacity||0)}`;
+ root.append(period,wrapper,vault,premium,note);
 }

@@ -15,7 +15,7 @@ from reportlab.pdfgen.canvas import Canvas
 from app.barcodes import parse_barcode
 from app.retail_barcodes import retail_png, retail_svg
 
-Symbology = Literal["ean13", "upca", "code128", "qr"]
+Symbology = Literal["ean13", "ean8", "upca", "code128", "code39", "qr"]
 
 
 class RenderRequest(BaseModel):
@@ -40,19 +40,22 @@ class ValidationRequest(BaseModel):
 
 
 def validate_symbol(value: str, symbology: Symbology) -> None:
-    if symbology in {"ean13", "upca"}:
+    if symbology in {"ean13", "ean8", "upca"}:
         parsed = parse_barcode(value)
-        length = 13 if symbology == "ean13" else 12
+        length = {"ean13":13,"ean8":8,"upca":12}[symbology]
         if len(value) != length or parsed.value != value:
             raise ValueError(f"{symbology} requires exactly {length} digits including the correct check digit")
     elif symbology == "code128":
         if not 1 <= len(value) <= 80 or any(not 32 <= ord(char) <= 126 for char in value):
             raise ValueError("Code 128 accepts 1 to 80 printable ASCII characters")
+    elif symbology == "code39":
+        if not 1<=len(value)<=40 or any(char not in "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. $/+%" for char in value):
+            raise ValueError("Code 39 accepts up to 40 uppercase letters, digits, spaces and -. $/+%; no optional Mod-43 digit is added")
 
 
-def render_symbol(request: RenderRequest) -> bytes:
+def render_symbol(request: RenderRequest, *, internal_label_height:float|None=None) -> bytes:
     validate_symbol(request.value, request.symbology)
-    if request.symbology in {"ean13", "upca"}:
+    if request.symbology in {"ean13", "ean8", "upca"}:
         renderer = retail_svg if request.format == "svg" else retail_png
         return renderer(request.value, request.symbology)
     output = BytesIO()
@@ -65,10 +68,13 @@ def render_symbol(request: RenderRequest) -> bytes:
             image.save(output)
     else:
         writer = SVGWriter() if request.format == "svg" else ImageWriter()
-        symbol = barcode.get(request.symbology, request.value, writer=writer)
+        symbol = barcode.get(request.symbology, request.value, writer=writer,options={"add_checksum":False} if request.symbology=="code39" else None)
         module_width = 0.33 if request.format == "svg" else 4 * 25.4 / 300
         options = {"module_width": module_width, "module_height": 22,
                    "quiet_zone": 6.5, "font_size": 10, "dpi": 300}
+        if internal_label_height is not None and request.symbology in {"code128","code39"}:
+            # Internal labels can use shorter bars; narrow bars and >=10X quiet zones stay intact.
+            options.update(module_height=max(5,min(22,internal_label_height-7)),quiet_zone=10*module_width,font_size=8,text_distance=2)
         if request.format == "png":
             symbol.render(options).save(output, format="PNG", dpi=(300, 300))
         else:

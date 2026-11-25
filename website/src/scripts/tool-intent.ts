@@ -1,4 +1,5 @@
 const toolPaths = new Set([
+  "/catalogue/", "/sku-manager/", "/label-studio/",
   "/workspace/", "/barcode-lookup/", "/barcode-converter/",
   "/vault/",
   "/barcode-scanner/",

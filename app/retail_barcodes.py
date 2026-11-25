@@ -30,13 +30,14 @@ class Bar:
 
 def retail_bars(value: str, symbology: str) -> list[Bar]:
     pattern = barcode.get(symbology, value).build()[0]
-    if len(pattern) != 95 or set(pattern) != {"0", "1"}:
+    expected=67 if symbology=="ean8" else 95
+    if len(pattern) != expected or set(pattern) != {"0", "1"}:
         raise ValueError("Unexpected retail barcode pattern")
     bars = []
     for index, bit in enumerate(pattern):
         if bit == "0":
             continue
-        extended = index < 3 or 45 <= index < 50 or index >= 92
+        extended = (index<3 or 31<=index<36 or index>=64) if symbology=="ean8" else (index < 3 or 45 <= index < 50 or index >= 92)
         if symbology == "upca":
             extended = extended or 3 <= index < 10 or 85 <= index < 92
         if bars and bars[-1].start + bars[-1].width == index and bars[-1].extended == extended:
@@ -47,6 +48,8 @@ def retail_bars(value: str, symbology: str) -> list[Bar]:
 
 
 def digit_positions(value: str, symbology: str) -> list[tuple[str, float]]:
+    if symbology=="ean8":
+        return [(digit,6.5+index*7) for index,digit in enumerate(value[:4])]+[(digit,39.5+index*7) for index,digit in enumerate(value[4:])]
     if symbology == "ean13":
         positions = [(value[0], -4)]
         positions.extend((digit, 6.5 + index * 7) for index, digit in enumerate(value[1:7]))
@@ -60,7 +63,7 @@ def digit_positions(value: str, symbology: str) -> list[tuple[str, float]]:
 
 
 def retail_svg(value: str, symbology: str) -> bytes:
-    width = 95 * MODULE_WIDTH_MM + 2 * QUIET_ZONE_MM
+    width = (67 if symbology=="ean8" else 95) * MODULE_WIDTH_MM + 2 * QUIET_ZONE_MM
     baseline = 1 + BAR_HEIGHT_MM + 3
     height = baseline + 1
     svg = Element("svg", {
@@ -92,7 +95,7 @@ def retail_png(value: str, symbology: str) -> bytes:
     top = ceil(pixels_per_mm)
     bar_height = ceil(BAR_HEIGHT_MM * pixels_per_mm)
     baseline = top + bar_height + ceil(3 * pixels_per_mm)
-    image = Image.new("RGB", (95 * module + 2 * quiet, baseline + top), "white")
+    image = Image.new("RGB", ((67 if symbology=="ean8" else 95) * module + 2 * quiet, baseline + top), "white")
     draw = ImageDraw.Draw(image)
     for bar in retail_bars(value, symbology):
         height = bar_height + (GUARD_EXTENSION_MODULES * module if bar.extended else 0)
